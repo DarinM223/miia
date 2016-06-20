@@ -1,5 +1,9 @@
 package main
 
+const (
+	QuitMsg = iota
+)
+
 // Msg contains the data being sent/received between Nodes.
 type Msg struct {
 	// Type is the type of the message being sent.
@@ -17,20 +21,16 @@ type Node interface {
 	ID() int
 	// Run runs the node in a goroutine.
 	Run()
-	// InChan accesses the input channel of the node.
-	// This channel is for sending messages to the node.
-	InChan() chan Msg
-	// OutChan accesses the output channel of the node.
-	// This channel is for receiving messages from the node.
-	OutChan() chan Msg
-	// ParentChans is a map of parent ids to parent input channels
-	// to send the completed data to after finishing.
+	// Chan is the input channel for the node.
+	Chan() chan Msg
+	// ParentChans is a map of parent ids to parent input channels.
 	ParentChans() map[int]chan Msg
-	// AddChild adds a child Node and listens for the child node's
-	// passed up messages
+	// AddChild adds a child Node.
 	AddChild(child Node)
-	// RemoveChild removes a child Node and listens for
+	// RemoveChild removes a child Node.
 	RemoveChild(child Node)
+	// Destroy cleans up the resources before killing a Node.
+	Destroy()
 
 	// addParentChan adds a new parent input channel to the node.
 	// Only meant to be used by AddChild.
@@ -42,32 +42,56 @@ type Node interface {
 
 type ForNode struct {
 	id          int
-	collection  Node
 	subnodes    []Node
+	insertIdx   int
 	inChan      chan Msg
-	outChan     chan Msg
 	parentChans map[int]chan Msg
 }
 
 func NewForNode(id int, collection Node, subnodes []Node) *ForNode {
-	return &ForNode{
+	forNode := &ForNode{
 		id:          id,
-		collection:  collection,
+		insertIdx:   0,
 		subnodes:    subnodes,
 		inChan:      make(chan Msg),
-		outChan:     make(chan Msg),
 		parentChans: make(map[int]chan Msg),
 	}
+	// Listen for collection's result
+	collection.addParentChan(forNode.id, forNode.inChan)
+	return forNode
 }
 
 func (n *ForNode) ID() int                       { return n.id }
-func (n *ForNode) InChan() chan Msg              { return n.inChan }
-func (n *ForNode) OutChan() chan Msg             { return n.outChan }
+func (n *ForNode) Chan() chan Msg                { return n.inChan }
 func (n *ForNode) ParentChans() map[int]chan Msg { return n.parentChans }
 
 func (n *ForNode) Run() {
-	// TODO(DarinM223): listen @ Collection's out channel and
-	// then distribute the data to the subnodes.
+	passUpCount := 0
+	for {
+		msg := <-n.inChan
+		if msg.Type == QuitMsg {
+			for _, subnode := range n.subnodes {
+				subnode.Chan() <- msg
+			}
+			n.Destroy()
+			break
+		} else if msg.PassUp {
+			for _, parent := range n.parentChans {
+				parent <- msg
+			}
+			passUpCount++
+			if passUpCount >= len(n.subnodes) {
+				n.Destroy()
+				break
+			}
+		} else if len(n.subnodes) > 0 {
+			n.subnodes[n.insertIdx].Chan() <- msg
+			n.insertIdx++
+			if n.insertIdx >= len(n.subnodes) {
+				n.insertIdx = 0
+			}
+		}
+	}
 }
 
 func (n *ForNode) AddChild(child Node) {
@@ -85,8 +109,20 @@ func (n *ForNode) RemoveChild(child Node) {
 	}
 	if childIdx != -1 {
 		n.subnodes = append(n.subnodes[:childIdx], n.subnodes[childIdx+1:]...)
+		if n.insertIdx >= len(n.subnodes) {
+			n.insertIdx = len(n.subnodes) - 1
+		} else if childIdx < n.insertIdx {
+			n.insertIdx--
+		}
 	}
 	child.removeParentChan(n.id)
+}
+
+func (n *ForNode) Destroy() {
+	// TODO(DarinM223): test that this works as expected.
+	for _, node := range n.subnodes {
+		n.RemoveChild(node)
+	}
 }
 
 func (n *ForNode) addParentChan(id int, parentChan chan Msg) {
@@ -102,7 +138,6 @@ type GotoNode struct {
 	next        Node
 	selectors   []SelectorExpr
 	inChan      chan Msg
-	outChan     chan Msg
 	parentChans map[int]chan Msg
 }
 
@@ -112,22 +147,46 @@ func NewGotoNode(id int, next Node) *GotoNode {
 		next:        next,
 		selectors:   []SelectorExpr{},
 		inChan:      make(chan Msg),
-		outChan:     make(chan Msg),
 		parentChans: make(map[int]chan Msg),
 	}
 }
 
 func (n *GotoNode) ID() int                       { return n.id }
-func (n *GotoNode) InChan() chan Msg              { return n.inChan }
-func (n *GotoNode) OutChan() chan Msg             { return n.outChan }
+func (n *GotoNode) Chan() chan Msg                { return n.inChan }
 func (n *GotoNode) ParentChans() map[int]chan Msg { return n.parentChans }
 
 func (n *GotoNode) Run() {
-	// TODO(DarinM223): listen for input channel and
-	// for every message received, send an HTTP request
-	// to get the page retrieve the data using the selectors
-	// and then either send into the next node if there is a
-	// next node or pass the data back up.
+	for {
+		msg := <-n.inChan
+		if msg.Type == QuitMsg {
+			if n.next != nil {
+				n.next.Chan() <- msg
+			}
+			n.Destroy()
+			break
+		} else if msg.PassUp {
+			for _, parent := range n.parentChans {
+				parent <- msg
+			}
+			n.Destroy()
+			break
+		} else {
+			var data Msg
+			// TODO(DarinM223): send an HTTP request to get
+			// the page and then either send to next node
+			// or pass up.
+			if n.next != nil {
+				n.next.Chan() <- data
+			} else {
+				data.PassUp = true
+				for _, parent := range n.parentChans {
+					parent <- data
+				}
+				n.Destroy()
+				break
+			}
+		}
+	}
 }
 
 func (n *GotoNode) AddChild(child Node) {
@@ -141,6 +200,13 @@ func (n *GotoNode) AddChild(child Node) {
 func (n *GotoNode) RemoveChild(child Node) {
 	if child.ID() == n.next.ID() {
 		n.next.removeParentChan(n.id)
+		n.next = nil
+	}
+}
+
+func (n *GotoNode) Destroy() {
+	if n.next != nil {
+		n.RemoveChild(n.next)
 		n.next = nil
 	}
 }
