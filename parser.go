@@ -9,6 +9,7 @@ var (
 	NumFirstIdentErr error = errors.New("Digit is scanned as the first character in an ident")
 	InvalidChErr           = errors.New("Invalid character scanned")
 	InvalidTokenErr        = errors.New("Invalid token scanned")
+	ExpectedStrErr         = errors.New("String different from expected")
 )
 
 type Token int
@@ -100,6 +101,20 @@ func (p *Parser) parseWhitespace() {
 	}
 }
 
+// expectString parses from the current position and checks if it
+// matches the expected string. If it doesn't it returns an error.
+func (p *Parser) expectString(expected string) error {
+	for i := 0; i < len(expected); i++ {
+		ch := p.text[p.pos]
+		if ch == expected[i] {
+			p.pos++
+		} else {
+			return ExpectedStrErr
+		}
+	}
+	return nil
+}
+
 // parseKeywordOrIdent retrieves a ident string and checks if it
 // is a keyword or not, returning the appropriate token.
 func (p *Parser) parseKeywordOrIdent() (Token, string, error) {
@@ -115,12 +130,16 @@ func (p *Parser) parseKeywordOrIdent() (Token, string, error) {
 	return IdentToken, ident, InvalidTokenErr
 }
 
+// parseFor parses a for expression.
 func (p *Parser) parseFor() (Expr, error) {
 	p.parseWhitespace()
 	name, err := p.parseIdent()
 	if err != nil {
 		return ForExpr{}, err
 	}
+
+	p.parseWhitespace()
+	p.expectString("in")
 
 	p.parseWhitespace()
 	collection, err := p.parseExpr()
@@ -141,9 +160,34 @@ func (p *Parser) parseFor() (Expr, error) {
 	}, nil
 }
 
+// parseIf parses an if expression.
 func (p *Parser) parseIf() (Expr, error) {
-	// TODO(DarinM223): implement this
-	return IfExpr{}, nil
+	p.parseWhitespace()
+	pred, err := p.parseExpr()
+	if err != nil {
+		return IfExpr{}, err
+	}
+
+	p.parseWhitespace()
+	conseq, err := p.parseBlock()
+	if err != nil {
+		return IfExpr{}, err
+	}
+
+	p.parseWhitespace()
+	p.expectString("else")
+
+	p.parseWhitespace()
+	alt, err := p.parseBlock()
+	if err != nil {
+		return IfExpr{}, err
+	}
+
+	return IfExpr{
+		Pred:   pred,
+		Conseq: conseq,
+		Alt:    alt,
+	}, nil
 }
 
 func (p *Parser) parseNumOrRange() (Expr, error) {
