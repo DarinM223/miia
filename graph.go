@@ -1,13 +1,15 @@
 package main
 
+type MsgType int
+
 const (
-	QuitMsg = iota
+	QuitMsg MsgType = iota
 )
 
 // Msg contains the data being sent/received between Nodes.
 type Msg struct {
 	// Type is the type of the message being sent.
-	Type int
+	Type MsgType
 	// PassUp is true when completed data is being
 	// sent backwards from the child to the parent.
 	PassUp bool
