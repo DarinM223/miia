@@ -11,6 +11,7 @@ var (
 	InvalidTokenErr        = errors.New("Invalid token scanned")
 	ExpectedStrErr         = errors.New("String different from expected")
 	NumRangeErr            = errors.New("Error parsing number or range")
+	GotoNotStringErr       = errors.New("Goto URL is not a string type")
 )
 
 type Token int
@@ -25,6 +26,8 @@ const (
 	ColonToken
 	ForToken
 	IfToken
+	ElseToken
+	GotoToken
 	AssignToken
 	AndToken
 	OrToken
@@ -32,21 +35,11 @@ const (
 	EqualsToken
 )
 
-var tokens = [...]string{
-	IdentToken:  "IDENT",
-	LParenToken: "(",
-	RParenToken: ")",
-	LBraceToken: "{",
-	RBraceToken: "}",
-	RangeToken:  "..",
-	ColonToken:  ":",
-	ForToken:    "for",
-	IfToken:     "if",
-	AssignToken: "=",
-	AndToken:    "&&",
-	OrToken:     "||",
-	NotToken:    "!",
-	EqualsToken: "==",
+var tokens = map[string]Token{
+	"for":  ForToken,
+	"if":   IfToken,
+	"else": ElseToken,
+	"goto": GotoToken,
 }
 
 type Parser struct {
@@ -63,6 +56,7 @@ func NewParser(text string) *Parser {
 
 // parseIdent parses an ident from the file.
 func (p *Parser) parseIdent() (string, error) {
+	// TODO(DarinM223): also check if ident is a range expression.
 	var ident bytes.Buffer
 	for i := 0; ; i++ {
 		ch := p.text[p.pos]
@@ -251,8 +245,56 @@ func (p *Parser) parseString() (Expr, error) {
 }
 
 func (p *Parser) parseBlock() (Stmt, error) {
+	p.expectString("{")
+
+	var stmtList []Stmt
+	for {
+		p.parseWhitespace()
+		stmt, err := p.parseStmt()
+		if err != nil {
+			break
+		}
+
+		stmtList = append(stmtList, stmt)
+	}
+
+	// Generate a SeqStmt tree from the list of statements.
+	var currStmt Stmt = nil
+	for i := len(stmtList) - 2; i >= 0; i-- {
+		if currStmt == nil {
+			currStmt = &SeqStmt{
+				A: stmtList[i],
+				B: stmtList[len(stmtList)-1],
+			}
+		} else {
+			currStmt = &SeqStmt{
+				A: stmtList[i],
+				B: currStmt,
+			}
+		}
+	}
+
+	p.expectString("}")
+	return currStmt, nil
+}
+
+func (p *Parser) parseBinding(ident string) (Stmt, error) {
 	// TODO(DarinM223): implement this
+	p.parseWhitespace()
 	return nil, nil
+}
+
+func (p *Parser) parseGoto() (Stmt, error) {
+	p.parseWhitespace()
+	strExpr, err := p.parseString()
+	if err != nil {
+		return GotoStmt{}, err
+	}
+
+	if str, ok := strExpr.(StringExpr); ok {
+		return GotoStmt{str.Value}, nil
+	}
+	return GotoStmt{}, GotoNotStringErr
 }
 
 func (p *Parser) parseExpr() (Expr, error) {
@@ -282,7 +324,24 @@ func (p *Parser) parseExpr() (Expr, error) {
 }
 
 func (p *Parser) parseStmt() (Stmt, error) {
-	// TODO(DarinM223): implement this
+	p.parseWhitespace()
+	ch := p.text[p.pos]
+	switch {
+	case ch == '{':
+		return p.parseBlock()
+	case isLetter(ch):
+		token, lit, err := p.parseKeywordOrIdent()
+		if err != nil {
+			return nil, err
+		}
+
+		switch token {
+		case GotoToken:
+			return p.parseGoto()
+		case IdentToken:
+			return p.parseBinding(lit)
+		}
+	}
 	return nil, nil
 }
 
@@ -291,10 +350,8 @@ func isLetter(ch byte) bool {
 }
 
 func lookupToken(s string) (Token, error) {
-	for tok, tokLit := range tokens {
-		if tokLit == s {
-			return Token(tok), nil
-		}
+	if token, ok := tokens[s]; ok {
+		return token, nil
 	}
 
 	return -1, errors.New("String is not a token")
