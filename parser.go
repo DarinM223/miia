@@ -6,12 +6,13 @@ import (
 )
 
 var (
-	NumFirstIdentErr error = errors.New("Digit is scanned as the first character in an ident")
-	InvalidChErr           = errors.New("Invalid character scanned")
-	InvalidTokenErr        = errors.New("Invalid token scanned")
-	ExpectedStrErr         = errors.New("String different from expected")
-	NumRangeErr            = errors.New("Error parsing number or range")
-	GotoNotStringErr       = errors.New("Goto URL is not a string type")
+	NumFirstIdentErr   error = errors.New("Digit is scanned as the first character in an ident")
+	InvalidChErr             = errors.New("Invalid character scanned")
+	InvalidTokenErr          = errors.New("Invalid token scanned")
+	ExpectedStrErr           = errors.New("String different from expected")
+	NumRangeErr              = errors.New("Error parsing number or range")
+	GotoNotStringErr         = errors.New("Goto URL is not a string type")
+	BindingNotIdentErr       = errors.New("Binding statment must start with an ident")
 )
 
 type Token int
@@ -124,6 +125,10 @@ func (p *Parser) parseKeywordOrIdent() (Token, string, error) {
 
 	return IdentToken, ident, InvalidTokenErr
 }
+
+/*
+ * Expression parsing functions
+ */
 
 // parseFor parses a for expression.
 func (p *Parser) parseFor() (Expr, error) {
@@ -244,59 +249,6 @@ func (p *Parser) parseString() (Expr, error) {
 	}
 }
 
-func (p *Parser) parseBlock() (Stmt, error) {
-	p.expectString("{")
-
-	var stmtList []Stmt
-	for {
-		p.parseWhitespace()
-		stmt, err := p.parseStmt()
-		if err != nil {
-			break
-		}
-
-		stmtList = append(stmtList, stmt)
-	}
-
-	// Generate a SeqStmt tree from the list of statements.
-	var currStmt Stmt = nil
-	for i := len(stmtList) - 2; i >= 0; i-- {
-		if currStmt == nil {
-			currStmt = &SeqStmt{
-				A: stmtList[i],
-				B: stmtList[len(stmtList)-1],
-			}
-		} else {
-			currStmt = &SeqStmt{
-				A: stmtList[i],
-				B: currStmt,
-			}
-		}
-	}
-
-	p.expectString("}")
-	return currStmt, nil
-}
-
-func (p *Parser) parseBinding(ident string) (Stmt, error) {
-	// TODO(DarinM223): implement this
-	p.parseWhitespace()
-	return nil, nil
-}
-
-func (p *Parser) parseGoto() (Stmt, error) {
-	p.parseWhitespace()
-	strExpr, err := p.parseString()
-	if err != nil {
-		return GotoStmt{}, err
-	}
-
-	if str, ok := strExpr.(StringExpr); ok {
-		return GotoStmt{str.Value}, nil
-	}
-	return GotoStmt{}, GotoNotStringErr
-}
-
 func (p *Parser) parseExpr() (Expr, error) {
 	p.parseWhitespace()
 	ch := p.text[p.pos]
@@ -323,6 +275,90 @@ func (p *Parser) parseExpr() (Expr, error) {
 	return nil, nil
 }
 
+/*
+ * Statement parsing functions
+ */
+
+func (p *Parser) parseBlock() (Stmt, error) {
+	p.expectString("{")
+
+	var stmtList []Stmt
+	for {
+		p.parseWhitespace()
+		stmt, err := p.parseStmt()
+		if err != nil {
+			break
+		}
+
+		stmtList = append(stmtList, stmt)
+	}
+
+	// Generate a SeqStmt tree from the list of statements.
+	var currStmt Stmt = nil
+	for i := len(stmtList) - 2; i >= 0; i-- {
+		if currStmt == nil {
+			currStmt = SeqStmt{
+				A: stmtList[i],
+				B: stmtList[len(stmtList)-1],
+			}
+		} else {
+			currStmt = SeqStmt{
+				A: stmtList[i],
+				B: currStmt,
+			}
+		}
+	}
+
+	p.expectString("}")
+	return currStmt, nil
+}
+
+func (p *Parser) parseBinding(ident string) (Stmt, error) {
+	bindings := make(map[string]Expr)
+
+	p.parseWhitespace()
+	p.expectString("=")
+	expr, err := p.parseExpr()
+	if err != nil {
+		return BindingStmt{}, err
+	}
+	bindings[ident] = expr
+
+	for err := p.expectString(","); err == nil; err = p.expectString(",") {
+		p.parseWhitespace()
+		token, ident, err := p.parseKeywordOrIdent()
+		if err != nil {
+			return BindingStmt{}, err
+		}
+
+		if token != IdentToken {
+			return BindingStmt{}, BindingNotIdentErr
+		}
+
+		p.expectString("=")
+		expr, err := p.parseExpr()
+		if err != nil {
+			return BindingStmt{}, err
+		}
+		bindings[ident] = expr
+	}
+
+	return BindingStmt{bindings}, nil
+}
+
+func (p *Parser) parseGoto() (Stmt, error) {
+	p.parseWhitespace()
+	strExpr, err := p.parseString()
+	if err != nil {
+		return GotoStmt{}, err
+	}
+
+	if str, ok := strExpr.(StringExpr); ok {
+		return GotoStmt{str.Value}, nil
+	}
+	return GotoStmt{}, GotoNotStringErr
+}
+
 func (p *Parser) parseStmt() (Stmt, error) {
 	p.parseWhitespace()
 	ch := p.text[p.pos]
@@ -344,6 +380,10 @@ func (p *Parser) parseStmt() (Stmt, error) {
 	}
 	return nil, nil
 }
+
+/*
+ * Utility functions
+ */
 
 func isLetter(ch byte) bool {
 	return (ch >= 'a' && ch <= 'z') || (ch >= 'A' && ch <= 'Z') || ch == '_'
