@@ -60,6 +60,10 @@ func (p *Parser) parseIdent() (string, error) {
 	// TODO(DarinM223): also check if ident is a range expression.
 	var ident bytes.Buffer
 	for i := 0; ; i++ {
+		if p.pos >= len(p.text) {
+			return ident.String(), nil
+		}
+
 		ch := p.text[p.pos]
 		switch {
 		case isLetter(ch):
@@ -76,10 +80,8 @@ func (p *Parser) parseIdent() (string, error) {
 				return "", err
 			}
 			p.pos++
-		case ch == ' ', ch == '\t', ch == '\n':
-			return ident.String(), nil
 		default:
-			return "", InvalidChErr
+			return ident.String(), nil
 		}
 	}
 }
@@ -88,6 +90,10 @@ func (p *Parser) parseIdent() (string, error) {
 // whitespace characters.
 func (p *Parser) parseWhitespace() {
 	for {
+		if p.pos >= len(p.text) {
+			return
+		}
+
 		ch := p.text[p.pos]
 		if ch == ' ' || ch == '\t' || ch == '\n' {
 			p.pos++
@@ -100,11 +106,18 @@ func (p *Parser) parseWhitespace() {
 // expectString parses from the current position and checks if it
 // matches the expected string. If it doesn't it returns an error.
 func (p *Parser) expectString(expected string) error {
+	oldPos := p.pos
 	for i := 0; i < len(expected); i++ {
+		if p.pos >= len(p.text) {
+			p.pos = oldPos
+			return ExpectedStrErr
+		}
+
 		ch := p.text[p.pos]
 		if ch == expected[i] {
 			p.pos++
 		} else {
+			p.pos = oldPos
 			return ExpectedStrErr
 		}
 	}
