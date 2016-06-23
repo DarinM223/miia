@@ -10,7 +10,8 @@ var (
 	InvalidChErr             = errors.New("Invalid character scanned")
 	InvalidTokenErr          = errors.New("Invalid token scanned")
 	ExpectedStrErr           = errors.New("String different from expected")
-	NumRangeErr              = errors.New("Error parsing number or range")
+	NumErr                   = errors.New("Error parsing number")
+	StringNotClosedErr       = errors.New("String does not have an opening or closing quote")
 	GotoNotStringErr         = errors.New("Goto URL is not a string type")
 	BindingNotIdentErr       = errors.New("Binding statment must start with an ident")
 )
@@ -57,7 +58,6 @@ func NewParser(text string) *Parser {
 
 // parseIdent parses an ident from the file.
 func (p *Parser) parseIdent() (string, error) {
-	// TODO(DarinM223): also check if ident is a range expression.
 	var ident bytes.Buffer
 	for i := 0; ; i++ {
 		if p.pos >= len(p.text) {
@@ -136,7 +136,7 @@ func (p *Parser) parseKeywordOrIdent() (Token, string, error) {
 		return Token(token), ident, nil
 	}
 
-	return IdentToken, ident, InvalidTokenErr
+	return IdentToken, ident, nil
 }
 
 /*
@@ -152,7 +152,9 @@ func (p *Parser) parseFor() (Expr, error) {
 	}
 
 	p.parseWhitespace()
-	p.expectString("in")
+	if err := p.expectString("in"); err != nil {
+		return ForExpr{}, err
+	}
 
 	p.parseWhitespace()
 	collection, err := p.parseExpr()
@@ -188,7 +190,9 @@ func (p *Parser) parseIf() (Expr, error) {
 	}
 
 	p.parseWhitespace()
-	p.expectString("else")
+	if err := p.expectString("else"); err != nil {
+		return IfExpr{}, err
+	}
 
 	p.parseWhitespace()
 	alt, err := p.parseBlock()
@@ -203,63 +207,57 @@ func (p *Parser) parseIf() (Expr, error) {
 	}, nil
 }
 
-// parseNumOrRange either returns a integer expression
-// or a range expression between two integers.
-func (p *Parser) parseNumOrRange() (Expr, error) {
-	isRange := false
-	num1, num2 := -1, -1
+// parseNum parses an integer expression from the file.
+func (p *Parser) parseNumber() (Expr, error) {
+	num := -1
+
 	for {
-		ch := p.text[p.pos]
-		switch {
-		case '0' <= ch && ch <= '9':
-			if isRange {
-				if num2 == -1 {
-					num2 = 0
-				}
-				num2 *= 10
-				num2 += int(ch) - int('0')
-			} else {
-				if num1 == -1 {
-					num1 = 0
-				}
-				num1 *= 10
-				num1 += int(ch) - int('0')
-			}
-			p.pos++
-		case ch == '.':
-			isRange = true
-			p.pos++
-			p.expectString(".")
-		case ch == ' ' || ch == '\t' || ch == '\n':
+		if p.pos >= len(p.text) {
 			break
-		default:
-			return nil, NumRangeErr
+		}
+
+		ch := p.text[p.pos]
+		if '0' <= ch && ch <= '9' {
+			if num == -1 {
+				num = 0
+			}
+			num *= 10
+			num += int(ch) - int('0')
+			p.pos++
+		} else {
+			break
 		}
 	}
-	if isRange && num1 != -1 && num2 != -1 {
-		return RangeExpr{IntExpr{num1}, IntExpr{num2}}, nil
-	} else if !isRange && num1 != 1 {
-		return IntExpr{num1}, nil
+	if num == -1 {
+		return IntExpr{}, NumErr
 	}
-	return nil, NumRangeErr
+
+	return IntExpr{num}, nil
 }
 
 // parseString parses a string from the file.
 func (p *Parser) parseString() (Expr, error) {
-	p.expectString("\"")
+	if err := p.expectString("\""); err != nil {
+		return StringExpr{}, StringNotClosedErr
+	}
+
 	var str bytes.Buffer
 	for {
+		if p.pos >= len(p.text) {
+			break
+		}
+
 		ch := p.text[p.pos]
-		switch {
-		case ch == '"':
+		if ch == '"' {
 			return StringExpr{str.String()}, nil
-		default:
+		} else {
 			if err := str.WriteByte(ch); err != nil {
 				return StringExpr{}, err
 			}
 			p.pos++
 		}
 	}
+	return StringExpr{}, StringNotClosedErr
 }
 
 func (p *Parser) parseExpr() (Expr, error) {
@@ -272,6 +270,7 @@ func (p *Parser) parseExpr() (Expr, error) {
 			return nil, err
 		}
 
+		// TODO(DarinM223): account for operators and functions
 		switch token {
 		case IdentToken:
 			return VarExpr{lit}, nil
@@ -281,7 +280,8 @@ func (p *Parser) parseExpr() (Expr, error) {
 			return p.parseIf()
 		}
 	case '0' <= ch && ch <= '9':
-		return p.parseNumOrRange()
+		// TODO(DarinM223): account for operators and functions
+		return p.parseNumber()
 	case ch == '"':
 		return p.parseString()
 	}
@@ -293,7 +293,9 @@ func (p *Parser) parseExpr() (Expr, error) {
  */
 
 func (p *Parser) parseBlock() (Stmt, error) {
-	p.expectString("{")
+	if err := p.expectString("{"); err != nil {
+		return SeqStmt{}, err
+	}
 
 	var stmtList []Stmt
 	for {
@@ -322,7 +324,9 @@ func (p *Parser) parseBlock() (Stmt, error) {
 		}
 	}
 
-	p.expectString("}")
+	if err := p.expectString("}"); err != nil {
+		return SeqStmt{}, err
+	}
 	return currStmt, nil
 }
 
@@ -330,7 +334,10 @@ func (p *Parser) parseBinding(ident string) (Stmt, error) {
 	bindings := make(map[string]Expr)
 
 	p.parseWhitespace()
-	p.expectString("=")
+	if err := p.expectString("="); err != nil {
+		return BindingStmt{}, err
+	}
+
 	expr, err := p.parseExpr()
 	if err != nil {
 		return BindingStmt{}, err
@@ -348,7 +355,10 @@ func (p *Parser) parseBinding(ident string) (Stmt, error) {
 			return BindingStmt{}, BindingNotIdentErr
 		}
 
-		p.expectString("=")
+		if err := p.expectString("="); err != nil {
+			return BindingStmt{}, err
+		}
+
 		expr, err := p.parseExpr()
 		if err != nil {
 			return BindingStmt{}, err

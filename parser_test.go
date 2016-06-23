@@ -1,8 +1,6 @@
 package main
 
-import (
-	"testing"
-)
+import "testing"
 
 var parseIdentTests = []struct {
 	text, ident string
@@ -114,12 +112,83 @@ var expectStringTests = []struct {
 func TestExpectString(t *testing.T) {
 	for _, test := range expectStringTests {
 		parser := Parser{test.pos, test.text}
-		err := parser.expectString(test.expected)
-		if err != test.err {
+		if err := parser.expectString(test.expected); err != test.err {
 			t.Errorf("Different errors: expected %v got %v", test.err, err)
 		}
 		if parser.pos != test.endPos {
 			t.Errorf("Different end positions: expected %d got %d", test.endPos, parser.pos)
+		}
+	}
+}
+
+var parseKeywordOrIndentTests = []struct {
+	text, ident string
+	token       Token
+}{
+	{"goto \"www.google.com\"", "goto", GotoToken},
+	{"hello world", "hello", IdentToken},
+	{"for name in names {", "for", ForToken},
+	{"if (a == 2) {", "if", IfToken},
+	{"else b", "else", ElseToken},
+}
+
+func TestParseKeywordOrIndent(t *testing.T) {
+	for _, test := range parseKeywordOrIndentTests {
+		parser := Parser{0, test.text}
+		token, ident, err := parser.parseKeywordOrIdent()
+		if err != nil {
+			t.Errorf("Error: %s", err.Error())
+		}
+
+		if ident != test.ident {
+			t.Errorf("Different idents: expected %s got %s", test.ident, ident)
+		}
+		if token != test.token {
+			t.Errorf("Different tokens: expected %d got %d", test.token, token)
+		}
+	}
+}
+
+var parseNumberTests = []struct {
+	text string
+	expr Expr
+	err  error
+}{
+	{"0", IntExpr{0}, nil},
+	{"1234", IntExpr{1234}, nil},
+	{"abcd", IntExpr{}, NumErr},
+}
+
+func TestParseNumber(t *testing.T) {
+	for _, test := range parseNumberTests {
+		parser := Parser{0, test.text}
+		expr, err := parser.parseNumber()
+		if err != test.err {
+			t.Errorf("Different errors: expected %v got %v", test.err, err)
+		} else if expr != test.expr {
+			t.Errorf("Different exprs: expected %v got %v", test.expr, expr)
+		}
+	}
+}
+
+var parseStringTests = []struct {
+	text string
+	expr Expr
+	err  error
+}{
+	{"\"Sample Text\"", StringExpr{"Sample Text"}, nil},
+	{"\"Sample Text", StringExpr{}, StringNotClosedErr},
+	{"Sample Text\"", StringExpr{}, StringNotClosedErr},
+}
+
+func TestParseString(t *testing.T) {
+	for _, test := range parseStringTests {
+		parser := Parser{0, test.text}
+		expr, err := parser.parseString()
+		if err != test.err {
+			t.Errorf("Different errors: expected %v got %v", test.err, err)
+		} else if expr != test.expr {
+			t.Errorf("Different exprs: expected %v got %v", test.expr, expr)
 		}
 	}
 }
