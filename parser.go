@@ -229,6 +229,7 @@ func (p *Parser) parseExpr() (Expr, error) {
 	switch {
 	case ch == '(':
 		p.pos++
+		p.parseWhitespace()
 		tok, name, err := p.parseKeywordOrIdent()
 		if err != nil {
 			return nil, err
@@ -242,6 +243,10 @@ func (p *Parser) parseExpr() (Expr, error) {
 			expr, err = p.parseFor()
 		case tok == BlockToken:
 			expr, err = p.parseBlock()
+		case tok == AssignToken:
+			expr, err = p.parseBindings()
+		case tok == GotoToken:
+			expr, err = p.parseGoto()
 		case isUnaryOp(name):
 			expr, err = p.parseUnOp(tok)
 		case isBinaryOp(name):
@@ -254,6 +259,7 @@ func (p *Parser) parseExpr() (Expr, error) {
 			return nil, err
 		}
 
+		p.parseWhitespace()
 		if err := p.expectString(")"); err != nil {
 			return nil, err
 		}
@@ -382,9 +388,53 @@ func (p *Parser) parseBlock() (Expr, error) {
 	return BlockExpr{exprList}, nil
 }
 
-/*
- * Utility functions
- */
+func (p *Parser) parseBindings() (Expr, error) {
+	if p.pos >= len(p.text) {
+		return nil, PosOutOfBoundsErr
+	}
+
+	ch := p.text[p.pos]
+	bindings := make(map[string]Expr)
+	for ch != ')' {
+		p.parseWhitespace()
+		name, err := p.parseIdent()
+		if err != nil {
+			return nil, err
+		}
+
+		p.parseWhitespace()
+		expr, err := p.parseExpr()
+		if err != nil {
+			return nil, err
+		}
+
+		bindings[name] = expr
+
+		p.parseWhitespace()
+		if p.pos >= len(p.text) {
+			return nil, PosOutOfBoundsErr
+		}
+		ch = p.text[p.pos]
+	}
+	return BindExpr{bindings}, nil
+}
+
+// parseGoto parses a goto expression
+func (p *Parser) parseGoto() (Expr, error) {
+	if p.pos >= len(p.text) {
+		return nil, PosOutOfBoundsErr
+	}
+
+	p.parseWhitespace()
+	url, err := p.parseExpr()
+	if err != nil {
+		return nil, err
+	}
+
+	return GotoExpr{url}, nil
+}
+
+// Utility functions
 
 func isLetter(ch byte) bool {
 	return (ch >= 'a' && ch <= 'z') || (ch >= 'A' && ch <= 'Z') || ch == '_'

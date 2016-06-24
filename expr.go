@@ -53,6 +53,12 @@ type IfExpr struct {
 	Alt    Expr // The body if predicate is false.
 }
 
+// GotoExpr changes the page to the URL string
+// created from evaluating the subexpression.
+type GotoExpr struct {
+	URL Expr
+}
+
 // BlockExpr creates a new scope and evaluates each of the
 // subexprs and returns the result of the last subexpr.
 type BlockExpr struct {
@@ -84,6 +90,7 @@ func (e SelectorExpr) expr() {}
 func (e VarExpr) expr()      {}
 func (e ForExpr) expr()      {}
 func (e IfExpr) expr()       {}
+func (e GotoExpr) expr()     {}
 func (e BlockExpr) expr()    {}
 func (e BindExpr) expr()     {}
 func (e BinOp) expr()        {}

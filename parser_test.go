@@ -223,11 +223,27 @@ var parseExprTests = []struct {
 		nil,
 	},
 	{
-		"(if (= a 1) (block (+ a b) \"hello\") 2)",
+		"( if ( = a 1 ) \n ( block  ( + a b ) \"hello\" ) 2 ) ",
 		IfExpr{
 			BinOp{EqualsToken, VarExpr{"a"}, IntExpr{1}},
 			BlockExpr{[]Expr{BinOp{AddToken, VarExpr{"a"}, VarExpr{"b"}}, StringExpr{"hello"}}},
 			IntExpr{2},
+		},
+		nil,
+	},
+	{
+		"(goto (+ \"http://www.\" \"google.com\"))",
+		GotoExpr{BinOp{AddToken, StringExpr{"http://www."}, StringExpr{"google.com"}}},
+		nil,
+	},
+	{
+		"( set   \ta \n2 b ( + 1 2\n) c (\tblock \"hello\" \"world\" )\n)\t",
+		BindExpr{
+			map[string]Expr{
+				"a": IntExpr{2},
+				"b": BinOp{AddToken, IntExpr{1}, IntExpr{2}},
+				"c": BlockExpr{[]Expr{StringExpr{"hello"}, StringExpr{"world"}}},
+			},
 		},
 		nil,
 	},
