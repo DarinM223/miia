@@ -42,15 +42,28 @@ type VarExpr struct {
 type ForExpr struct {
 	Collection Expr
 	Name       string
-	Body       Stmt
+	Body       Expr
 }
 
 // IfExpr checks a predicate and evaluates different bodies based
 // on whether the predicate is true or false.
 type IfExpr struct {
 	Pred   Expr // Predicate to evaluate if true/false.
-	Conseq Stmt // The body if predicate is true.
-	Alt    Stmt // The body if predicate is false.
+	Conseq Expr // The body if predicate is true.
+	Alt    Expr // The body if predicate is false.
+}
+
+// BinOp applies a binary operator to two expressions.
+type BinOp struct {
+	Operator Token
+	A        Expr
+	B        Expr
+}
+
+// UnOp applies a unary operator to an expression.
+type UnOp struct {
+	Operator Token
+	A        Expr
 }
 
 func (e IntExpr) expr()      {}
@@ -60,3 +73,5 @@ func (e SelectorExpr) expr() {}
 func (e VarExpr) expr()      {}
 func (e ForExpr) expr()      {}
 func (e IfExpr) expr()       {}
+func (e BinOp) expr()        {}
+func (e UnOp) expr()         {}

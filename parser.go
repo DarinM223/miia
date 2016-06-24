@@ -14,18 +14,15 @@ var (
 	StringNotClosedErr       = errors.New("String does not have an opening or closing quote")
 	GotoNotStringErr         = errors.New("Goto URL is not a string type")
 	BindingNotIdentErr       = errors.New("Binding statment must start with an ident")
+	PosOutOfBoundsErr        = errors.New("Text index is greater than the text length")
 )
 
 type Token int
 
 const (
 	IdentToken Token = iota
-	LParenToken
-	RParenToken
-	LBraceToken
-	RBraceToken
+	BlockToken
 	RangeToken
-	ColonToken
 	ForToken
 	IfToken
 	ElseToken
@@ -35,14 +32,36 @@ const (
 	OrToken
 	NotToken
 	EqualsToken
+	AddToken
+	SubToken
+	MulToken
+	DivToken
 )
 
-var tokens = map[string]Token{
-	"for":  ForToken,
-	"if":   IfToken,
-	"else": ElseToken,
-	"goto": GotoToken,
+var keywords = map[string]Token{
+	"block": BlockToken,
+	"for":   ForToken,
+	"if":    IfToken,
+	"else":  ElseToken,
+	"goto":  GotoToken,
 }
+
+var binOps = map[string]Token{
+	"..":  RangeToken,
+	"+":   AddToken,
+	"-":   SubToken,
+	"*":   MulToken,
+	"/":   DivToken,
+	"=":   EqualsToken,
+	"or":  OrToken,
+	"and": AndToken,
+}
+
+var unOps = map[string]Token{
+	"not": NotToken,
+}
+
+var tokens = mergeMaps(keywords, binOps, unOps)
 
 type Parser struct {
 	pos  int
@@ -132,86 +151,19 @@ func (p *Parser) parseKeywordOrIdent() (Token, string, error) {
 		return -1, "", err
 	}
 
-	if token, err := lookupToken(ident); err == nil {
+	if token, err := lookup(ident, tokens); err == nil {
 		return Token(token), ident, nil
 	}
 
 	return IdentToken, ident, nil
 }
 
-/*
- * Expression parsing functions
- */
-
-// parseFor parses a for expression.
-func (p *Parser) parseFor() (Expr, error) {
-	p.parseWhitespace()
-	name, err := p.parseIdent()
-	if err != nil {
-		return ForExpr{}, err
-	}
-
-	p.parseWhitespace()
-	if err := p.expectString("in"); err != nil {
-		return ForExpr{}, err
-	}
-
-	p.parseWhitespace()
-	collection, err := p.parseExpr()
-	if err != nil {
-		return ForExpr{}, err
-	}
-
-	p.parseWhitespace()
-	body, err := p.parseBlock()
-	if err != nil {
-		return ForExpr{}, err
-	}
-
-	return ForExpr{
-		Collection: collection,
-		Name:       name,
-		Body:       body,
-	}, nil
-}
-
-// parseIf parses an if expression.
-func (p *Parser) parseIf() (Expr, error) {
-	p.parseWhitespace()
-	pred, err := p.parseExpr()
-	if err != nil {
-		return IfExpr{}, err
-	}
-
-	p.parseWhitespace()
-	conseq, err := p.parseBlock()
-	if err != nil {
-		return IfExpr{}, err
-	}
-
-	p.parseWhitespace()
-	if err := p.expectString("else"); err != nil {
-		return IfExpr{}, err
-	}
-
-	p.parseWhitespace()
-	alt, err := p.parseBlock()
-	if err != nil {
-		return IfExpr{}, err
-	}
-
-	return IfExpr{
-		Pred:   pred,
-		Conseq: conseq,
-		Alt:    alt,
-	}, nil
-}
-
 // parseNum parses an integer expression from the file.
 func (p *Parser) parseNumber() (Expr, error) {
 	num := -1
+	isNegative := false
 
-	for {
+	for i := 0; ; i++ {
 		if p.pos >= len(p.text) {
 			break
 		}
@@ -224,6 +176,9 @@ func (p *Parser) parseNumber() (Expr, error) {
 			num *= 10
 			num += int(ch) - int('0')
 			p.pos++
+		} else if i == 0 && ch == '-' {
+			isNegative = true
+			p.pos++
 		} else {
 			break
 		}
@@ -232,6 +187,9 @@ func (p *Parser) parseNumber() (Expr, error) {
 		return IntExpr{}, NumErr
 	}
 
+	if isNegative {
+		num *= -1
+	}
 	return IntExpr{num}, nil
 }
 
@@ -261,36 +219,134 @@ func (p *Parser) parseString() (Expr, error) {
 }
 
 func (p *Parser) parseExpr() (Expr, error) {
-	p.parseWhitespace()
+	if p.pos >= len(p.text) {
+		return nil, PosOutOfBoundsErr
+	}
+
 	ch := p.text[p.pos]
 	switch {
-	case isLetter(ch):
-		token, lit, err := p.parseKeywordOrIdent()
+	case ch == '(':
+		tok, name, err := p.parseKeywordOrIdent()
 		if err != nil {
 			return nil, err
 		}
 
-		// TODO(DarinM223): account for operators and functions
-		switch token {
-		case IdentToken:
-			return VarExpr{lit}, nil
-		case ForToken:
-			return p.parseFor()
-		case IfToken:
-			return p.parseIf()
+		var expr Expr
+		switch {
+		case tok == IfToken:
+			expr, err = p.parseIf()
+		case tok == ForToken:
+			expr, err = p.parseFor()
+		//case tok == BlockToken:
+		//    expr, err = p.parseBlock()
+		case isUnaryOp(name):
+			expr, err = p.parseUnOp(tok)
+		case isBinaryOp(name):
+			expr, err = p.parseBinOp(tok)
 		}
-	case '0' <= ch && ch <= '9':
-		// TODO(DarinM223): account for operators and functions
+
+		if err != nil {
+			return nil, err
+		}
+		if err := p.expectString(")"); err != nil {
+			return nil, err
+		}
+
+		return expr, nil
+	case isLetter(ch):
+		lit, err := p.parseIdent()
+		if err != nil {
+			return nil, err
+		}
+
+		return VarExpr{lit}, nil
+	case ('0' <= ch && ch <= '9') || ch == '-':
 		return p.parseNumber()
 	case ch == '"':
 		return p.parseString()
 	}
-	return nil, nil
+	return nil, errors.New("Invalid expr")
 }
 
-/*
- * Statement parsing functions
- */
+// parseIf parses an if expression.
+func (p *Parser) parseIf() (Expr, error) {
+	p.parseWhitespace()
+	pred, err := p.parseExpr()
+	if err != nil {
+		return nil, err
+	}
+
+	p.parseWhitespace()
+	conseq, err := p.parseExpr()
+	if err != nil {
+		return nil, err
+	}
+
+	p.parseWhitespace()
+	alt, err := p.parseExpr()
+	if err != nil {
+		return nil, err
+	}
+
+	return IfExpr{
+		Pred:   pred,
+		Conseq: conseq,
+		Alt:    alt,
+	}, nil
+}
+
+// parseFor parses a for expression.
+func (p *Parser) parseFor() (Expr, error) {
+	p.parseWhitespace()
+	name, err := p.parseIdent()
+	if err != nil {
+		return nil, err
+	}
+
+	p.parseWhitespace()
+	collection, err := p.parseExpr()
+	if err != nil {
+		return nil, err
+	}
+
+	p.parseWhitespace()
+	body, err := p.parseExpr()
+	if err != nil {
+		return nil, err
+	}
+
+	return ForExpr{
+		Collection: collection,
+		Name:       name,
+		Body:       body,
+	}, nil
+}
+
+func (p *Parser) parseUnOp(token Token) (Expr, error) {
+	p.parseWhitespace()
+	expr, err := p.parseExpr()
+	if err != nil {
+		return nil, err
+	}
+
+	return UnOp{token, expr}, nil
+}
+
+func (p *Parser) parseBinOp(token Token) (Expr, error) {
+	p.parseWhitespace()
+	a, err := p.parseExpr()
+	if err != nil {
+		return nil, err
+	}
+
+	p.parseWhitespace()
+	b, err := p.parseExpr()
+	if err != nil {
+		return nil, err
+	}
+
+	return BinOp{token, a, b}, nil
+}
 
 func (p *Parser) parseBlock() (Stmt, error) {
 	if err := p.expectString("{"); err != nil {
@@ -412,10 +468,30 @@ func isLetter(ch byte) bool {
 	return (ch >= 'a' && ch <= 'z') || (ch >= 'A' && ch <= 'Z') || ch == '_'
 }
 
-func lookupToken(s string) (Token, error) {
-	if token, ok := tokens[s]; ok {
+func isBinaryOp(s string) bool {
+	_, ok := binOps[s]
+	return ok
+}
+
+func isUnaryOp(s string) bool {
+	_, ok := binOps[s]
+	return ok
+}
+
+func lookup(s string, dict map[string]Token) (Token, error) {
+	if token, ok := dict[s]; ok {
 		return token, nil
 	}
 
 	return -1, errors.New("String is not a token")
+}
+
+func mergeMaps(maps ...map[string]Token) map[string]Token {
+	mergedMap := make(map[string]Token)
+	for _, m := range maps {
+		for k, v := range m {
+			mergedMap[k] = v
+		}
+	}
+	return mergedMap
 }

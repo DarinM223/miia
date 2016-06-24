@@ -157,6 +157,7 @@ var parseNumberTests = []struct {
 	{"0", IntExpr{0}, nil},
 	{"1234", IntExpr{1234}, nil},
 	{"abcd", IntExpr{}, NumErr},
+	{"-23", IntExpr{-23}, nil},
 }
 
 func TestParseNumber(t *testing.T) {
