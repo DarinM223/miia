@@ -204,12 +204,12 @@ var parseExprTests = []struct {
 }{
 	{
 		"(+ 1 2)",
-		BinOp{AddToken, IntExpr{1}, IntExpr{2}},
+		MultOp{AddToken, []Expr{IntExpr{1}, IntExpr{2}}},
 		nil,
 	},
 	{
-		"(+ a b)",
-		BinOp{AddToken, VarExpr{"a"}, VarExpr{"b"}},
+		"(and a b)",
+		BinOp{AndToken, VarExpr{"a"}, VarExpr{"b"}},
 		nil,
 	},
 	{
@@ -226,14 +226,14 @@ var parseExprTests = []struct {
 		"( if ( = a 1 ) \n ( block  ( + a b ) \"hello\" ) 2 ) ",
 		IfExpr{
 			BinOp{EqualsToken, VarExpr{"a"}, IntExpr{1}},
-			BlockExpr{[]Expr{BinOp{AddToken, VarExpr{"a"}, VarExpr{"b"}}, StringExpr{"hello"}}},
+			BlockExpr{[]Expr{MultOp{AddToken, []Expr{VarExpr{"a"}, VarExpr{"b"}}}, StringExpr{"hello"}}},
 			IntExpr{2},
 		},
 		nil,
 	},
 	{
 		"(goto (+ \"http://www.\" \"google.com\"))",
-		GotoExpr{BinOp{AddToken, StringExpr{"http://www."}, StringExpr{"google.com"}}},
+		GotoExpr{MultOp{AddToken, []Expr{StringExpr{"http://www."}, StringExpr{"google.com"}}}},
 		nil,
 	},
 	{
@@ -241,10 +241,15 @@ var parseExprTests = []struct {
 		BindExpr{
 			map[string]Expr{
 				"a": IntExpr{2},
-				"b": BinOp{AddToken, IntExpr{1}, IntExpr{2}},
+				"b": MultOp{AddToken, []Expr{IntExpr{1}, IntExpr{2}}},
 				"c": BlockExpr{[]Expr{StringExpr{"hello"}, StringExpr{"world"}}},
 			},
 		},
+		nil,
+	},
+	{
+		"( sel \"#button\" )",
+		UnOp{SelectorToken, StringExpr{"#button"}},
 		nil,
 	},
 }

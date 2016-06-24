@@ -22,6 +22,7 @@ type Token int
 const (
 	IdentToken Token = iota
 	BlockToken
+	SelectorToken
 	RangeToken
 	ForToken
 	IfToken
@@ -49,20 +50,24 @@ var keywords = map[string]Token{
 
 var binOps = map[string]Token{
 	"..":  RangeToken,
-	"+":   AddToken,
-	"-":   SubToken,
-	"*":   MulToken,
-	"/":   DivToken,
 	"=":   EqualsToken,
 	"or":  OrToken,
 	"and": AndToken,
 }
 
-var unOps = map[string]Token{
-	"not": NotToken,
+var multOps = map[string]Token{
+	"+": AddToken,
+	"-": SubToken,
+	"*": MulToken,
+	"/": DivToken,
 }
 
-var tokens = mergeMaps(keywords, binOps, unOps)
+var unOps = map[string]Token{
+	"not": NotToken,
+	"sel": SelectorToken,
+}
+
+var tokens = mergeMaps(keywords, binOps, unOps, multOps)
 
 type Parser struct {
 	pos  int
@@ -249,6 +254,8 @@ func (p *Parser) parseExpr() (Expr, error) {
 			expr, err = p.parseGoto()
 		case isUnaryOp(name):
 			expr, err = p.parseUnOp(tok)
+		case isMultOp(name):
+			expr, err = p.parseMultOp(tok)
 		case isBinaryOp(name):
 			expr, err = p.parseBinOp(tok)
 		default:
@@ -345,7 +352,7 @@ func (p *Parser) parseUnOp(token Token) (Expr, error) {
 	return UnOp{token, expr}, nil
 }
 
-// parseBinOp parses a binary operation like (+ 1 2).
+// parseBinOp parses a binary operation like (and a b).
 func (p *Parser) parseBinOp(token Token) (Expr, error) {
 	p.parseWhitespace()
 	a, err := p.parseExpr()
@@ -360,6 +367,21 @@ func (p *Parser) parseBinOp(token Token) (Expr, error) {
 	}
 
 	return BinOp{token, a, b}, nil
+}
+
+// parseMultOp parses an operation with more than two subexpressions
+// like (+ 1 2 3 4).
+func (p *Parser) parseMultOp(token Token) (Expr, error) {
+	p.parseWhitespace()
+	exprs, err := p.parseBlock()
+	if err != nil {
+		return nil, err
+	}
+
+	if block, ok := exprs.(BlockExpr); ok {
+		return MultOp{token, block.Exprs}, nil
+	}
+	return nil, errors.New("Expression not a block")
 }
 
 // parseBlock parses a block of expressions
@@ -419,7 +441,7 @@ func (p *Parser) parseBindings() (Expr, error) {
 	return BindExpr{bindings}, nil
 }
 
-// parseGoto parses a goto expression
+// parseGoto parses a goto expression.
 func (p *Parser) parseGoto() (Expr, error) {
 	if p.pos >= len(p.text) {
 		return nil, PosOutOfBoundsErr
@@ -447,6 +469,11 @@ func isBinaryOp(s string) bool {
 
 func isUnaryOp(s string) bool {
 	_, ok := unOps[s]
+	return ok
+}
+
+func isMultOp(s string) bool {
+	_, ok := multOps[s]
 	return ok
 }
 

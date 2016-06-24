@@ -70,6 +70,12 @@ type BindExpr struct {
 	Bindings map[string]Expr
 }
 
+// MultOp applies an operator to a list of subexpressions.
+type MultOp struct {
+	Operator Token
+	Exprs    []Expr
+}
+
 // BinOp applies a binary operator to two expressions.
 type BinOp struct {
 	Operator Token
@@ -93,5 +99,6 @@ func (e IfExpr) expr()       {}
 func (e GotoExpr) expr()     {}
 func (e BlockExpr) expr()    {}
 func (e BindExpr) expr()     {}
+func (e MultOp) expr()       {}
 func (e BinOp) expr()        {}
 func (e UnOp) expr()         {}
