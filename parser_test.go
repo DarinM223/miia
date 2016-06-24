@@ -1,6 +1,9 @@
 package main
 
-import "testing"
+import (
+	"reflect"
+	"testing"
+)
 
 var parseIdentTests = []struct {
 	text, ident string
@@ -23,8 +26,8 @@ var parseIdentTests = []struct {
 		nil,
 	},
 	{
-		"num1+num2", "num1",
-		0, 4,
+		"+", "+",
+		0, 1,
 		nil,
 	},
 }
@@ -156,7 +159,7 @@ var parseNumberTests = []struct {
 }{
 	{"0", IntExpr{0}, nil},
 	{"1234", IntExpr{1234}, nil},
-	{"abcd", IntExpr{}, NumErr},
+	{"abcd", nil, NumErr},
 	{"-23", IntExpr{-23}, nil},
 }
 
@@ -166,7 +169,7 @@ func TestParseNumber(t *testing.T) {
 		expr, err := parser.parseNumber()
 		if err != test.err {
 			t.Errorf("Different errors: expected %v got %v", test.err, err)
-		} else if expr != test.expr {
+		} else if err == nil && expr != test.expr {
 			t.Errorf("Different exprs: expected %v got %v", test.expr, expr)
 		}
 	}
@@ -178,8 +181,8 @@ var parseStringTests = []struct {
 	err  error
 }{
 	{"\"Sample Text\"", StringExpr{"Sample Text"}, nil},
-	{"\"Sample Text", StringExpr{}, StringNotClosedErr},
-	{"Sample Text\"", StringExpr{}, StringNotClosedErr},
+	{"\"Sample Text", nil, StringNotClosedErr},
+	{"Sample Text\"", nil, StringNotClosedErr},
 }
 
 func TestParseString(t *testing.T) {
@@ -188,7 +191,55 @@ func TestParseString(t *testing.T) {
 		expr, err := parser.parseString()
 		if err != test.err {
 			t.Errorf("Different errors: expected %v got %v", test.err, err)
-		} else if expr != test.expr {
+		} else if err == nil && expr != test.expr {
+			t.Errorf("Different exprs: expected %v got %v", test.expr, expr)
+		}
+	}
+}
+
+var parseExprTests = []struct {
+	text string
+	expr Expr
+	err  error
+}{
+	{
+		"(+ 1 2)",
+		BinOp{AddToken, IntExpr{1}, IntExpr{2}},
+		nil,
+	},
+	{
+		"(+ a b)",
+		BinOp{AddToken, VarExpr{"a"}, VarExpr{"b"}},
+		nil,
+	},
+	{
+		"(if 1 a \"Hello\")",
+		IfExpr{IntExpr{1}, VarExpr{"a"}, StringExpr{"Hello"}},
+		nil,
+	},
+	{
+		"(block \"hello\" 2)",
+		BlockExpr{[]Expr{StringExpr{"hello"}, IntExpr{2}}},
+		nil,
+	},
+	{
+		"(if (= a 1) (block (+ a b) \"hello\") 2)",
+		IfExpr{
+			BinOp{EqualsToken, VarExpr{"a"}, IntExpr{1}},
+			BlockExpr{[]Expr{BinOp{AddToken, VarExpr{"a"}, VarExpr{"b"}}, StringExpr{"hello"}}},
+			IntExpr{2},
+		},
+		nil,
+	},
+}
+
+func TestParseExpr(t *testing.T) {
+	for _, test := range parseExprTests {
+		parser := Parser{0, test.text}
+		expr, err := parser.parseExpr()
+		if err != test.err {
+			t.Errorf("Different errors: expected %v got %v", test.err, err)
+		} else if err == nil && !reflect.DeepEqual(expr, test.expr) {
 			t.Errorf("Different exprs: expected %v got %v", test.expr, expr)
 		}
 	}

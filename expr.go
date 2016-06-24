@@ -53,6 +53,17 @@ type IfExpr struct {
 	Alt    Expr // The body if predicate is false.
 }
 
+// BlockExpr creates a new scope and evaluates each of the
+// subexprs and returns the result of the last subexpr.
+type BlockExpr struct {
+	Exprs []Expr
+}
+
+// BindExpr binds multiple name-expression pairs to the local scope.
+type BindExpr struct {
+	Bindings map[string]Expr
+}
+
 // BinOp applies a binary operator to two expressions.
 type BinOp struct {
 	Operator Token
@@ -73,5 +84,7 @@ func (e SelectorExpr) expr() {}
 func (e VarExpr) expr()      {}
 func (e ForExpr) expr()      {}
 func (e IfExpr) expr()       {}
+func (e BlockExpr) expr()    {}
+func (e BindExpr) expr()     {}
 func (e BinOp) expr()        {}
 func (e UnOp) expr()         {}

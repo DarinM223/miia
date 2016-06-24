@@ -44,6 +44,7 @@ var keywords = map[string]Token{
 	"if":    IfToken,
 	"else":  ElseToken,
 	"goto":  GotoToken,
+	"set":   AssignToken,
 }
 
 var binOps = map[string]Token{
@@ -85,11 +86,6 @@ func (p *Parser) parseIdent() (string, error) {
 
 		ch := p.text[p.pos]
 		switch {
-		case isLetter(ch):
-			if err := ident.WriteByte(ch); err != nil {
-				return "", err
-			}
-			p.pos++
 		case '0' <= ch && ch <= '9':
 			// Idents cannot start with a digit
 			if i == 0 {
@@ -99,8 +95,13 @@ func (p *Parser) parseIdent() (string, error) {
 				return "", err
 			}
 			p.pos++
-		default:
+		case ch == ' ' || ch == '\t' || ch == '\n' || ch == ')' || ch == '(':
 			return ident.String(), nil
+		default:
+			if err := ident.WriteByte(ch); err != nil {
+				return "", err
+			}
+			p.pos++
 		}
 	}
 }
@@ -184,7 +185,7 @@ func (p *Parser) parseNumber() (Expr, error) {
 		}
 	}
 	if num == -1 {
-		return IntExpr{}, NumErr
+		return nil, NumErr
 	}
 
 	if isNegative {
@@ -196,7 +197,7 @@ func (p *Parser) parseNumber() (Expr, error) {
 // parseString parses a string from the file.
 func (p *Parser) parseString() (Expr, error) {
 	if err := p.expectString("\""); err != nil {
-		return StringExpr{}, StringNotClosedErr
+		return nil, StringNotClosedErr
 	}
 
 	var str bytes.Buffer
@@ -207,15 +208,16 @@ func (p *Parser) parseString() (Expr, error) {
 
 		ch := p.text[p.pos]
 		if ch == '"' {
+			p.pos++
 			return StringExpr{str.String()}, nil
 		} else {
 			if err := str.WriteByte(ch); err != nil {
-				return StringExpr{}, err
+				return nil, err
 			}
 			p.pos++
 		}
 	}
-	return StringExpr{}, StringNotClosedErr
+	return nil, StringNotClosedErr
 }
 
 func (p *Parser) parseExpr() (Expr, error) {
@@ -226,6 +228,7 @@ func (p *Parser) parseExpr() (Expr, error) {
 	ch := p.text[p.pos]
 	switch {
 	case ch == '(':
+		p.pos++
 		tok, name, err := p.parseKeywordOrIdent()
 		if err != nil {
 			return nil, err
@@ -237,17 +240,20 @@ func (p *Parser) parseExpr() (Expr, error) {
 			expr, err = p.parseIf()
 		case tok == ForToken:
 			expr, err = p.parseFor()
-		//case tok == BlockToken:
-		//    expr, err = p.parseBlock()
+		case tok == BlockToken:
+			expr, err = p.parseBlock()
 		case isUnaryOp(name):
 			expr, err = p.parseUnOp(tok)
 		case isBinaryOp(name):
 			expr, err = p.parseBinOp(tok)
+		default:
+			panic("Invalid token type")
 		}
 
 		if err != nil {
 			return nil, err
 		}
+
 		if err := p.expectString(")"); err != nil {
 			return nil, err
 		}
@@ -322,6 +328,7 @@ func (p *Parser) parseFor() (Expr, error) {
 	}, nil
 }
 
+// parseUnOp parses a unary operation like (not true).
 func (p *Parser) parseUnOp(token Token) (Expr, error) {
 	p.parseWhitespace()
 	expr, err := p.parseExpr()
@@ -332,6 +339,7 @@ func (p *Parser) parseUnOp(token Token) (Expr, error) {
 	return UnOp{token, expr}, nil
 }
 
+// parseBinOp parses a binary operation like (+ 1 2).
 func (p *Parser) parseBinOp(token Token) (Expr, error) {
 	p.parseWhitespace()
 	a, err := p.parseExpr()
@@ -348,116 +356,30 @@ func (p *Parser) parseBinOp(token Token) (Expr, error) {
 	return BinOp{token, a, b}, nil
 }
 
-func (p *Parser) parseBlock() (Stmt, error) {
-	if err := p.expectString("{"); err != nil {
-		return SeqStmt{}, err
+// parseBlock parses a block of expressions
+func (p *Parser) parseBlock() (Expr, error) {
+	if p.pos >= len(p.text) {
+		return nil, PosOutOfBoundsErr
 	}
 
-	var stmtList []Stmt
-	for {
-		p.parseWhitespace()
-		stmt, err := p.parseStmt()
-		if err != nil {
-			break
-		}
-
-		stmtList = append(stmtList, stmt)
-	}
-
-	// Generate a SeqStmt tree from the list of statements.
-	var currStmt Stmt = nil
-	for i := len(stmtList) - 2; i >= 0; i-- {
-		if currStmt == nil {
-			currStmt = SeqStmt{
-				A: stmtList[i],
-				B: stmtList[len(stmtList)-1],
-			}
-		} else {
-			currStmt = SeqStmt{
-				A: stmtList[i],
-				B: currStmt,
-			}
-		}
-	}
-
-	if err := p.expectString("}"); err != nil {
-		return SeqStmt{}, err
-	}
-	return currStmt, nil
-}
-
-func (p *Parser) parseBinding(ident string) (Stmt, error) {
-	bindings := make(map[string]Expr)
-
-	p.parseWhitespace()
-	if err := p.expectString("="); err != nil {
-		return BindingStmt{}, err
-	}
-
-	expr, err := p.parseExpr()
-	if err != nil {
-		return BindingStmt{}, err
-	}
-	bindings[ident] = expr
-
-	for err := p.expectString(","); err == nil; err = p.expectString(",") {
-		p.parseWhitespace()
-		token, ident, err := p.parseKeywordOrIdent()
-		if err != nil {
-			return BindingStmt{}, err
-		}
-
-		if token != IdentToken {
-			return BindingStmt{}, BindingNotIdentErr
-		}
-
-		if err := p.expectString("="); err != nil {
-			return BindingStmt{}, err
-		}
-
-		expr, err := p.parseExpr()
-		if err != nil {
-			return BindingStmt{}, err
-		}
-		bindings[ident] = expr
-	}
-
-	return BindingStmt{bindings}, nil
-}
-
-func (p *Parser) parseGoto() (Stmt, error) {
-	p.parseWhitespace()
-	strExpr, err := p.parseString()
-	if err != nil {
-		return GotoStmt{}, err
-	}
-
-	if str, ok := strExpr.(StringExpr); ok {
-		return GotoStmt{str.Value}, nil
-	}
-	return GotoStmt{}, GotoNotStringErr
-}
-
-func (p *Parser) parseStmt() (Stmt, error) {
-	p.parseWhitespace()
 	ch := p.text[p.pos]
-	switch {
-	case ch == '{':
-		return p.parseBlock()
-	case isLetter(ch):
-		token, lit, err := p.parseKeywordOrIdent()
+	var exprList []Expr
+	for ch != ')' {
+		p.parseWhitespace()
+		expr, err := p.parseExpr()
 		if err != nil {
 			return nil, err
 		}
 
-		switch token {
-		case GotoToken:
-			return p.parseGoto()
-		case IdentToken:
-			return p.parseBinding(lit)
+		exprList = append(exprList, expr)
+
+		p.parseWhitespace()
+		if p.pos >= len(p.text) {
+			return nil, PosOutOfBoundsErr
 		}
+		ch = p.text[p.pos]
 	}
-	return nil, nil
+	return BlockExpr{exprList}, nil
 }
 
 /*
@@ -474,7 +396,7 @@ func isBinaryOp(s string) bool {
 }
 
 func isUnaryOp(s string) bool {
-	_, ok := binOps[s]
+	_, ok := unOps[s]
 	return ok
 }
 
