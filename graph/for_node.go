@@ -11,7 +11,12 @@ type ForNode struct {
 	parentChans map[int]chan Msg
 }
 
-func NewForNode(id int, collection Node, subnodes []Node) *ForNode {
+func NewForNode(id int, collection Node, body Node, numSubnodes int) *ForNode {
+	subnodes := make([]Node, numSubnodes)
+	for i := 0; i < numSubnodes; i++ {
+		subnodes[i] = body
+	}
+
 	forNode := &ForNode{
 		id:          id,
 		insertIdx:   0,
