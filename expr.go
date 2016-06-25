@@ -1,5 +1,7 @@
 package main
 
+import "github.com/DarinM223/http-scraper/graph"
+
 type Expr interface {
 	// expr is a dummy method that "registers"
 	// a struct to be an Expr.
@@ -16,20 +18,9 @@ type StringExpr struct {
 	Value string
 }
 
-// A range expression over two values like `1..2`.
-type RangeExpr struct {
-	Start Expr
-	End   Expr
-}
-
-const (
-	SelectorClass = iota // A CSS class to retrieve
-	SelectorID           // A CSS id to retrieve
-)
-
 // SelectorExpr retrieves data from the current page.
 type SelectorExpr struct {
-	Type int
+	Type graph.SelectorType
 	Name string
 }
 
@@ -91,7 +82,6 @@ type UnOp struct {
 
 func (e IntExpr) expr()      {}
 func (e StringExpr) expr()   {}
-func (e RangeExpr) expr()    {}
 func (e SelectorExpr) expr() {}
 func (e VarExpr) expr()      {}
 func (e ForExpr) expr()      {}

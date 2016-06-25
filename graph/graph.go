@@ -1,0 +1,44 @@
+package graph
+
+type MsgType int
+
+const (
+	QuitMsg MsgType = iota
+	ValueMsg
+)
+
+// Msg contains the data being sent/received between Nodes.
+type Msg struct {
+	// Type is the type of the message being sent.
+	Type MsgType
+	// PassUp is true when completed data is being
+	// sent backwards from the child to the parent.
+	PassUp bool
+	// Data is the data contained in the message being sent.
+	Data interface{}
+}
+
+// Node is a contained "actor" that sends/receives messages.
+type Node interface {
+	// ID returns the ID of the specified node.
+	ID() int
+	// Run runs the node in a goroutine.
+	Run()
+	// Chan is the input channel for the node.
+	Chan() chan Msg
+	// ParentChans is a map of parent ids to parent input channels.
+	ParentChans() map[int]chan Msg
+	// AddChild adds a child Node.
+	AddChild(child Node)
+	// RemoveChild removes a child Node.
+	RemoveChild(child Node)
+	// Destroy cleans up the resources before killing a Node.
+	Destroy()
+
+	// addParentChan adds a new parent input channel to the node.
+	// Only meant to be used by AddChild.
+	addParentChan(id int, parentChan chan Msg)
+	// removeParentChan removes a parent input channel by its id.
+	// Only meant to be used by RemoveChild.
+	removeParentChan(id int)
+}
