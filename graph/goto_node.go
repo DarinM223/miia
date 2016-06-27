@@ -12,7 +12,7 @@ func NewGotoNode(id int, url Node) *GotoNode {
 	return &GotoNode{
 		id:          id,
 		url:         url,
-		inChan:      make(chan Msg),
+		inChan:      make(chan Msg, InChanSize),
 		parentChans: make(map[int]chan Msg),
 	}
 }
@@ -40,9 +40,6 @@ func (n *GotoNode) Run() {
 		}
 	}
 }
-
-func (n *GotoNode) AddChild(child Node)    { child.addParentChan(n.id, n.inChan) }
-func (n *GotoNode) RemoveChild(child Node) { n.next.removeParentChan(n.id) }
 
 func (n *GotoNode) addParentChan(id int, parentChan chan Msg) { n.parentChans[id] = parentChan }
 func (n *GotoNode) removeParentChan(id int)                   { delete(n.parentChans, id) }

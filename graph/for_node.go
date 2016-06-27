@@ -17,7 +17,7 @@ func NewForNode(id int, collection Node, body Node) *ForNode {
 	forNode := &ForNode{
 		id:          id,
 		body:        body,
-		inChan:      make(chan Msg),
+		inChan:      make(chan Msg, InChanSize),
 		parentChans: make(map[int]chan Msg),
 	}
 	// Listen for collection's result
@@ -99,12 +99,9 @@ func (n *ForNode) Run() {
 	}
 }
 
-func (n *ForNode) AddChild(child Node)    { child.addParentChan(n.id, n.inChan) }
-func (n *ForNode) RemoveChild(child Node) { child.removeParentChan(n.id) }
-
 func (n *ForNode) Destroy() {
 	for _, node := range n.subnodes {
-		n.RemoveChild(node)
+		node.removeParentChan(n.id)
 	}
 }
 

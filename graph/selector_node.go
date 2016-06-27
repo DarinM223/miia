@@ -24,7 +24,7 @@ func NewSelectorNode(id int, gotoNode Node, selType SelectorType, selector strin
 		selType:     selType,
 		selector:    selector,
 		gotoNode:    gotoNode,
-		inChan:      make(chan Msg),
+		inChan:      make(chan Msg, InChanSize),
 		parentChans: make(map[int]chan Msg),
 	}
 }
@@ -38,11 +38,9 @@ func (n *SelectorNode) Run() {
 	// TODO(DarinM223): listen for HTTP responses and then parse them
 }
 
-func (n *SelectorNode) AddChild(child Node)    { child.addParentChan(n.id, n.inChan) }
-func (n *SelectorNode) RemoveChild(child Node) { child.removeParentChan(n.id) }
 func (n *SelectorNode) Destroy() {
 	if n.gotoNode != nil {
-		n.RemoveChild(n.gotoNode)
+		n.gotoNode.removeParentChan(n.id)
 		n.gotoNode = nil
 	}
 }

@@ -18,6 +18,9 @@ type Msg struct {
 	Data interface{}
 }
 
+// The size of the input channel buffers for nodes.
+const InChanSize = 5
+
 // Node is a contained "actor" that sends/receives messages.
 type Node interface {
 	// ID returns the ID of the specified node.
@@ -28,10 +31,6 @@ type Node interface {
 	Chan() chan Msg
 	// ParentChans is a map of parent ids to parent input channels.
 	ParentChans() map[int]chan Msg
-	// AddChild adds a child Node.
-	AddChild(child Node)
-	// RemoveChild removes a child Node.
-	RemoveChild(child Node)
 	// Destroy cleans up the resources before killing a Node.
 	Destroy()
 	// IsLoop is true if the node or any of the subnodes is a loop node.
