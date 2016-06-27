@@ -57,7 +57,7 @@ func CompileExpr(expr Expr, scope *Scope) (graph.Node, error) {
 			return nil, err
 		}
 
-		return graph.NewForNode(GenID(), collection, body, 4), nil
+		return graph.NewForNode(GenID(), collection, body), nil
 	case IfExpr:
 	case GotoExpr:
 		urlNode, err := CompileExpr(e.URL, scope)
@@ -69,7 +69,28 @@ func CompileExpr(expr Expr, scope *Scope) (graph.Node, error) {
 		scope.Page = gotoNode
 		return gotoNode, nil
 	case BlockExpr:
+		newScope := NewScope(scope)
+		for i, expr := range e.Exprs {
+			res, err := CompileExpr(expr, newScope)
+			if err != nil {
+				return nil, err
+			}
+
+			// Return result of last expression.
+			if i == len(e.Exprs)-1 {
+				return res, nil
+			}
+		}
 	case BindExpr:
+		for name, expr := range e.Bindings {
+			res, err := CompileExpr(expr, scope)
+			if err != nil {
+				return nil, err
+			}
+
+			scope.set(name, res)
+		}
+		return graph.NewValueNode(GenID(), nil), nil
 	case MultOp:
 	case BinOp:
 	case UnOp:

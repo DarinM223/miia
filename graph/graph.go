@@ -34,6 +34,8 @@ type Node interface {
 	RemoveChild(child Node)
 	// Destroy cleans up the resources before killing a Node.
 	Destroy()
+	// IsLoop is true if the node or any of the subnodes is a loop node.
+	IsLoop() bool
 
 	// addParentChan adds a new parent input channel to the node.
 	// Only meant to be used by AddChild.

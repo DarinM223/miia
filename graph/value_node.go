@@ -23,6 +23,7 @@ func (n *ValueNode) ParentChans() map[int]chan Msg { return n.parentChans }
 func (n *ValueNode) AddChild(child Node)           { child.addParentChan(n.id, n.inChan) }
 func (n *ValueNode) RemoveChild(child Node)        { child.removeParentChan(n.id) }
 func (n *ValueNode) Destroy()                      {}
+func (n *ValueNode) IsLoop() bool                  { return false }
 
 func (n *ValueNode) addParentChan(id int, parentChan chan Msg) { n.parentChans[id] = parentChan }
 func (n *ValueNode) removeParentChan(id int)                   { delete(n.parentChans, id) }

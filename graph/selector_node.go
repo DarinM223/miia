@@ -32,6 +32,7 @@ func NewSelectorNode(id int, gotoNode Node, selType SelectorType, selector strin
 func (n *SelectorNode) ID() int                       { return n.id }
 func (n *SelectorNode) Chan() chan Msg                { return n.inChan }
 func (n *SelectorNode) ParentChans() map[int]chan Msg { return n.parentChans }
+func (n *SelectorNode) IsLoop() bool                  { return false }
 
 func (n *SelectorNode) Run() {
 	// TODO(DarinM223): listen for HTTP responses and then parse them
