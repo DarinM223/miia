@@ -23,9 +23,6 @@ func (n *ValueNode) ParentChans() map[int]chan Msg { return n.parentChans }
 func (n *ValueNode) Destroy()                      {}
 func (n *ValueNode) IsLoop() bool                  { return false }
 
-func (n *ValueNode) addParentChan(id int, parentChan chan Msg) { n.parentChans[id] = parentChan }
-func (n *ValueNode) removeParentChan(id int)                   { delete(n.parentChans, id) }
-
 func (n *ValueNode) Run() {
 	data := Msg{ValueMsg, true, n.value}
 	for _, parent := range n.parentChans {

@@ -40,10 +40,7 @@ func (n *SelectorNode) Run() {
 
 func (n *SelectorNode) Destroy() {
 	if n.gotoNode != nil {
-		n.gotoNode.removeParentChan(n.id)
+		delete(n.gotoNode.ParentChans(), n.id)
 		n.gotoNode = nil
 	}
 }
-
-func (n *SelectorNode) addParentChan(id int, parentChan chan Msg) { n.parentChans[id] = parentChan }
-func (n *SelectorNode) removeParentChan(id int)                   { delete(n.parentChans, id) }

@@ -9,8 +9,8 @@ func TestValueNode(t *testing.T) {
 	parentChan1, parentChan2 := make(chan Msg, InChanSize), make(chan Msg, InChanSize)
 
 	node := NewValueNode(0, 20)
-	node.addParentChan(1, parentChan1)
-	node.addParentChan(2, parentChan2)
+	node.ParentChans()[1] = parentChan1
+	node.ParentChans()[2] = parentChan2
 
 	go node.Run()
 

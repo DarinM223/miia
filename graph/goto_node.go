@@ -40,6 +40,3 @@ func (n *GotoNode) Run() {
 		}
 	}
 }
-
-func (n *GotoNode) addParentChan(id int, parentChan chan Msg) { n.parentChans[id] = parentChan }
-func (n *GotoNode) removeParentChan(id int)                   { delete(n.parentChans, id) }

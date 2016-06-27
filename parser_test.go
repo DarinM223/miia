@@ -130,8 +130,8 @@ var parseKeywordOrIndentTests = []struct {
 }{
 	{"goto \"www.google.com\"", "goto", GotoToken},
 	{"hello world", "hello", IdentToken},
-	{"for name in names {", "for", ForToken},
-	{"if (a == 2) {", "if", IfToken},
+	{"for name names ", "for", ForToken},
+	{"if (== a 2) \n", "if", IfToken},
 	{"else b", "else", ElseToken},
 }
 

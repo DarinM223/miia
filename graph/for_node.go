@@ -21,7 +21,7 @@ func NewForNode(id int, collection Node, body Node) *ForNode {
 		parentChans: make(map[int]chan Msg),
 	}
 	// Listen for collection's result
-	collection.addParentChan(forNode.id, forNode.inChan)
+	collection.ParentChans()[forNode.id] = forNode.inChan
 	return forNode
 }
 
@@ -73,7 +73,7 @@ func (n *ForNode) Run() {
 				for i := 0; i < arr.Len(); i++ {
 					// TODO(DarinM223): need to clone the body node.
 					n.subnodes[i] = n.body
-					n.subnodes[i].addParentChan(n.id, n.inChan)
+					n.subnodes[i].ParentChans()[n.id] = n.inChan
 
 					n.subnodes[len(n.subnodes)-1].Chan() <- Msg{
 						ValueMsg,
@@ -101,9 +101,6 @@ func (n *ForNode) Run() {
 
 func (n *ForNode) Destroy() {
 	for _, node := range n.subnodes {
-		node.removeParentChan(n.id)
+		delete(node.ParentChans(), n.id)
 	}
 }
-
-func (n *ForNode) addParentChan(id int, parentChan chan Msg) { n.parentChans[id] = parentChan }
-func (n *ForNode) removeParentChan(id int)                   { delete(n.parentChans, id) }

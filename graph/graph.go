@@ -35,11 +35,4 @@ type Node interface {
 	Destroy()
 	// IsLoop is true if the node or any of the subnodes is a loop node.
 	IsLoop() bool
-
-	// addParentChan adds a new parent input channel to the node.
-	// Only meant to be used by AddChild.
-	addParentChan(id int, parentChan chan Msg)
-	// removeParentChan removes a parent input channel by its id.
-	// Only meant to be used by RemoveChild.
-	removeParentChan(id int)
 }
