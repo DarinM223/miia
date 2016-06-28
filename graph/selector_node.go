@@ -1,5 +1,7 @@
 package graph
 
+import "net/http"
+
 type SelectorType int
 
 const (
@@ -7,24 +9,30 @@ const (
 	SelectorID                        // A CSS id to retrieve.
 )
 
+type Selector struct {
+	Type     SelectorType
+	Selector string
+}
+
 // SelectorNode is a node that receives HTTP Responses and parses out CSS selectors
 // and passes the result back to the parents.
 type SelectorNode struct {
 	id          int
-	selType     SelectorType
-	selector    string
+	selectors   []Selector
 	gotoNode    Node
 	inChan      chan Msg
 	parentChans map[int]chan Msg
 }
 
-func NewSelectorNode(id int, gotoNode Node, selType SelectorType, selector string) *SelectorNode {
+func NewSelectorNode(id int, gotoNode Node, selectors []Selector) *SelectorNode {
+	inChan := make(chan Msg, InChanSize)
+	gotoNode.ParentChans()[id] = inChan
+
 	return &SelectorNode{
 		id:          id,
-		selType:     selType,
-		selector:    selector,
+		selectors:   selectors,
 		gotoNode:    gotoNode,
-		inChan:      make(chan Msg, InChanSize),
+		inChan:      inChan,
 		parentChans: make(map[int]chan Msg),
 	}
 }
@@ -35,7 +43,13 @@ func (n *SelectorNode) ParentChans() map[int]chan Msg { return n.parentChans }
 func (n *SelectorNode) IsLoop() bool                  { return false }
 
 func (n *SelectorNode) Run() {
-	// TODO(DarinM223): listen for HTTP responses and then parse them
+	msg := <-n.inChan
+	if msg.Type != QuitMsg {
+		if resp, ok := msg.Data.(*http.Response); ok {
+			_ = resp
+			// TODO(DarinM223): read body and use goquery to parse out selectors
+		}
+	}
 }
 
 func (n *SelectorNode) Destroy() {

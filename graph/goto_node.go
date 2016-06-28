@@ -1,5 +1,10 @@
 package graph
 
+import (
+	"errors"
+	"net/http"
+)
+
 type GotoNode struct {
 	id          int
 	url         Node
@@ -9,10 +14,12 @@ type GotoNode struct {
 }
 
 func NewGotoNode(id int, url Node) *GotoNode {
+	inChan := make(chan Msg, InChanSize)
+	url.ParentChans()[id] = inChan
 	return &GotoNode{
 		id:          id,
 		url:         url,
-		inChan:      make(chan Msg, InChanSize),
+		inChan:      inChan,
 		parentChans: make(map[int]chan Msg),
 	}
 }
@@ -24,19 +31,22 @@ func (n *GotoNode) Destroy()                      {}
 func (n *GotoNode) IsLoop() bool                  { return false }
 
 func (n *GotoNode) Run() {
-	for {
-		msg := <-n.inChan
-		if msg.Type == QuitMsg {
-			break
-		} else {
-			var data Msg
-			// TODO(DarinM223): send an HTTP request to get
-			// and pass up the response.
-			data.PassUp = true
-			for _, parent := range n.parentChans {
-				parent <- data
+	msg := <-n.inChan
+	if msg.Type != QuitMsg {
+		var data Msg
+		if url, ok := msg.Data.(string); ok {
+			// Send an HTTP request to get and pass up the response.
+			resp, err := http.Get(url)
+			if err != nil {
+				data = Msg{ErrMsg, true, err}
+			} else {
+				data = Msg{ValueMsg, true, resp}
 			}
-			break
+		} else {
+			data = Msg{ErrMsg, true, errors.New("Message received is not a string")}
+		}
+		for _, parent := range n.parentChans {
+			parent <- data
 		}
 	}
 }

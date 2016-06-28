@@ -5,6 +5,7 @@ type MsgType int
 const (
 	QuitMsg MsgType = iota
 	ValueMsg
+	ErrMsg
 )
 
 // Msg contains the data being sent/received between Nodes.

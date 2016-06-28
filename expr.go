@@ -20,8 +20,7 @@ type StringExpr struct {
 
 // SelectorExpr retrieves data from the current page.
 type SelectorExpr struct {
-	Type graph.SelectorType
-	Name string
+	Selectors []graph.Selector
 }
 
 // VarExpr accesses a variable defined in the scope.
