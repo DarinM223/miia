@@ -248,8 +248,19 @@ var parseExprTests = []struct {
 		nil,
 	},
 	{
-		"( sel \"#button\" )",
-		UnOp{SelectorToken, StringExpr{"#button"}},
+		"( sel button \"#button\" textbox (+ \".\" \"textbox\") )",
+		SelectorExpr{
+			[]Selector{
+				{
+					"button",
+					StringExpr{"#button"},
+				},
+				{
+					"textbox",
+					MultOp{AddToken, []Expr{StringExpr{"."}, StringExpr{"textbox"}}},
+				},
+			},
+		},
 		nil,
 	},
 }

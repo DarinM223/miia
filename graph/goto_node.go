@@ -32,21 +32,21 @@ func (n *GotoNode) IsLoop() bool                  { return false }
 
 func (n *GotoNode) Run() {
 	msg := <-n.inChan
-	if msg.Type != QuitMsg {
-		var data Msg
-		if url, ok := msg.Data.(string); ok {
-			// Send an HTTP request to get and pass up the response.
-			resp, err := http.Get(url)
-			if err != nil {
-				data = Msg{ErrMsg, true, err}
-			} else {
-				data = Msg{ValueMsg, true, resp}
-			}
+	if msg.Type == QuitMsg {
+		return
+	}
+
+	data := Msg{ErrMsg, true, errors.New("Message received is not a string")}
+	if url, ok := msg.Data.(string); ok {
+		// Send an HTTP request to get and pass up the response.
+		resp, err := http.Get(url)
+		if err != nil {
+			data = Msg{ErrMsg, true, err}
 		} else {
-			data = Msg{ErrMsg, true, errors.New("Message received is not a string")}
+			data = Msg{ValueMsg, true, resp}
 		}
-		for _, parent := range n.parentChans {
-			parent <- data
-		}
+	}
+	for _, parent := range n.parentChans {
+		parent <- data
 	}
 }

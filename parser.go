@@ -252,6 +252,8 @@ func (p *Parser) parseExpr() (Expr, error) {
 			expr, err = p.parseBindings()
 		case tok == GotoToken:
 			expr, err = p.parseGoto()
+		case tok == SelectorToken:
+			expr, err = p.parseSelector()
 		case isUnaryOp(name):
 			expr, err = p.parseUnOp(tok)
 		case isMultOp(name):
@@ -384,7 +386,39 @@ func (p *Parser) parseMultOp(token Token) (Expr, error) {
 	return nil, errors.New("Expression not a block")
 }
 
-// parseBlock parses a block of expressions
+// parseSelector parses a selector expression.
+func (p *Parser) parseSelector() (Expr, error) {
+	if p.pos >= len(p.text) {
+		return nil, PosOutOfBoundsErr
+	}
+
+	ch := p.text[p.pos]
+	var selectorList []Selector
+	for ch != ')' {
+		p.parseWhitespace()
+		ident, err := p.parseIdent()
+		if err != nil {
+			return nil, err
+		}
+
+		p.parseWhitespace()
+		expr, err := p.parseExpr()
+		if err != nil {
+			return nil, err
+		}
+
+		selectorList = append(selectorList, Selector{ident, expr})
+
+		p.parseWhitespace()
+		if p.pos >= len(p.text) {
+			return nil, PosOutOfBoundsErr
+		}
+		ch = p.text[p.pos]
+	}
+	return SelectorExpr{selectorList}, nil
+}
+
+// parseBlock parses a block of expressions.
 func (p *Parser) parseBlock() (Expr, error) {
 	if p.pos >= len(p.text) {
 		return nil, PosOutOfBoundsErr

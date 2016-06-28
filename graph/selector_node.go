@@ -9,9 +9,13 @@ const (
 	SelectorID                        // A CSS id to retrieve.
 )
 
+// Selector is binding from a value node that
+// outputs a css string like `#id`
+// to the name of the key in the output map after
+// parsing all of the selectors like { button: ... }
 type Selector struct {
-	Type     SelectorType
-	Selector string
+	Name     string
+	Selector Node
 }
 
 // SelectorNode is a node that receives HTTP Responses and parses out CSS selectors
@@ -44,11 +48,13 @@ func (n *SelectorNode) IsLoop() bool                  { return false }
 
 func (n *SelectorNode) Run() {
 	msg := <-n.inChan
-	if msg.Type != QuitMsg {
-		if resp, ok := msg.Data.(*http.Response); ok {
-			_ = resp
-			// TODO(DarinM223): read body and use goquery to parse out selectors
-		}
+	if msg.Type == QuitMsg {
+		return
+	}
+
+	if resp, ok := msg.Data.(*http.Response); ok {
+		_ = resp
+		// TODO(DarinM223): read body and use goquery to parse out selectors
 	}
 }
 
