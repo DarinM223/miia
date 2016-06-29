@@ -1,6 +1,7 @@
 package main
 
 import (
+	"github.com/DarinM223/http-scraper/graph"
 	"reflect"
 	"testing"
 )
@@ -248,17 +249,11 @@ var parseExprTests = []struct {
 		nil,
 	},
 	{
-		"( sel button \"#button\" textbox (+ \".\" \"textbox\") )",
+		"( sel button \"#button\" textbox \"textbox\")",
 		SelectorExpr{
-			[]Selector{
-				{
-					"button",
-					StringExpr{"#button"},
-				},
-				{
-					"textbox",
-					MultOp{AddToken, []Expr{StringExpr{"."}, StringExpr{"textbox"}}},
-				},
+			[]graph.Selector{
+				{"button", "#button"},
+				{"textbox", "textbox"},
 			},
 		},
 		nil,

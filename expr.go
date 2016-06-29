@@ -1,5 +1,7 @@
 package main
 
+import "github.com/DarinM223/http-scraper/graph"
+
 type Expr interface {
 	// expr is a dummy method that "registers"
 	// a struct to be an Expr.
@@ -16,17 +18,9 @@ type StringExpr struct {
 	Value string
 }
 
-// Selector is binding from a selector css string like `#id`
-// to the name of the key in the output map after
-// parsing all of the selectors like { button: ... }
-type Selector struct {
-	Name     string
-	Selector Expr
-}
-
 // SelectorExpr retrieves data from the current page.
 type SelectorExpr struct {
-	Selectors []Selector
+	Selectors []graph.Selector
 }
 
 // VarExpr accesses a variable defined in the scope.

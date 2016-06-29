@@ -3,6 +3,7 @@ package main
 import (
 	"bytes"
 	"errors"
+	"github.com/DarinM223/http-scraper/graph"
 )
 
 var (
@@ -393,7 +394,7 @@ func (p *Parser) parseSelector() (Expr, error) {
 	}
 
 	ch := p.text[p.pos]
-	var selectorList []Selector
+	var selectorList []graph.Selector
 	for ch != ')' {
 		p.parseWhitespace()
 		ident, err := p.parseIdent()
@@ -402,12 +403,14 @@ func (p *Parser) parseSelector() (Expr, error) {
 		}
 
 		p.parseWhitespace()
-		expr, err := p.parseExpr()
+		selectorExpr, err := p.parseString()
 		if err != nil {
 			return nil, err
 		}
 
-		selectorList = append(selectorList, Selector{ident, expr})
+		if selector, ok := selectorExpr.(StringExpr); ok {
+			selectorList = append(selectorList, graph.Selector{ident, selector.Value})
+		}
 
 		p.parseWhitespace()
 		if p.pos >= len(p.text) {

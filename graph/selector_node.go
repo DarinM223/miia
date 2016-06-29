@@ -1,21 +1,24 @@
 package graph
 
-import "net/http"
-
-type SelectorType int
-
-const (
-	SelectorClass SelectorType = iota // A CSS class to retrieve.
-	SelectorID                        // A CSS id to retrieve.
+import (
+	"errors"
+	"io/ioutil"
+	"net/http"
 )
 
-// Selector is binding from a value node that
-// outputs a css string like `#id`
+type SelectorType byte
+
+const (
+	SelectorClass SelectorType = '.' // A CSS class to retrieve.
+	SelectorID                 = '#' // A CSS id to retrieve.
+)
+
+// Selector is binding from a css string like `#id`
 // to the name of the key in the output map after
 // parsing all of the selectors like { button: ... }
 type Selector struct {
 	Name     string
-	Selector Node
+	Selector string
 }
 
 // SelectorNode is a node that receives HTTP Responses and parses out CSS selectors
@@ -52,9 +55,34 @@ func (n *SelectorNode) Run() {
 		return
 	}
 
+	data := Msg{ErrMsg, true, errors.New("Message received is not a HTTP response")}
+
 	if resp, ok := msg.Data.(*http.Response); ok {
-		_ = resp
-		// TODO(DarinM223): read body and use goquery to parse out selectors
+		body, err := ioutil.ReadAll(resp.Body)
+		if err != nil {
+			data = Msg{ErrMsg, true, err}
+		} else {
+			bindings := make(map[string]interface{})
+			var err error
+
+			// Read body and use goquery to parse out selectors
+			for _, selector := range n.selectors {
+				err = handleSelector(bindings, selector, body)
+				if err != nil {
+					break
+				}
+			}
+
+			if err != nil {
+				data = Msg{ErrMsg, true, err}
+			} else {
+				data = Msg{ValueMsg, true, bindings}
+			}
+		}
+	}
+
+	for _, parent := range n.parentChans {
+		parent <- data
 	}
 }
 
@@ -63,4 +91,15 @@ func (n *SelectorNode) Destroy() {
 		delete(n.gotoNode.ParentChans(), n.id)
 		n.gotoNode = nil
 	}
+}
+
+// handleSelector parses a selector from the body and stores the result in the data map
+func handleSelector(data map[string]interface{}, selector Selector, body []byte) error {
+	switch SelectorType(selector.Selector[0]) {
+	case SelectorClass:
+	case SelectorID:
+	default:
+		return errors.New("Invalid selector")
+	}
+	return nil
 }

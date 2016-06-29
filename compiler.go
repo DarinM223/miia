@@ -42,15 +42,7 @@ func CompileExpr(expr Expr, scope *Scope) (graph.Node, error) {
 		if scope.Page == nil {
 			return nil, errors.New("Attempting to apply selector before loading a page")
 		}
-		var selectorNodeList []graph.Selector
-		for _, selector := range e.Selectors {
-			selectorNode, err := CompileExpr(selector.Selector, scope)
-			if err != nil {
-				return nil, err
-			}
-			selectorNodeList = append(selectorNodeList, graph.Selector{selector.Name, selectorNode})
-		}
-		return graph.NewSelectorNode(GenID(), scope.Page, selectorNodeList), nil
+		return graph.NewSelectorNode(GenID(), scope.Page, e.Selectors), nil
 	case VarExpr:
 		return scope.lookup(e.Name)
 	case ForExpr:
