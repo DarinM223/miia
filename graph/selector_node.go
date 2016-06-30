@@ -84,9 +84,11 @@ func (n *SelectorNode) Run() {
 	for _, parent := range n.parentChans {
 		parent <- data
 	}
+
+	n.destroy()
 }
 
-func (n *SelectorNode) Destroy() {
+func (n *SelectorNode) destroy() {
 	if n.gotoNode != nil {
 		delete(n.gotoNode.ParentChans(), n.id)
 		n.gotoNode = nil

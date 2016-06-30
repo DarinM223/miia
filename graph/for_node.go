@@ -53,7 +53,7 @@ func (n *ForNode) Run() {
 			for _, subnode := range n.subnodes {
 				subnode.Chan() <- msg
 			}
-			n.Destroy()
+			n.destroy()
 			break
 		} else if msg.PassUp {
 			// Send the message to all of the parent nodes.
@@ -62,7 +62,7 @@ func (n *ForNode) Run() {
 			}
 			passUpCount++
 			if passUpCount >= len(n.subnodes) {
-				n.Destroy()
+				n.destroy()
 				break
 			}
 		} else if !msgReceived {
@@ -99,7 +99,7 @@ func (n *ForNode) Run() {
 	}
 }
 
-func (n *ForNode) Destroy() {
+func (n *ForNode) destroy() {
 	for _, node := range n.subnodes {
 		delete(node.ParentChans(), n.id)
 	}

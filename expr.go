@@ -1,6 +1,9 @@
 package main
 
-import "github.com/DarinM223/http-scraper/graph"
+import (
+	"github.com/DarinM223/http-scraper/graph"
+	"github.com/DarinM223/http-scraper/tokens"
+)
 
 type Expr interface {
 	// expr is a dummy method that "registers"
@@ -62,20 +65,20 @@ type BindExpr struct {
 
 // MultOp applies an operator to a list of subexpressions.
 type MultOp struct {
-	Operator Token
+	Operator tokens.Token
 	Exprs    []Expr
 }
 
 // BinOp applies a binary operator to two expressions.
 type BinOp struct {
-	Operator Token
+	Operator tokens.Token
 	A        Expr
 	B        Expr
 }
 
 // UnOp applies a unary operator to an expression.
 type UnOp struct {
-	Operator Token
+	Operator tokens.Token
 	A        Expr
 }
 

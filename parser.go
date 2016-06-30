@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"errors"
 	"github.com/DarinM223/http-scraper/graph"
+	"github.com/DarinM223/http-scraper/tokens"
 )
 
 var (
@@ -17,58 +18,6 @@ var (
 	BindingNotIdentErr       = errors.New("Binding statment must start with an ident")
 	PosOutOfBoundsErr        = errors.New("Text index is greater than the text length")
 )
-
-type Token int
-
-const (
-	IdentToken Token = iota
-	BlockToken
-	SelectorToken
-	RangeToken
-	ForToken
-	IfToken
-	ElseToken
-	GotoToken
-	AssignToken
-	AndToken
-	OrToken
-	NotToken
-	EqualsToken
-	AddToken
-	SubToken
-	MulToken
-	DivToken
-)
-
-var keywords = map[string]Token{
-	"block": BlockToken,
-	"for":   ForToken,
-	"if":    IfToken,
-	"else":  ElseToken,
-	"goto":  GotoToken,
-	"set":   AssignToken,
-}
-
-var binOps = map[string]Token{
-	"..":  RangeToken,
-	"=":   EqualsToken,
-	"or":  OrToken,
-	"and": AndToken,
-}
-
-var multOps = map[string]Token{
-	"+": AddToken,
-	"-": SubToken,
-	"*": MulToken,
-	"/": DivToken,
-}
-
-var unOps = map[string]Token{
-	"not": NotToken,
-	"sel": SelectorToken,
-}
-
-var tokens = mergeMaps(keywords, binOps, unOps, multOps)
 
 type Parser struct {
 	pos  int
@@ -152,17 +101,17 @@ func (p *Parser) expectString(expected string) error {
 
 // parseKeywordOrIdent retrieves a ident string and checks if it
 // is a keyword or not, returning the appropriate token.
-func (p *Parser) parseKeywordOrIdent() (Token, string, error) {
+func (p *Parser) parseKeywordOrIdent() (tokens.Token, string, error) {
 	ident, err := p.parseIdent()
 	if err != nil {
 		return -1, "", err
 	}
 
-	if token, err := lookup(ident, tokens); err == nil {
-		return Token(token), ident, nil
+	if token, err := tokens.Lookup(ident, tokens.Tokens); err == nil {
+		return tokens.Token(token), ident, nil
 	}
 
-	return IdentToken, ident, nil
+	return tokens.IdentToken, ident, nil
 }
 
 // parseNum parses an integer expression from the file.
@@ -243,23 +192,23 @@ func (p *Parser) parseExpr() (Expr, error) {
 
 		var expr Expr
 		switch {
-		case tok == IfToken:
+		case tok == tokens.IfToken:
 			expr, err = p.parseIf()
-		case tok == ForToken:
+		case tok == tokens.ForToken:
 			expr, err = p.parseFor()
-		case tok == BlockToken:
+		case tok == tokens.BlockToken:
 			expr, err = p.parseBlock()
-		case tok == AssignToken:
+		case tok == tokens.AssignToken:
 			expr, err = p.parseBindings()
-		case tok == GotoToken:
+		case tok == tokens.GotoToken:
 			expr, err = p.parseGoto()
-		case tok == SelectorToken:
+		case tok == tokens.SelectorToken:
 			expr, err = p.parseSelector()
-		case isUnaryOp(name):
+		case tokens.IsUnaryOp(name):
 			expr, err = p.parseUnOp(tok)
-		case isMultOp(name):
+		case tokens.IsMultOp(name):
 			expr, err = p.parseMultOp(tok)
-		case isBinaryOp(name):
+		case tokens.IsBinaryOp(name):
 			expr, err = p.parseBinOp(tok)
 		default:
 			panic("Invalid token type")
@@ -345,7 +294,7 @@ func (p *Parser) parseFor() (Expr, error) {
 }
 
 // parseUnOp parses a unary operation like (not true).
-func (p *Parser) parseUnOp(token Token) (Expr, error) {
+func (p *Parser) parseUnOp(token tokens.Token) (Expr, error) {
 	p.parseWhitespace()
 	expr, err := p.parseExpr()
 	if err != nil {
@@ -356,7 +305,7 @@ func (p *Parser) parseUnOp(token Token) (Expr, error) {
 }
 
 // parseBinOp parses a binary operation like (and a b).
-func (p *Parser) parseBinOp(token Token) (Expr, error) {
+func (p *Parser) parseBinOp(token tokens.Token) (Expr, error) {
 	p.parseWhitespace()
 	a, err := p.parseExpr()
 	if err != nil {
@@ -374,7 +323,7 @@ func (p *Parser) parseBinOp(token Token) (Expr, error) {
 
 // parseMultOp parses an operation with more than two subexpressions
 // like (+ 1 2 3 4).
-func (p *Parser) parseMultOp(token Token) (Expr, error) {
+func (p *Parser) parseMultOp(token tokens.Token) (Expr, error) {
 	p.parseWhitespace()
 	exprs, err := p.parseBlock()
 	if err != nil {
@@ -493,41 +442,6 @@ func (p *Parser) parseGoto() (Expr, error) {
 	return GotoExpr{url}, nil
 }
 
-// Utility functions
-
 func isLetter(ch byte) bool {
 	return (ch >= 'a' && ch <= 'z') || (ch >= 'A' && ch <= 'Z') || ch == '_'
-}
-
-func isBinaryOp(s string) bool {
-	_, ok := binOps[s]
-	return ok
-}
-
-func isUnaryOp(s string) bool {
-	_, ok := unOps[s]
-	return ok
-}
-
-func isMultOp(s string) bool {
-	_, ok := multOps[s]
-	return ok
-}
-
-func lookup(s string, dict map[string]Token) (Token, error) {
-	if token, ok := dict[s]; ok {
-		return token, nil
-	}
-
-	return -1, errors.New("String is not a token")
-}
-
-func mergeMaps(maps ...map[string]Token) map[string]Token {
-	mergedMap := make(map[string]Token)
-	for _, m := range maps {
-		for k, v := range m {
-			mergedMap[k] = v
-		}
-	}
-	return mergedMap
 }

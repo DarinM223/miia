@@ -2,6 +2,7 @@ package main
 
 import (
 	"github.com/DarinM223/http-scraper/graph"
+	"github.com/DarinM223/http-scraper/tokens"
 	"reflect"
 	"testing"
 )
@@ -127,13 +128,13 @@ func TestExpectString(t *testing.T) {
 
 var parseKeywordOrIndentTests = []struct {
 	text, ident string
-	token       Token
+	token       tokens.Token
 }{
-	{"goto \"www.google.com\"", "goto", GotoToken},
-	{"hello world", "hello", IdentToken},
-	{"for name names ", "for", ForToken},
-	{"if (== a 2) \n", "if", IfToken},
-	{"else b", "else", ElseToken},
+	{"goto \"www.google.com\"", "goto", tokens.GotoToken},
+	{"hello world", "hello", tokens.IdentToken},
+	{"for name names ", "for", tokens.ForToken},
+	{"if (== a 2) \n", "if", tokens.IfToken},
+	{"else b", "else", tokens.ElseToken},
 }
 
 func TestParseKeywordOrIndent(t *testing.T) {
@@ -205,12 +206,12 @@ var parseExprTests = []struct {
 }{
 	{
 		"(+ 1 2)",
-		MultOp{AddToken, []Expr{IntExpr{1}, IntExpr{2}}},
+		MultOp{tokens.AddToken, []Expr{IntExpr{1}, IntExpr{2}}},
 		nil,
 	},
 	{
 		"(and a b)",
-		BinOp{AndToken, VarExpr{"a"}, VarExpr{"b"}},
+		BinOp{tokens.AndToken, VarExpr{"a"}, VarExpr{"b"}},
 		nil,
 	},
 	{
@@ -226,15 +227,15 @@ var parseExprTests = []struct {
 	{
 		"( if ( = a 1 ) \n ( block  ( + a b ) \"hello\" ) 2 ) ",
 		IfExpr{
-			BinOp{EqualsToken, VarExpr{"a"}, IntExpr{1}},
-			BlockExpr{[]Expr{MultOp{AddToken, []Expr{VarExpr{"a"}, VarExpr{"b"}}}, StringExpr{"hello"}}},
+			BinOp{tokens.EqualsToken, VarExpr{"a"}, IntExpr{1}},
+			BlockExpr{[]Expr{MultOp{tokens.AddToken, []Expr{VarExpr{"a"}, VarExpr{"b"}}}, StringExpr{"hello"}}},
 			IntExpr{2},
 		},
 		nil,
 	},
 	{
 		"(goto (+ \"http://www.\" \"google.com\"))",
-		GotoExpr{MultOp{AddToken, []Expr{StringExpr{"http://www."}, StringExpr{"google.com"}}}},
+		GotoExpr{MultOp{tokens.AddToken, []Expr{StringExpr{"http://www."}, StringExpr{"google.com"}}}},
 		nil,
 	},
 	{
@@ -242,7 +243,7 @@ var parseExprTests = []struct {
 		BindExpr{
 			map[string]Expr{
 				"a": IntExpr{2},
-				"b": MultOp{AddToken, []Expr{IntExpr{1}, IntExpr{2}}},
+				"b": MultOp{tokens.AddToken, []Expr{IntExpr{1}, IntExpr{2}}},
 				"c": BlockExpr{[]Expr{StringExpr{"hello"}, StringExpr{"world"}}},
 			},
 		},
