@@ -20,7 +20,6 @@ func NewValueNode(id int, value interface{}) *ValueNode {
 func (n *ValueNode) ID() int                       { return n.id }
 func (n *ValueNode) Chan() chan Msg                { return n.inChan }
 func (n *ValueNode) ParentChans() map[int]chan Msg { return n.parentChans }
-func (n *ValueNode) Destroy()                      {}
 func (n *ValueNode) IsLoop() bool                  { return false }
 
 func (n *ValueNode) Run() {

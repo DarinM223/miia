@@ -32,8 +32,6 @@ type Node interface {
 	Chan() chan Msg
 	// ParentChans is a map of parent ids to parent input channels.
 	ParentChans() map[int]chan Msg
-	// Destroy cleans up the resources before killing a Node.
-	Destroy()
 	// IsLoop is true if the node or any of the subnodes is a loop node.
 	IsLoop() bool
 }

@@ -8,7 +8,6 @@ import (
 type GotoNode struct {
 	id          int
 	url         Node
-	next        Node
 	inChan      chan Msg
 	parentChans map[int]chan Msg
 }
@@ -27,7 +26,6 @@ func NewGotoNode(id int, url Node) *GotoNode {
 func (n *GotoNode) ID() int                       { return n.id }
 func (n *GotoNode) Chan() chan Msg                { return n.inChan }
 func (n *GotoNode) ParentChans() map[int]chan Msg { return n.parentChans }
-func (n *GotoNode) Destroy()                      {}
 func (n *GotoNode) IsLoop() bool                  { return false }
 
 func (n *GotoNode) Run() {

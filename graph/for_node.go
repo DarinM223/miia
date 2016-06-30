@@ -14,15 +14,15 @@ type ForNode struct {
 }
 
 func NewForNode(id int, collection Node, body Node) *ForNode {
-	forNode := &ForNode{
+	inChan := make(chan Msg, InChanSize)
+	// Listen for collection's result
+	collection.ParentChans()[id] = inChan
+	return &ForNode{
 		id:          id,
 		body:        body,
-		inChan:      make(chan Msg, InChanSize),
+		inChan:      inChan,
 		parentChans: make(map[int]chan Msg),
 	}
-	// Listen for collection's result
-	collection.ParentChans()[forNode.id] = forNode.inChan
-	return forNode
 }
 
 func (n *ForNode) ID() int                       { return n.id }
