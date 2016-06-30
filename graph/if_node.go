@@ -2,6 +2,12 @@ package graph
 
 import "errors"
 
+var IfPredicateErr error = errors.New("Predicate return is not a boolean value")
+
+// IfNode is a node that listens to the predicate node,
+// the consequence node (the node when predicate is true),
+// and the alternate node (the node when predicate is false),
+// and either returns the result of the consequence or the alternate node.
 type IfNode struct {
 	id          int
 	pred        Node
@@ -40,7 +46,7 @@ func (n *IfNode) ParentChans() map[int]chan Msg { return n.parentChans }
 func (n *IfNode) IsLoop() bool                  { return n.pred.IsLoop() || n.conseq.IsLoop() || n.alt.IsLoop() }
 
 func (n *IfNode) Run() {
-	data := Msg{ErrMsg, true, errors.New("Predicate return is not a boolean value")}
+	data := Msg{ErrMsg, true, IfPredicateErr}
 
 	msg := <-n.inChan
 	if pred, ok := msg.Data.(bool); ok {

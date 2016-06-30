@@ -59,6 +59,24 @@ func CompileExpr(expr Expr, scope *Scope) (graph.Node, error) {
 
 		return graph.NewForNode(GenID(), collection, body), nil
 	case IfExpr:
+		pred, err := CompileExpr(e.Pred, scope)
+		if err != nil {
+			return nil, err
+		}
+
+		scope1, scope2 := NewScope(scope), NewScope(scope)
+
+		conseq, err := CompileExpr(e.Conseq, scope1)
+		if err != nil {
+			return nil, err
+		}
+
+		alt, err := CompileExpr(e.Alt, scope2)
+		if err != nil {
+			return nil, err
+		}
+
+		return graph.NewIfNode(GenID(), pred, conseq, alt), nil
 	case GotoExpr:
 		urlNode, err := CompileExpr(e.URL, scope)
 		if err != nil {

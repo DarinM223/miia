@@ -23,6 +23,12 @@ var ifNodeTests = []struct {
 		NewValueNode(2, "Alt"),
 		Msg{ValueMsg, true, "Alt"},
 	},
+	{
+		NewValueNode(0, 1),
+		NewValueNode(1, "Conseq"),
+		NewValueNode(2, "Alt"),
+		Msg{ErrMsg, true, IfPredicateErr},
+	},
 }
 
 func TestIfNode(t *testing.T) {
