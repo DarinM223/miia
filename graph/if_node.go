@@ -46,7 +46,7 @@ func (n *IfNode) ParentChans() map[int]chan Msg { return n.parentChans }
 func (n *IfNode) IsLoop() bool                  { return n.pred.IsLoop() || n.conseq.IsLoop() || n.alt.IsLoop() }
 
 func (n *IfNode) Run() {
-	data := Msg{ErrMsg, true, IfPredicateErr}
+	data := Msg{ErrMsg, n.id, true, IfPredicateErr}
 
 	msg := <-n.inChan
 	if pred, ok := msg.Data.(bool); ok {
@@ -55,6 +55,7 @@ func (n *IfNode) Run() {
 		} else {
 			data = <-n.altChan
 		}
+		data.ID = n.id
 	}
 
 	for _, parent := range n.parentChans {

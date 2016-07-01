@@ -23,7 +23,7 @@ func (n *ValueNode) ParentChans() map[int]chan Msg { return n.parentChans }
 func (n *ValueNode) IsLoop() bool                  { return false }
 
 func (n *ValueNode) Run() {
-	data := Msg{ValueMsg, true, n.value}
+	data := Msg{ValueMsg, n.id, true, n.value}
 	for _, parent := range n.parentChans {
 		parent <- data
 	}

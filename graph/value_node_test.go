@@ -14,7 +14,7 @@ func TestValueNode(t *testing.T) {
 
 	go node.Run()
 
-	expected := Msg{ValueMsg, true, 20}
+	expected := Msg{ValueMsg, 0, true, 20}
 
 	if msg, ok := <-parentChan1; ok {
 		if !reflect.DeepEqual(msg, expected) {

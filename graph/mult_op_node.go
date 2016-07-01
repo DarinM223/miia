@@ -11,12 +11,21 @@ type MultOpNode struct {
 	nodes       []Node
 	inChan      chan Msg
 	parentChans map[int]chan Msg
+	// Stores the results of the nodes.
+	// Index of a result corresponds to the index
+	// of the node in nodes that created the result.
+	results []interface{}
+	// Map from the ID of the node to the
+	// index of the node from nodes.
+	idMap map[int]int
 }
 
 func NewMultOpNode(id int, operator tokens.Token, nodes []Node) *MultOpNode {
 	inChan := make(chan Msg, len(nodes))
-	for _, node := range nodes {
+	idMap := make(map[int]int, len(nodes))
+	for i, node := range nodes {
 		node.ParentChans()[id] = inChan
+		idMap[node.ID()] = i
 	}
 
 	return &MultOpNode{
@@ -25,6 +34,8 @@ func NewMultOpNode(id int, operator tokens.Token, nodes []Node) *MultOpNode {
 		nodes:       nodes,
 		inChan:      inChan,
 		parentChans: make(map[int]chan Msg),
+		results:     make([]interface{}, len(nodes)),
+		idMap:       idMap,
 	}
 }
 
@@ -43,9 +54,6 @@ func (n *MultOpNode) IsLoop() bool {
 }
 
 func (n *MultOpNode) Run() {
-	var collectedData interface{} = nil
-	var err error = nil
-
 	passUpCount := 0
 	for {
 		msg := <-n.inChan
@@ -56,27 +64,26 @@ func (n *MultOpNode) Run() {
 			n.destroy()
 			return
 		} else if msg.PassUp {
-			if collectedData == nil {
-				collectedData = msg.Data
-			} else {
-				collectedData, err = applyMultOp(collectedData, msg.Data, n.operator)
-			}
+			// Store the result and break when all the nodes have finished.
+			nodeIdx := n.idMap[msg.ID]
+			n.results[nodeIdx] = msg.Data
 			passUpCount++
-			if err != nil || passUpCount >= len(n.nodes) {
+			if passUpCount >= len(n.nodes) {
 				break
 			}
 		}
 	}
 
-	var data Msg
+	var msg Msg
+	data, err := applyMultOp(n.results, n.operator)
 	if err != nil {
-		data = Msg{ErrMsg, true, err}
+		msg = Msg{ErrMsg, n.id, true, err}
 	} else {
-		data = Msg{ValueMsg, true, collectedData}
+		msg = Msg{ValueMsg, n.id, true, data}
 	}
 
 	for _, parent := range n.parentChans {
-		parent <- data
+		parent <- msg
 	}
 	n.destroy()
 }
@@ -87,44 +94,72 @@ func (n *MultOpNode) destroy() {
 	}
 }
 
-func applyMultOp(collectedData interface{}, data interface{}, op tokens.Token) (interface{}, error) {
+func applyMultOp(data []interface{}, op tokens.Token) (interface{}, error) {
+	if len(data) <= 0 {
+		return nil, errors.New("Need to apply MultOp to at least one element")
+	}
 	switch op {
 	case tokens.AddToken:
-		collected, collectedOk := collectedData.(int)
-		newData, newDataOk := data.(int)
-
-		if collectedOk && newDataOk {
-			return collected + newData, nil
-		} else {
+		switch result := data[0].(type) {
+		case string:
+			for i := 1; i < len(data); i++ {
+				elem, ok := data[i].(string)
+				if !ok {
+					return nil, errors.New("Invalid types for MultOp AddToken")
+				}
+				result += elem
+			}
+			return result, nil
+		case int:
+			for i := 1; i < len(data); i++ {
+				elem, ok := data[i].(int)
+				if !ok {
+					return nil, errors.New("Invalid types for MultOp AddToken")
+				}
+				result += elem
+			}
+			return result, nil
+		default:
 			return nil, errors.New("Invalid types for MultOp AddToken")
 		}
 	case tokens.SubToken:
-		collected, collectedOk := collectedData.(int)
-		newData, newDataOk := data.(int)
-
-		if collectedOk && newDataOk {
-			return collected - newData, nil
-		} else {
+		result, ok := data[0].(int)
+		if !ok {
 			return nil, errors.New("Invalid types for MultOp SubToken")
 		}
-	case tokens.MulToken:
-		collected, collectedOk := collectedData.(int)
-		newData, newDataOk := data.(int)
 
-		if collectedOk && newDataOk {
-			return collected * newData, nil
-		} else {
-			return nil, errors.New("Invalid types for MultOp MulToken")
+		for i := 1; i < len(data); i++ {
+			elem, ok := data[i].(int)
+			if !ok {
+				return nil, errors.New("Invalid types for MultOp SubToken")
+			}
+			result -= elem
 		}
+		return result, nil
+	case tokens.MulToken:
+		result := 1
+		for i := 0; i < len(data); i++ {
+			elem, ok := data[i].(int)
+			if !ok {
+				return nil, errors.New("Invalid types for MultOp MulToken")
+			}
+			result *= elem
+		}
+		return result, nil
 	case tokens.DivToken:
-		collected, collectedOk := collectedData.(int)
-		newData, newDataOk := data.(int)
-
-		if collectedOk && newDataOk {
-			return collected / newData, nil
-		} else {
+		result, ok := data[0].(int)
+		if !ok {
 			return nil, errors.New("Invalid types for MultOp Divtoken")
 		}
+
+		for i := 1; i < len(data); i++ {
+			elem, ok := data[i].(int)
+			if !ok {
+				return nil, errors.New("Invalid types for MultOp Divtoken")
+			}
+			result /= elem
+		}
+		return result, nil
 	}
 	return nil, errors.New("Invalid MultOp operator")
 }

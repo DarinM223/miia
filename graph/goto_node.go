@@ -34,14 +34,14 @@ func (n *GotoNode) Run() {
 		return
 	}
 
-	data := Msg{ErrMsg, true, errors.New("Message received is not a string")}
+	data := Msg{ErrMsg, n.id, true, errors.New("Message received is not a string")}
 	if url, ok := msg.Data.(string); ok {
 		// Send an HTTP request to get and pass up the response.
 		resp, err := http.Get(url)
 		if err != nil {
-			data = Msg{ErrMsg, true, err}
+			data = Msg{ErrMsg, n.id, true, err}
 		} else {
-			data = Msg{ValueMsg, true, resp}
+			data = Msg{ValueMsg, n.id, true, resp}
 		}
 	}
 	for _, parent := range n.parentChans {

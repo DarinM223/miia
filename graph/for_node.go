@@ -77,6 +77,7 @@ func (n *ForNode) Run() {
 
 					n.subnodes[len(n.subnodes)-1].Chan() <- Msg{
 						ValueMsg,
+						n.id,
 						false,
 						arr.Index(i).Interface(),
 					}

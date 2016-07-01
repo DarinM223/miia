@@ -12,6 +12,8 @@ const (
 type Msg struct {
 	// Type is the type of the message being sent.
 	Type MsgType
+	// ID is the id of the node sending the message.
+	ID int
 	// PassUp is true when completed data is being
 	// sent backwards from the child to the parent.
 	PassUp bool

@@ -55,12 +55,12 @@ func (n *SelectorNode) Run() {
 		return
 	}
 
-	data := Msg{ErrMsg, true, errors.New("Message received is not a HTTP response")}
+	data := Msg{ErrMsg, n.id, true, errors.New("Message received is not a HTTP response")}
 
 	if resp, ok := msg.Data.(*http.Response); ok {
 		body, err := ioutil.ReadAll(resp.Body)
 		if err != nil {
-			data = Msg{ErrMsg, true, err}
+			data = Msg{ErrMsg, n.id, true, err}
 		} else {
 			bindings := make(map[string]interface{})
 			var err error
@@ -74,9 +74,9 @@ func (n *SelectorNode) Run() {
 			}
 
 			if err != nil {
-				data = Msg{ErrMsg, true, err}
+				data = Msg{ErrMsg, n.id, true, err}
 			} else {
-				data = Msg{ValueMsg, true, bindings}
+				data = Msg{ValueMsg, n.id, true, bindings}
 			}
 		}
 	}

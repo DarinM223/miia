@@ -15,19 +15,19 @@ var ifNodeTests = []struct {
 		NewValueNode(0, true),
 		NewValueNode(1, "Conseq"),
 		NewValueNode(2, "Alt"),
-		Msg{ValueMsg, true, "Conseq"},
+		Msg{ValueMsg, 69, true, "Conseq"},
 	},
 	{
 		NewValueNode(0, false),
 		NewValueNode(1, "Conseq"),
 		NewValueNode(2, "Alt"),
-		Msg{ValueMsg, true, "Alt"},
+		Msg{ValueMsg, 69, true, "Alt"},
 	},
 	{
 		NewValueNode(0, 1),
 		NewValueNode(1, "Conseq"),
 		NewValueNode(2, "Alt"),
-		Msg{ErrMsg, true, IfPredicateErr},
+		Msg{ErrMsg, 69, true, IfPredicateErr},
 	},
 }
 
@@ -59,4 +59,7 @@ func TestIfNode(t *testing.T) {
 			t.Errorf("Parent channel 2 closed")
 		}
 	}
+}
+
+func TestIfNodeIsLoop(t *testing.T) {
 }

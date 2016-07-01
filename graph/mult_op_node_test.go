@@ -14,12 +14,27 @@ var multOpNodeTests = []struct {
 	{
 		tokens.AddToken,
 		[]interface{}{1, 2, 3, 4, 5, 6},
-		Msg{ValueMsg, true, 21},
+		Msg{ValueMsg, 6, true, 21},
 	},
 	{
 		tokens.MulToken,
 		[]interface{}{1, 2, 3, 4, 5, 6},
-		Msg{ValueMsg, true, 720},
+		Msg{ValueMsg, 6, true, 720},
+	},
+	{
+		tokens.AddToken,
+		[]interface{}{"a", "b", "c", "d", "e"},
+		Msg{ValueMsg, 5, true, "abcde"},
+	},
+	{
+		tokens.SubToken,
+		[]interface{}{10, 2, 2, 1, 1},
+		Msg{ValueMsg, 5, true, 4},
+	},
+	{
+		tokens.DivToken,
+		[]interface{}{6, 3, 2},
+		Msg{ValueMsg, 3, true, 1},
 	},
 }
 
@@ -56,5 +71,23 @@ func TestMultOpNode(t *testing.T) {
 		} else {
 			t.Errorf("Parent channel 2 closed")
 		}
+	}
+}
+
+func TestMultOpNodeIsLoop(t *testing.T) {
+	valueNodes := make([]Node, 2)
+	valueNodes[0] = NewValueNode(0, 2)
+	valueNodes[1] = NewForNode(1, NewValueNode(2, 3), NewValueNode(3, 3))
+
+	multOpNode := NewMultOpNode(4, tokens.AddToken, valueNodes)
+	if multOpNode.IsLoop() == false {
+		t.Errorf("MultOp node with for loop node has IsLoop() return false instead of true")
+	}
+
+	valueNodes[1] = NewValueNode(5, 3)
+
+	multOpNode2 := NewMultOpNode(4, tokens.AddToken, valueNodes)
+	if multOpNode2.IsLoop() == true {
+		t.Errorf("MultOp node without for loop node has IsLoop() return true instead of false")
 	}
 }
