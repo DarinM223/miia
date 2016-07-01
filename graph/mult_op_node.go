@@ -1,6 +1,9 @@
 package graph
 
-import "github.com/DarinM223/http-scraper/tokens"
+import (
+	"errors"
+	"github.com/DarinM223/http-scraper/tokens"
+)
 
 type MultOpNode struct {
 	id          int
@@ -11,7 +14,7 @@ type MultOpNode struct {
 }
 
 func NewMultOpNode(id int, operator tokens.Token, nodes []Node) *MultOpNode {
-	inChan := make(chan Msg, InChanSize)
+	inChan := make(chan Msg, len(nodes))
 	for _, node := range nodes {
 		node.ParentChans()[id] = inChan
 	}
@@ -57,10 +60,10 @@ func (n *MultOpNode) Run() {
 				collectedData = msg.Data
 			} else {
 				collectedData, err = applyMultOp(collectedData, msg.Data, n.operator)
-				passUpCount++
-				if err != nil || passUpCount >= len(n.nodes) {
-					break
-				}
+			}
+			passUpCount++
+			if err != nil || passUpCount >= len(n.nodes) {
+				break
 			}
 		}
 	}
@@ -85,5 +88,43 @@ func (n *MultOpNode) destroy() {
 }
 
 func applyMultOp(collectedData interface{}, data interface{}, op tokens.Token) (interface{}, error) {
-	return nil, nil
+	switch op {
+	case tokens.AddToken:
+		collected, collectedOk := collectedData.(int)
+		newData, newDataOk := data.(int)
+
+		if collectedOk && newDataOk {
+			return collected + newData, nil
+		} else {
+			return nil, errors.New("Invalid types for MultOp AddToken")
+		}
+	case tokens.SubToken:
+		collected, collectedOk := collectedData.(int)
+		newData, newDataOk := data.(int)
+
+		if collectedOk && newDataOk {
+			return collected - newData, nil
+		} else {
+			return nil, errors.New("Invalid types for MultOp SubToken")
+		}
+	case tokens.MulToken:
+		collected, collectedOk := collectedData.(int)
+		newData, newDataOk := data.(int)
+
+		if collectedOk && newDataOk {
+			return collected * newData, nil
+		} else {
+			return nil, errors.New("Invalid types for MultOp MulToken")
+		}
+	case tokens.DivToken:
+		collected, collectedOk := collectedData.(int)
+		newData, newDataOk := data.(int)
+
+		if collectedOk && newDataOk {
+			return collected / newData, nil
+		} else {
+			return nil, errors.New("Invalid types for MultOp Divtoken")
+		}
+	}
+	return nil, errors.New("Invalid MultOp operator")
 }
