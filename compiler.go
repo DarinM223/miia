@@ -88,6 +88,7 @@ func CompileExpr(expr Expr, scope *Scope) (graph.Node, error) {
 		return gotoNode, nil
 	case BlockExpr:
 		newScope := NewScope(scope)
+		var lastNode graph.Node
 		for i, expr := range e.Exprs {
 			res, err := CompileExpr(expr, newScope)
 			if err != nil {
@@ -96,9 +97,11 @@ func CompileExpr(expr Expr, scope *Scope) (graph.Node, error) {
 
 			// Return result of last expression.
 			if i == len(e.Exprs)-1 {
-				return res, nil
+				lastNode = res
+				break
 			}
 		}
+		return lastNode, nil
 	case BindExpr:
 		for name, expr := range e.Bindings {
 			res, err := CompileExpr(expr, scope)
@@ -110,10 +113,37 @@ func CompileExpr(expr Expr, scope *Scope) (graph.Node, error) {
 		}
 		return graph.NewValueNode(GenID(), nil), nil
 	case MultOp:
+		nodes := make([]graph.Node, len(e.Exprs))
+		for i := 0; i < len(nodes); i++ {
+			node, err := CompileExpr(e.Exprs[i], scope)
+			if err != nil {
+				return nil, err
+			}
+			nodes[i] = node
+		}
+		return graph.NewMultOpNode(GenID(), e.Operator, nodes), nil
 	case BinOp:
+		a, err := CompileExpr(e.A, scope)
+		if err != nil {
+			return nil, err
+		}
+
+		b, err := CompileExpr(e.B, scope)
+		if err != nil {
+			return nil, err
+		}
+
+		return graph.NewBinOpNode(GenID(), e.Operator, a, b), nil
 	case UnOp:
+		node, err := CompileExpr(e.A, scope)
+		if err != nil {
+			return nil, err
+		}
+
+		return graph.NewUnOpNode(GenID(), e.Operator, node), nil
+	default:
+		return nil, errors.New("Invalid expression type")
 	}
-	return nil, nil
 }
 
 var globalCounter = 0

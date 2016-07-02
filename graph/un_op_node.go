@@ -5,6 +5,8 @@ import (
 	"github.com/DarinM223/http-scraper/tokens"
 )
 
+// UnOpNode listens for a value and applies
+// an operator to the value when it is received.
 type UnOpNode struct {
 	id          int
 	operator    tokens.Token

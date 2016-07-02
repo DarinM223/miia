@@ -5,6 +5,9 @@ import (
 	"github.com/DarinM223/http-scraper/tokens"
 )
 
+// MultOpNode listens to multiple values and
+// applies an operator to the values when all
+// of them are received.
 type MultOpNode struct {
 	id          int
 	operator    tokens.Token

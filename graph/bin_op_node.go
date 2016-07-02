@@ -7,6 +7,8 @@ import (
 	"reflect"
 )
 
+// BinOpNode listens to two nodes and applies
+// an operator when receiving the values.
 type BinOpNode struct {
 	id           int
 	operator     tokens.Token
