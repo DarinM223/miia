@@ -102,6 +102,7 @@ func applyBinOp(a interface{}, b interface{}, op tokens.Token) (interface{}, err
 			return firstVal && secondVal, nil
 		}
 		return nil, errors.New("Invalid types for BinOp AndToken")
+	default:
+		return nil, errors.New("Invalid BinOp operator")
 	}
-	return nil, errors.New("Invalid BinOp operator")
 }

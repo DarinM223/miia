@@ -30,6 +30,7 @@ var Keywords = map[string]Token{
 	"if":    IfToken,
 	"else":  ElseToken,
 	"goto":  GotoToken,
+	"sel":   SelectorToken,
 	"set":   AssignToken,
 }
 
@@ -49,7 +50,6 @@ var MultOps = map[string]Token{
 
 var UnOps = map[string]Token{
 	"not": NotToken,
-	"sel": SelectorToken,
 }
 
 var Tokens = mergeMaps(Keywords, BinOps, UnOps, MultOps)
