@@ -163,6 +163,7 @@ func applyMultOp(data []interface{}, op tokens.Token) (interface{}, error) {
 			result /= elem
 		}
 		return result, nil
+	default:
+		return nil, errors.New("Invalid MultOp operator")
 	}
-	return nil, errors.New("Invalid MultOp operator")
 }

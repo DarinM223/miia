@@ -2,7 +2,7 @@ package graph
 
 import (
 	"errors"
-	"io/ioutil"
+	"github.com/PuerkitoBio/goquery"
 	"net/http"
 )
 
@@ -58,26 +58,15 @@ func (n *SelectorNode) Run() {
 	data := Msg{ErrMsg, n.id, true, errors.New("Message received is not a HTTP response")}
 
 	if resp, ok := msg.Data.(*http.Response); ok {
-		body, err := ioutil.ReadAll(resp.Body)
+		doc, err := goquery.NewDocumentFromResponse(resp)
 		if err != nil {
 			data = Msg{ErrMsg, n.id, true, err}
 		} else {
-			bindings := make(map[string]interface{})
-			var err error
-
-			// Read body and use goquery to parse out selectors
+			bindings := make(map[string]string)
 			for _, selector := range n.selectors {
-				err = handleSelector(bindings, selector, body)
-				if err != nil {
-					break
-				}
+				bindings[selector.Name] = doc.Find(selector.Selector).First().Text()
 			}
-
-			if err != nil {
-				data = Msg{ErrMsg, n.id, true, err}
-			} else {
-				data = Msg{ValueMsg, n.id, true, bindings}
-			}
+			data = Msg{ValueMsg, n.id, true, bindings}
 		}
 	}
 
@@ -93,15 +82,4 @@ func (n *SelectorNode) destroy() {
 		delete(n.gotoNode.ParentChans(), n.id)
 		n.gotoNode = nil
 	}
-}
-
-// handleSelector parses a selector from the body and stores the result in the data map
-func handleSelector(data map[string]interface{}, selector Selector, body []byte) error {
-	switch SelectorType(selector.Selector[0]) {
-	case SelectorClass:
-	case SelectorID:
-	default:
-		return errors.New("Invalid selector")
-	}
-	return nil
 }
