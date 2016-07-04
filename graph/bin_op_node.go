@@ -60,6 +60,13 @@ func (n *BinOpNode) Run() {
 	n.destroy()
 }
 
+func (n *BinOpNode) Clone() Node {
+	clonedA, clonedB := n.a.Clone(), n.b.Clone()
+	retNode := NewBinOpNode(n.id, n.operator, clonedA, clonedB)
+	retNode.parentChans = n.parentChans
+	return retNode
+}
+
 func (n *BinOpNode) destroy() {
 	delete(n.a.ParentChans(), n.id)
 	delete(n.b.ParentChans(), n.id)

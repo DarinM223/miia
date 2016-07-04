@@ -36,4 +36,6 @@ type Node interface {
 	ParentChans() map[int]chan Msg
 	// IsLoop is true if the node or any of the subnodes is a loop node.
 	IsLoop() bool
+	// Clone returns a cloned Node.
+	Clone() Node
 }

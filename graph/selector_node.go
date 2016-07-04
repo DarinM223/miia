@@ -77,6 +77,12 @@ func (n *SelectorNode) Run() {
 	n.destroy()
 }
 
+func (n *SelectorNode) Clone() Node {
+	retNode := NewSelectorNode(n.id, n.gotoNode, n.selectors)
+	retNode.parentChans = n.parentChans
+	return retNode
+}
+
 func (n *SelectorNode) destroy() {
 	if n.gotoNode != nil {
 		delete(n.gotoNode.ParentChans(), n.id)

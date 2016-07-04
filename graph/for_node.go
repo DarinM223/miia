@@ -8,6 +8,7 @@ import "reflect"
 type ForNode struct {
 	id          int
 	subnodes    []Node
+	collection  Node
 	body        Node
 	inChan      chan Msg
 	parentChans map[int]chan Msg
@@ -19,6 +20,7 @@ func NewForNode(id int, collection Node, body Node) *ForNode {
 	collection.ParentChans()[id] = inChan
 	return &ForNode{
 		id:          id,
+		collection:  collection,
 		body:        body,
 		inChan:      inChan,
 		parentChans: make(map[int]chan Msg),
@@ -72,7 +74,7 @@ func (n *ForNode) Run() {
 				n.subnodes = make([]Node, arr.Len())
 				for i := 0; i < arr.Len(); i++ {
 					// TODO(DarinM223): need to clone the body node.
-					n.subnodes[i] = n.body
+					n.subnodes[i] = n.body.Clone()
 					n.subnodes[i].ParentChans()[n.id] = n.inChan
 
 					n.subnodes[len(n.subnodes)-1].Chan() <- Msg{
@@ -98,6 +100,13 @@ func (n *ForNode) Run() {
 			}
 		}
 	}
+}
+
+func (n *ForNode) Clone() Node {
+	clonedCollection := n.collection.Clone()
+	retNode := NewForNode(n.id, clonedCollection, n.body)
+	retNode.parentChans = n.parentChans
+	return retNode
 }
 
 func (n *ForNode) destroy() {

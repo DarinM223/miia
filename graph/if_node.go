@@ -62,3 +62,10 @@ func (n *IfNode) Run() {
 		parent <- data
 	}
 }
+
+func (n *IfNode) Clone() Node {
+	clonedPred, clonedConseq, clonedAlt := n.pred.Clone(), n.conseq.Clone(), n.alt.Clone()
+	retNode := NewIfNode(n.id, clonedPred, clonedConseq, clonedAlt)
+	retNode.parentChans = n.parentChans
+	return retNode
+}

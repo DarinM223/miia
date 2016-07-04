@@ -53,6 +53,13 @@ func (n *UnOpNode) Run() {
 	n.destroy()
 }
 
+func (n *UnOpNode) Clone() Node {
+	clonedNode := n.node.Clone()
+	retNode := NewUnOpNode(n.id, n.operator, clonedNode)
+	retNode.parentChans = n.parentChans
+	return retNode
+}
+
 func (n *UnOpNode) destroy() {
 	delete(n.node.ParentChans(), n.id)
 }

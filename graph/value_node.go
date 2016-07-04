@@ -28,3 +28,7 @@ func (n *ValueNode) Run() {
 		parent <- data
 	}
 }
+
+func (n *ValueNode) Clone() Node {
+	return NewValueNode(n.id, n.value)
+}

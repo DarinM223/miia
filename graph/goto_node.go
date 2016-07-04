@@ -48,3 +48,10 @@ func (n *GotoNode) Run() {
 		parent <- data
 	}
 }
+
+func (n *GotoNode) Clone() Node {
+	clonedURL := n.url.Clone()
+	retNode := NewGotoNode(n.id, clonedURL)
+	retNode.parentChans = n.parentChans
+	return retNode
+}

@@ -91,6 +91,16 @@ func (n *MultOpNode) Run() {
 	n.destroy()
 }
 
+func (n *MultOpNode) Clone() Node {
+	clonedNodes := make([]Node, len(n.nodes))
+	for i := 0; i < len(clonedNodes); i++ {
+		clonedNodes[i] = n.nodes[i].Clone()
+	}
+	retNode := NewMultOpNode(n.id, n.operator, clonedNodes)
+	retNode.parentChans = n.parentChans
+	return retNode
+}
+
 func (n *MultOpNode) destroy() {
 	for _, node := range n.nodes {
 		delete(node.ParentChans(), n.id)
