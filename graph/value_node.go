@@ -20,10 +20,11 @@ func NewValueNode(globals *Globals, value interface{}) *ValueNode {
 	return valueNode
 }
 
-func (n *ValueNode) ID() int                       { return n.id }
-func (n *ValueNode) Chan() chan Msg                { return n.inChan }
-func (n *ValueNode) ParentChans() map[int]chan Msg { return n.parentChans }
-func (n *ValueNode) isLoop() bool                  { return false }
+func (n *ValueNode) ID() int                               { return n.id }
+func (n *ValueNode) Chan() chan Msg                        { return n.inChan }
+func (n *ValueNode) ParentChans() map[int]chan Msg         { return n.parentChans }
+func (n *ValueNode) isLoop() bool                          { return false }
+func (n *ValueNode) setVar(name string, value interface{}) {}
 
 func (n *ValueNode) Run() {
 	data := Msg{ValueMsg, n.id, true, n.value}

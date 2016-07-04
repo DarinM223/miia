@@ -52,12 +52,13 @@ func CompileExpr(globals *graph.Globals, expr Expr, scope *Scope) (graph.Node, e
 		}
 
 		newScope := NewScope(scope)
+		newScope.set(e.Name, graph.NewVarNode(globals, e.Name))
 		body, err := CompileExpr(globals, e.Body, newScope)
 		if err != nil {
 			return nil, err
 		}
 
-		return graph.NewForNode(globals, collection, body), nil
+		return graph.NewForNode(globals, e.Name, collection, body), nil
 	case IfExpr:
 		pred, err := CompileExpr(globals, e.Pred, scope)
 		if err != nil {

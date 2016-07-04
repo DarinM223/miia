@@ -47,6 +47,11 @@ func (n *IfNode) ID() int                       { return n.id }
 func (n *IfNode) Chan() chan Msg                { return n.inChan }
 func (n *IfNode) ParentChans() map[int]chan Msg { return n.parentChans }
 func (n *IfNode) isLoop() bool                  { return n.pred.isLoop() || n.conseq.isLoop() || n.alt.isLoop() }
+func (n *IfNode) setVar(name string, value interface{}) {
+	n.pred.setVar(name, value)
+	n.conseq.setVar(name, value)
+	n.alt.setVar(name, value)
+}
 
 func (n *IfNode) Run() {
 	data := Msg{ErrMsg, n.id, true, IfPredicateErr}

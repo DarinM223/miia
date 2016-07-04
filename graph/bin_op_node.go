@@ -41,6 +41,10 @@ func (n *BinOpNode) ID() int                       { return n.id }
 func (n *BinOpNode) Chan() chan Msg                { return n.aChan }
 func (n *BinOpNode) ParentChans() map[int]chan Msg { return n.parentChans }
 func (n *BinOpNode) isLoop() bool                  { return n.a.isLoop() || n.b.isLoop() }
+func (n *BinOpNode) setVar(name string, value interface{}) {
+	n.a.setVar(name, value)
+	n.b.setVar(name, value)
+}
 
 func (n *BinOpNode) Run() {
 	val1 := <-n.aChan

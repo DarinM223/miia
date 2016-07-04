@@ -58,6 +58,11 @@ func (n *MultOpNode) isLoop() bool {
 	}
 	return isLoop
 }
+func (n *MultOpNode) setVar(name string, value interface{}) {
+	for _, node := range n.nodes {
+		node.setVar(name, value)
+	}
+}
 
 func (n *MultOpNode) Run() {
 	passUpCount := 0

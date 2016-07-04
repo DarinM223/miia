@@ -47,10 +47,11 @@ func NewSelectorNode(globals *Globals, gotoNode Node, selectors []Selector) *Sel
 	return selectorNode
 }
 
-func (n *SelectorNode) ID() int                       { return n.id }
-func (n *SelectorNode) Chan() chan Msg                { return n.inChan }
-func (n *SelectorNode) ParentChans() map[int]chan Msg { return n.parentChans }
-func (n *SelectorNode) isLoop() bool                  { return false }
+func (n *SelectorNode) ID() int                               { return n.id }
+func (n *SelectorNode) Chan() chan Msg                        { return n.inChan }
+func (n *SelectorNode) ParentChans() map[int]chan Msg         { return n.parentChans }
+func (n *SelectorNode) isLoop() bool                          { return false }
+func (n *SelectorNode) setVar(name string, value interface{}) {}
 
 func (n *SelectorNode) Run() {
 	msg := <-n.inChan

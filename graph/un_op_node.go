@@ -35,6 +35,9 @@ func (n *UnOpNode) ID() int                       { return n.id }
 func (n *UnOpNode) Chan() chan Msg                { return n.inChan }
 func (n *UnOpNode) ParentChans() map[int]chan Msg { return n.parentChans }
 func (n *UnOpNode) isLoop() bool                  { return n.node.isLoop() }
+func (n *UnOpNode) setVar(name string, value interface{}) {
+	n.node.setVar(name, value)
+}
 
 func (n *UnOpNode) Run() {
 	val := <-n.inChan

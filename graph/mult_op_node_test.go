@@ -76,7 +76,7 @@ func TestMultOpNodeIsLoop(t *testing.T) {
 	globals := NewGlobals()
 	valueNodes := make([]Node, 2)
 	valueNodes[0] = NewValueNode(globals, 2)
-	valueNodes[1] = NewForNode(globals, NewValueNode(globals, 3), NewValueNode(globals, 3))
+	valueNodes[1] = NewForNode(globals, "i", NewValueNode(globals, 3), NewValueNode(globals, 3))
 
 	multOpNode := NewMultOpNode(globals, tokens.AddToken, valueNodes)
 	if multOpNode.isLoop() == false {

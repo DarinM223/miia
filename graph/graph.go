@@ -39,4 +39,6 @@ type Node interface {
 
 	// isLoop is true if the node or any of the subnodes is a loop node.
 	isLoop() bool
+	// setVar traverses through the graph setting variable nodes.
+	setVar(name string, value interface{})
 }

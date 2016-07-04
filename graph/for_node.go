@@ -8,6 +8,7 @@ import "reflect"
 type ForNode struct {
 	id          int
 	subnodes    []Node
+	name        string
 	collection  Node
 	body        Node
 	inChan      chan Msg
@@ -15,7 +16,7 @@ type ForNode struct {
 	globals     *Globals
 }
 
-func NewForNode(globals *Globals, collection Node, body Node) *ForNode {
+func NewForNode(globals *Globals, name string, collection Node, body Node) *ForNode {
 	id := globals.GenerateID()
 	inChan := make(chan Msg, InChanSize)
 	// Listen for collection's result
@@ -23,6 +24,7 @@ func NewForNode(globals *Globals, collection Node, body Node) *ForNode {
 
 	forNode := &ForNode{
 		id:          id,
+		name:        name,
 		collection:  collection,
 		body:        body,
 		inChan:      inChan,
@@ -37,6 +39,10 @@ func (n *ForNode) ID() int                       { return n.id }
 func (n *ForNode) Chan() chan Msg                { return n.inChan }
 func (n *ForNode) ParentChans() map[int]chan Msg { return n.parentChans }
 func (n *ForNode) isLoop() bool                  { return true }
+func (n *ForNode) setVar(name string, value interface{}) {
+	n.collection.setVar(name, value)
+	n.body.setVar(name, value)
+}
 
 func (n *ForNode) Run() {
 	passUpCount := 0
@@ -79,16 +85,9 @@ func (n *ForNode) Run() {
 			if arr.Kind() == reflect.Array {
 				n.subnodes = make([]Node, arr.Len())
 				for i := 0; i < arr.Len(); i++ {
-					// TODO(DarinM223): need to clone the body node.
 					n.subnodes[i] = n.body.Clone(n.globals)
 					n.subnodes[i].ParentChans()[n.id] = n.inChan
-
-					n.subnodes[len(n.subnodes)-1].Chan() <- Msg{
-						ValueMsg,
-						n.id,
-						false,
-						arr.Index(i).Interface(),
-					}
+					n.subnodes[i].setVar(n.name, arr.Index(i).Interface())
 				}
 			}
 
@@ -110,7 +109,7 @@ func (n *ForNode) Run() {
 
 func (n *ForNode) Clone(globals *Globals) Node {
 	clonedCollection := n.collection.Clone(globals)
-	retNode := NewForNode(globals, clonedCollection, n.body)
+	retNode := NewForNode(globals, n.name, clonedCollection, n.body)
 	retNode.parentChans = n.parentChans
 	return retNode
 }
