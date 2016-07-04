@@ -12,21 +12,25 @@ type GotoNode struct {
 	parentChans map[int]chan Msg
 }
 
-func NewGotoNode(id int, url Node) *GotoNode {
+func NewGotoNode(globals *Globals, url Node) *GotoNode {
+	id := globals.GenerateID()
 	inChan := make(chan Msg, InChanSize)
 	url.ParentChans()[id] = inChan
-	return &GotoNode{
+
+	gotoNode := &GotoNode{
 		id:          id,
 		url:         url,
 		inChan:      inChan,
 		parentChans: make(map[int]chan Msg),
 	}
+	globals.RegisterNode(id, gotoNode)
+	return gotoNode
 }
 
 func (n *GotoNode) ID() int                       { return n.id }
 func (n *GotoNode) Chan() chan Msg                { return n.inChan }
 func (n *GotoNode) ParentChans() map[int]chan Msg { return n.parentChans }
-func (n *GotoNode) IsLoop() bool                  { return false }
+func (n *GotoNode) isLoop() bool                  { return false }
 
 func (n *GotoNode) Run() {
 	msg := <-n.inChan
@@ -49,9 +53,9 @@ func (n *GotoNode) Run() {
 	}
 }
 
-func (n *GotoNode) Clone() Node {
-	clonedURL := n.url.Clone()
-	retNode := NewGotoNode(n.id, clonedURL)
+func (n *GotoNode) Clone(globals *Globals) Node {
+	clonedURL := n.url.Clone(globals)
+	retNode := NewGotoNode(globals, clonedURL)
 	retNode.parentChans = n.parentChans
 	return retNode
 }

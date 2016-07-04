@@ -8,19 +8,22 @@ type ValueNode struct {
 	parentChans map[int]chan Msg
 }
 
-func NewValueNode(id int, value interface{}) *ValueNode {
-	return &ValueNode{
+func NewValueNode(globals *Globals, value interface{}) *ValueNode {
+	id := globals.GenerateID()
+	valueNode := &ValueNode{
 		id:          id,
 		value:       value,
 		inChan:      make(chan Msg, InChanSize),
 		parentChans: make(map[int]chan Msg),
 	}
+	globals.RegisterNode(id, valueNode)
+	return valueNode
 }
 
 func (n *ValueNode) ID() int                       { return n.id }
 func (n *ValueNode) Chan() chan Msg                { return n.inChan }
 func (n *ValueNode) ParentChans() map[int]chan Msg { return n.parentChans }
-func (n *ValueNode) IsLoop() bool                  { return false }
+func (n *ValueNode) isLoop() bool                  { return false }
 
 func (n *ValueNode) Run() {
 	data := Msg{ValueMsg, n.id, true, n.value}
@@ -29,6 +32,8 @@ func (n *ValueNode) Run() {
 	}
 }
 
-func (n *ValueNode) Clone() Node {
-	return NewValueNode(n.id, n.value)
+func (n *ValueNode) Clone(globals *Globals) Node {
+	valueNode := NewValueNode(globals, n.value)
+	valueNode.parentChans = n.parentChans
+	return valueNode
 }

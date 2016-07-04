@@ -17,12 +17,14 @@ type BinOpNode struct {
 	parentChans  map[int]chan Msg
 }
 
-func NewBinOpNode(id int, operator tokens.Token, a Node, b Node) *BinOpNode {
+func NewBinOpNode(globals *Globals, operator tokens.Token, a Node, b Node) *BinOpNode {
+	id := globals.GenerateID()
 	aChan := make(chan Msg, 1)
 	bChan := make(chan Msg, 1)
 	a.ParentChans()[id] = aChan
 	b.ParentChans()[id] = bChan
-	return &BinOpNode{
+
+	binOpNode := &BinOpNode{
 		id:          id,
 		operator:    operator,
 		aChan:       aChan,
@@ -31,12 +33,14 @@ func NewBinOpNode(id int, operator tokens.Token, a Node, b Node) *BinOpNode {
 		b:           b,
 		parentChans: make(map[int]chan Msg),
 	}
+	globals.RegisterNode(id, binOpNode)
+	return binOpNode
 }
 
 func (n *BinOpNode) ID() int                       { return n.id }
 func (n *BinOpNode) Chan() chan Msg                { return n.aChan }
 func (n *BinOpNode) ParentChans() map[int]chan Msg { return n.parentChans }
-func (n *BinOpNode) IsLoop() bool                  { return n.a.IsLoop() || n.b.IsLoop() }
+func (n *BinOpNode) isLoop() bool                  { return n.a.isLoop() || n.b.isLoop() }
 
 func (n *BinOpNode) Run() {
 	val1 := <-n.aChan
@@ -60,9 +64,9 @@ func (n *BinOpNode) Run() {
 	n.destroy()
 }
 
-func (n *BinOpNode) Clone() Node {
-	clonedA, clonedB := n.a.Clone(), n.b.Clone()
-	retNode := NewBinOpNode(n.id, n.operator, clonedA, clonedB)
+func (n *BinOpNode) Clone(globals *Globals) Node {
+	clonedA, clonedB := n.a.Clone(globals), n.b.Clone(globals)
+	retNode := NewBinOpNode(globals, n.operator, clonedA, clonedB)
 	retNode.parentChans = n.parentChans
 	return retNode
 }

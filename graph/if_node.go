@@ -19,7 +19,8 @@ type IfNode struct {
 	parentChans map[int]chan Msg
 }
 
-func NewIfNode(id int, pred Node, conseq Node, alt Node) *IfNode {
+func NewIfNode(globals *Globals, pred Node, conseq Node, alt Node) *IfNode {
+	id := globals.GenerateID()
 	inChan := make(chan Msg, InChanSize)
 	conseqChan := make(chan Msg, InChanSize)
 	altChan := make(chan Msg, InChanSize)
@@ -28,7 +29,7 @@ func NewIfNode(id int, pred Node, conseq Node, alt Node) *IfNode {
 	conseq.ParentChans()[id] = conseqChan
 	alt.ParentChans()[id] = altChan
 
-	return &IfNode{
+	ifNode := &IfNode{
 		id:          id,
 		pred:        pred,
 		conseq:      conseq,
@@ -38,12 +39,14 @@ func NewIfNode(id int, pred Node, conseq Node, alt Node) *IfNode {
 		altChan:     altChan,
 		parentChans: make(map[int]chan Msg),
 	}
+	globals.RegisterNode(id, ifNode)
+	return ifNode
 }
 
 func (n *IfNode) ID() int                       { return n.id }
 func (n *IfNode) Chan() chan Msg                { return n.inChan }
 func (n *IfNode) ParentChans() map[int]chan Msg { return n.parentChans }
-func (n *IfNode) IsLoop() bool                  { return n.pred.IsLoop() || n.conseq.IsLoop() || n.alt.IsLoop() }
+func (n *IfNode) isLoop() bool                  { return n.pred.isLoop() || n.conseq.isLoop() || n.alt.isLoop() }
 
 func (n *IfNode) Run() {
 	data := Msg{ErrMsg, n.id, true, IfPredicateErr}
@@ -63,9 +66,12 @@ func (n *IfNode) Run() {
 	}
 }
 
-func (n *IfNode) Clone() Node {
-	clonedPred, clonedConseq, clonedAlt := n.pred.Clone(), n.conseq.Clone(), n.alt.Clone()
-	retNode := NewIfNode(n.id, clonedPred, clonedConseq, clonedAlt)
+func (n *IfNode) Clone(globals *Globals) Node {
+	clonedPred := n.pred.Clone(globals)
+	clonedConseq := n.conseq.Clone(globals)
+	clonedAlt := n.alt.Clone(globals)
+
+	retNode := NewIfNode(globals, clonedPred, clonedConseq, clonedAlt)
 	retNode.parentChans = n.parentChans
 	return retNode
 }

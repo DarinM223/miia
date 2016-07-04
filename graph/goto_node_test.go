@@ -6,15 +6,15 @@ import (
 )
 
 func TestGotoNode(t *testing.T) {
+	globals := NewGlobals()
 	parentChan1, parentChan2 := make(chan Msg, InChanSize), make(chan Msg, InChanSize)
 
-	urlNode := NewValueNode(0, "http://www.google.com")
-	gotoNode := NewGotoNode(1, urlNode)
+	urlNode := NewValueNode(globals, "http://www.google.com")
+	gotoNode := NewGotoNode(globals, urlNode)
 	gotoNode.ParentChans()[2] = parentChan1
 	gotoNode.ParentChans()[3] = parentChan2
 
-	go urlNode.Run()
-	go gotoNode.Run()
+	globals.Run()
 
 	if msg, ok := <-parentChan1; ok {
 		if _, ok := msg.Data.(*http.Response); !ok {
@@ -34,14 +34,14 @@ func TestGotoNode(t *testing.T) {
 }
 
 func TestGotoNodeErrsOnNonString(t *testing.T) {
+	globals := NewGlobals()
 	parentChan := make(chan Msg, InChanSize)
 
-	urlNode := NewValueNode(0, 20)
-	gotoNode := NewGotoNode(1, urlNode)
+	urlNode := NewValueNode(globals, 20)
+	gotoNode := NewGotoNode(globals, urlNode)
 	gotoNode.ParentChans()[1] = parentChan
 
-	go urlNode.Run()
-	go gotoNode.Run()
+	globals.Run()
 
 	if msg, ok := <-parentChan; ok {
 		if msg.Type != ErrMsg {
@@ -53,14 +53,14 @@ func TestGotoNodeErrsOnNonString(t *testing.T) {
 }
 
 func TestGotoNodeErrsOnNonHTTP(t *testing.T) {
+	globals := NewGlobals()
 	parentChan := make(chan Msg, InChanSize)
 
-	urlNode := NewValueNode(0, "www.google.com")
-	gotoNode := NewGotoNode(1, urlNode)
+	urlNode := NewValueNode(globals, "www.google.com")
+	gotoNode := NewGotoNode(globals, urlNode)
 	gotoNode.ParentChans()[1] = parentChan
 
-	go urlNode.Run()
-	go gotoNode.Run()
+	globals.Run()
 
 	if msg, ok := <-parentChan; ok {
 		if msg.Type != ErrMsg {

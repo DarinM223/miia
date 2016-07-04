@@ -23,7 +23,8 @@ type MultOpNode struct {
 	idMap map[int]int
 }
 
-func NewMultOpNode(id int, operator tokens.Token, nodes []Node) *MultOpNode {
+func NewMultOpNode(globals *Globals, operator tokens.Token, nodes []Node) *MultOpNode {
+	id := globals.GenerateID()
 	inChan := make(chan Msg, len(nodes))
 	idMap := make(map[int]int, len(nodes))
 	for i, node := range nodes {
@@ -31,7 +32,7 @@ func NewMultOpNode(id int, operator tokens.Token, nodes []Node) *MultOpNode {
 		idMap[node.ID()] = i
 	}
 
-	return &MultOpNode{
+	multOpNode := &MultOpNode{
 		id:          id,
 		operator:    operator,
 		nodes:       nodes,
@@ -40,15 +41,17 @@ func NewMultOpNode(id int, operator tokens.Token, nodes []Node) *MultOpNode {
 		results:     make([]interface{}, len(nodes)),
 		idMap:       idMap,
 	}
+	globals.RegisterNode(id, multOpNode)
+	return multOpNode
 }
 
 func (n *MultOpNode) ID() int                       { return n.id }
 func (n *MultOpNode) Chan() chan Msg                { return n.inChan }
 func (n *MultOpNode) ParentChans() map[int]chan Msg { return n.parentChans }
-func (n *MultOpNode) IsLoop() bool {
+func (n *MultOpNode) isLoop() bool {
 	isLoop := false
 	for _, node := range n.nodes {
-		if node.IsLoop() {
+		if node.isLoop() {
 			isLoop = true
 			break
 		}
@@ -91,12 +94,12 @@ func (n *MultOpNode) Run() {
 	n.destroy()
 }
 
-func (n *MultOpNode) Clone() Node {
+func (n *MultOpNode) Clone(globals *Globals) Node {
 	clonedNodes := make([]Node, len(n.nodes))
 	for i := 0; i < len(clonedNodes); i++ {
-		clonedNodes[i] = n.nodes[i].Clone()
+		clonedNodes[i] = n.nodes[i].Clone(globals)
 	}
-	retNode := NewMultOpNode(n.id, n.operator, clonedNodes)
+	retNode := NewMultOpNode(globals, n.operator, clonedNodes)
 	retNode.parentChans = n.parentChans
 	return retNode
 }

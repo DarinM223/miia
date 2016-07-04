@@ -31,23 +31,26 @@ type SelectorNode struct {
 	parentChans map[int]chan Msg
 }
 
-func NewSelectorNode(id int, gotoNode Node, selectors []Selector) *SelectorNode {
+func NewSelectorNode(globals *Globals, gotoNode Node, selectors []Selector) *SelectorNode {
+	id := globals.GenerateID()
 	inChan := make(chan Msg, InChanSize)
 	gotoNode.ParentChans()[id] = inChan
 
-	return &SelectorNode{
+	selectorNode := &SelectorNode{
 		id:          id,
 		selectors:   selectors,
 		gotoNode:    gotoNode,
 		inChan:      inChan,
 		parentChans: make(map[int]chan Msg),
 	}
+	globals.RegisterNode(id, selectorNode)
+	return selectorNode
 }
 
 func (n *SelectorNode) ID() int                       { return n.id }
 func (n *SelectorNode) Chan() chan Msg                { return n.inChan }
 func (n *SelectorNode) ParentChans() map[int]chan Msg { return n.parentChans }
-func (n *SelectorNode) IsLoop() bool                  { return false }
+func (n *SelectorNode) isLoop() bool                  { return false }
 
 func (n *SelectorNode) Run() {
 	msg := <-n.inChan
@@ -77,8 +80,8 @@ func (n *SelectorNode) Run() {
 	n.destroy()
 }
 
-func (n *SelectorNode) Clone() Node {
-	retNode := NewSelectorNode(n.id, n.gotoNode, n.selectors)
+func (n *SelectorNode) Clone(globals *Globals) Node {
+	retNode := NewSelectorNode(globals, n.gotoNode, n.selectors)
 	retNode.parentChans = n.parentChans
 	return retNode
 }

@@ -34,8 +34,9 @@ type Node interface {
 	Chan() chan Msg
 	// ParentChans is a map of parent ids to parent input channels.
 	ParentChans() map[int]chan Msg
-	// IsLoop is true if the node or any of the subnodes is a loop node.
-	IsLoop() bool
 	// Clone returns a cloned Node.
-	Clone() Node
+	Clone(*Globals) Node
+
+	// isLoop is true if the node or any of the subnodes is a loop node.
+	isLoop() bool
 }

@@ -40,21 +40,19 @@ var multOpNodeTests = []struct {
 
 func TestMultOpNode(t *testing.T) {
 	for _, test := range multOpNodeTests {
+		globals := NewGlobals()
 		valuesNodes := make([]Node, len(test.values))
 		for i, value := range test.values {
-			valuesNodes[i] = NewValueNode(i, value)
+			valuesNodes[i] = NewValueNode(globals, value)
 		}
 
-		multOpNode := NewMultOpNode(len(test.values), test.op, valuesNodes)
+		multOpNode := NewMultOpNode(globals, test.op, valuesNodes)
 
 		parentChan1, parentChan2 := make(chan Msg, InChanSize), make(chan Msg, InChanSize)
 		multOpNode.ParentChans()[len(test.values)+1] = parentChan1
 		multOpNode.ParentChans()[len(test.values)+2] = parentChan2
 
-		go multOpNode.Run()
-		for _, valueNode := range valuesNodes {
-			go valueNode.Run()
-		}
+		globals.Run()
 
 		if msg, ok := <-parentChan1; ok {
 			if !reflect.DeepEqual(msg, test.expected) {
@@ -75,19 +73,20 @@ func TestMultOpNode(t *testing.T) {
 }
 
 func TestMultOpNodeIsLoop(t *testing.T) {
+	globals := NewGlobals()
 	valueNodes := make([]Node, 2)
-	valueNodes[0] = NewValueNode(0, 2)
-	valueNodes[1] = NewForNode(1, NewValueNode(2, 3), NewValueNode(3, 3))
+	valueNodes[0] = NewValueNode(globals, 2)
+	valueNodes[1] = NewForNode(globals, NewValueNode(globals, 3), NewValueNode(globals, 3))
 
-	multOpNode := NewMultOpNode(4, tokens.AddToken, valueNodes)
-	if multOpNode.IsLoop() == false {
-		t.Errorf("MultOp node with for loop node has IsLoop() return false instead of true")
+	multOpNode := NewMultOpNode(globals, tokens.AddToken, valueNodes)
+	if multOpNode.isLoop() == false {
+		t.Errorf("MultOp node with for loop node has isLoop() return false instead of true")
 	}
 
-	valueNodes[1] = NewValueNode(5, 3)
+	valueNodes[1] = NewValueNode(globals, 3)
 
-	multOpNode2 := NewMultOpNode(4, tokens.AddToken, valueNodes)
-	if multOpNode2.IsLoop() == true {
-		t.Errorf("MultOp node without for loop node has IsLoop() return true instead of false")
+	multOpNode2 := NewMultOpNode(globals, tokens.AddToken, valueNodes)
+	if multOpNode2.isLoop() == true {
+		t.Errorf("MultOp node without for loop node has isLoop() return true instead of false")
 	}
 }

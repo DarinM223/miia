@@ -15,22 +15,26 @@ type UnOpNode struct {
 	parentChans map[int]chan Msg
 }
 
-func NewUnOpNode(id int, operator tokens.Token, node Node) *UnOpNode {
+func NewUnOpNode(globals *Globals, operator tokens.Token, node Node) *UnOpNode {
+	id := globals.GenerateID()
 	inChan := make(chan Msg, 1)
 	node.ParentChans()[id] = inChan
-	return &UnOpNode{
+
+	unOpNode := &UnOpNode{
 		id:          id,
 		operator:    operator,
 		inChan:      inChan,
 		node:        node,
 		parentChans: make(map[int]chan Msg),
 	}
+	globals.RegisterNode(id, unOpNode)
+	return unOpNode
 }
 
 func (n *UnOpNode) ID() int                       { return n.id }
 func (n *UnOpNode) Chan() chan Msg                { return n.inChan }
 func (n *UnOpNode) ParentChans() map[int]chan Msg { return n.parentChans }
-func (n *UnOpNode) IsLoop() bool                  { return n.node.IsLoop() }
+func (n *UnOpNode) isLoop() bool                  { return n.node.isLoop() }
 
 func (n *UnOpNode) Run() {
 	val := <-n.inChan
@@ -53,9 +57,9 @@ func (n *UnOpNode) Run() {
 	n.destroy()
 }
 
-func (n *UnOpNode) Clone() Node {
-	clonedNode := n.node.Clone()
-	retNode := NewUnOpNode(n.id, n.operator, clonedNode)
+func (n *UnOpNode) Clone(globals *Globals) Node {
+	clonedNode := n.node.Clone(globals)
+	retNode := NewUnOpNode(globals, n.operator, clonedNode)
 	retNode.parentChans = n.parentChans
 	return retNode
 }
