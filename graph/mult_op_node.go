@@ -104,9 +104,7 @@ func (n *MultOpNode) Clone(globals *Globals) Node {
 	for i := 0; i < len(clonedNodes); i++ {
 		clonedNodes[i] = n.nodes[i].Clone(globals)
 	}
-	retNode := NewMultOpNode(globals, n.operator, clonedNodes)
-	retNode.parentChans = n.parentChans
-	return retNode
+	return NewMultOpNode(globals, n.operator, clonedNodes)
 }
 
 func (n *MultOpNode) destroy() {

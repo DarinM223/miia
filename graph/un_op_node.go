@@ -62,9 +62,7 @@ func (n *UnOpNode) Run() {
 
 func (n *UnOpNode) Clone(globals *Globals) Node {
 	clonedNode := n.node.Clone(globals)
-	retNode := NewUnOpNode(globals, n.operator, clonedNode)
-	retNode.parentChans = n.parentChans
-	return retNode
+	return NewUnOpNode(globals, n.operator, clonedNode)
 }
 
 func (n *UnOpNode) destroy() {

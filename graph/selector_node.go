@@ -82,9 +82,7 @@ func (n *SelectorNode) Run() {
 }
 
 func (n *SelectorNode) Clone(globals *Globals) Node {
-	retNode := NewSelectorNode(globals, n.gotoNode, n.selectors)
-	retNode.parentChans = n.parentChans
-	return retNode
+	return NewSelectorNode(globals, n.gotoNode, n.selectors)
 }
 
 func (n *SelectorNode) destroy() {

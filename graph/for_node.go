@@ -6,30 +6,32 @@ import "reflect"
 // passes up values as they are passed up from the subnodes
 // into the body node.
 type ForNode struct {
-	id          int
-	subnodes    []Node
-	name        string
-	collection  Node
-	body        Node
-	inChan      chan Msg
-	parentChans map[int]chan Msg
-	globals     *Globals
+	id             int
+	subnodes       []Node
+	name           string
+	collection     Node
+	body           Node
+	inChan         chan Msg
+	collectionChan chan Msg
+	parentChans    map[int]chan Msg
+	globals        *Globals
 }
 
 func NewForNode(globals *Globals, name string, collection Node, body Node) *ForNode {
 	id := globals.GenerateID()
-	inChan := make(chan Msg, InChanSize)
+	collectionChan := make(chan Msg, InChanSize)
 	// Listen for collection's result
-	collection.ParentChans()[id] = inChan
+	collection.ParentChans()[id] = collectionChan
 
 	forNode := &ForNode{
-		id:          id,
-		name:        name,
-		collection:  collection,
-		body:        body,
-		inChan:      inChan,
-		parentChans: make(map[int]chan Msg),
-		globals:     globals,
+		id:             id,
+		name:           name,
+		collection:     collection,
+		body:           body,
+		inChan:         nil,
+		collectionChan: collectionChan,
+		parentChans:    make(map[int]chan Msg),
+		globals:        globals,
 	}
 	globals.RegisterNode(id, forNode)
 	return forNode
@@ -45,73 +47,58 @@ func (n *ForNode) setVar(name string, value interface{}) {
 }
 
 func (n *ForNode) Run() {
-	passUpCount := 0
-
 	isLoop := n.body.isLoop() // true if the node's body contains a loop node
-	msgReceived := false      // true if the for loop received the collection
 	currNode := 0             // the index of the current node if the for loop is sequential
+	collectionMsg := <-n.collectionChan
 
-	for {
+	// TODO(DarinM223): refactor globals so that it can arbitrarily start up nodes and their dependencies
+	// instead of creating a new globals object.
+	globals := NewGlobals()
+
+	// On receiving an array, allocate the subnodes
+	arr := reflect.ValueOf(collectionMsg.Data)
+	if arr.Kind() == reflect.Array || arr.Kind() == reflect.Slice {
+		n.subnodes = make([]Node, arr.Len())
+		n.inChan = make(chan Msg, arr.Len())
+		for i := 0; i < arr.Len(); i++ {
+			n.subnodes[i] = n.body.Clone(globals)
+			n.subnodes[i].ParentChans()[n.id] = n.inChan
+			n.subnodes[i].setVar(n.name, arr.Index(i).Interface())
+		}
+	} else {
+		panic("Invalid array type")
+	}
+
+	// Check if the body node is a loop node.
+	// If it is, then run each subnode and listen for input sequentially,
+	// otherwise run all of the subnodes in parallel and listen for all of them.
+	if !isLoop {
+		globals.Run()
+	}
+
+	for passUpCount := 0; passUpCount < len(n.subnodes); passUpCount++ {
 		msg := <-n.inChan
 
 		// If sequential run the next node.
-		if isLoop && msgReceived {
+		// TODO(DarinM223): this doesn't work because it doesn't start the subnodes.
+		if isLoop {
 			currNode++
 			if currNode < len(n.subnodes) {
 				go n.subnodes[currNode].Run()
 			}
 		}
 
-		if msg.Type == QuitMsg {
-			// Send the quit message to all of the subnodes.
-			for _, subnode := range n.subnodes {
-				subnode.Chan() <- msg
-			}
-			n.destroy()
-			break
-		} else if msg.PassUp {
-			// Send the message to all of the parent nodes.
-			for _, parent := range n.parentChans {
-				parent <- msg
-			}
-			passUpCount++
-			if passUpCount >= len(n.subnodes) {
-				n.destroy()
-				break
-			}
-		} else if !msgReceived {
-			// On receiving an array, allocate the subnodes
-			arr := reflect.ValueOf(msg.Data)
-			if arr.Kind() == reflect.Array {
-				n.subnodes = make([]Node, arr.Len())
-				for i := 0; i < arr.Len(); i++ {
-					n.subnodes[i] = n.body.Clone(n.globals)
-					n.subnodes[i].ParentChans()[n.id] = n.inChan
-					n.subnodes[i].setVar(n.name, arr.Index(i).Interface())
-				}
-			}
-
-			msgReceived = true
-
-			// Check if the body node is a loop node.
-			// If it is, then run each subnode and listen for input sequentially,
-			// otherwise run all of the subnodes in parallel and listen for all of them.
-			if !isLoop {
-				for _, node := range n.subnodes {
-					go node.Run()
-				}
-			} else if len(n.subnodes) > 0 {
-				go n.subnodes[currNode].Run()
-			}
+		for _, parent := range n.parentChans {
+			parent <- msg
 		}
 	}
+
+	n.destroy()
 }
 
 func (n *ForNode) Clone(globals *Globals) Node {
 	clonedCollection := n.collection.Clone(globals)
-	retNode := NewForNode(globals, n.name, clonedCollection, n.body)
-	retNode.parentChans = n.parentChans
-	return retNode
+	return NewForNode(globals, n.name, clonedCollection, n.body)
 }
 
 func (n *ForNode) destroy() {

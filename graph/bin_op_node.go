@@ -70,9 +70,7 @@ func (n *BinOpNode) Run() {
 
 func (n *BinOpNode) Clone(globals *Globals) Node {
 	clonedA, clonedB := n.a.Clone(globals), n.b.Clone(globals)
-	retNode := NewBinOpNode(globals, n.operator, clonedA, clonedB)
-	retNode.parentChans = n.parentChans
-	return retNode
+	return NewBinOpNode(globals, n.operator, clonedA, clonedB)
 }
 
 func (n *BinOpNode) destroy() {

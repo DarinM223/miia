@@ -34,7 +34,5 @@ func (n *ValueNode) Run() {
 }
 
 func (n *ValueNode) Clone(globals *Globals) Node {
-	valueNode := NewValueNode(globals, n.value)
-	valueNode.parentChans = n.parentChans
-	return valueNode
+	return NewValueNode(globals, n.value)
 }

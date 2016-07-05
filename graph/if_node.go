@@ -76,7 +76,5 @@ func (n *IfNode) Clone(globals *Globals) Node {
 	clonedConseq := n.conseq.Clone(globals)
 	clonedAlt := n.alt.Clone(globals)
 
-	retNode := NewIfNode(globals, clonedPred, clonedConseq, clonedAlt)
-	retNode.parentChans = n.parentChans
-	return retNode
+	return NewIfNode(globals, clonedPred, clonedConseq, clonedAlt)
 }

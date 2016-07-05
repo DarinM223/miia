@@ -58,7 +58,5 @@ func (n *GotoNode) Run() {
 
 func (n *GotoNode) Clone(globals *Globals) Node {
 	clonedURL := n.url.Clone(globals)
-	retNode := NewGotoNode(globals, clonedURL)
-	retNode.parentChans = n.parentChans
-	return retNode
+	return NewGotoNode(globals, clonedURL)
 }

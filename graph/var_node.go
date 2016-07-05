@@ -39,7 +39,5 @@ func (n *VarNode) Run() {
 }
 
 func (n *VarNode) Clone(globals *Globals) Node {
-	varNode := NewVarNode(globals, n.name)
-	varNode.parentChans = n.parentChans
-	return varNode
+	return NewVarNode(globals, n.name)
 }
