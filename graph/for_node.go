@@ -41,13 +41,16 @@ func (n *ForNode) ID() int                       { return n.id }
 func (n *ForNode) Chan() chan Msg                { return n.inChan }
 func (n *ForNode) ParentChans() map[int]chan Msg { return n.parentChans }
 func (n *ForNode) Dependencies() []Node          { return []Node{n.collection, n.body} }
+func (n *ForNode) Clone(g *Globals) Node         { return NewForNode(g, n.name, n.collection.Clone(g), n.body) }
 
 func (n *ForNode) Run() {
 	defer destroyNode(n)
 
-	isLoop := IsLoop(n.body) // true if the node's body contains a loop node
-	currNode := 0            // the index of the current node if the for loop is sequential
+	isLoop := ContainsLoopNode(n.body) // true if the node's body contains a loop node
+	currNode := 0                      // the index of the current node if the for loop is sequential
 	collectionMsg := <-n.collectionChan
+
+	// TODO(DarinM223): check if message type is a value or a stream.
 
 	// On receiving an array, allocate the subnodes
 	arr := reflect.ValueOf(collectionMsg.Data)
@@ -57,7 +60,7 @@ func (n *ForNode) Run() {
 		for i := 0; i < arr.Len(); i++ {
 			n.subnodes[i] = n.body.Clone(n.globals)
 			n.subnodes[i].ParentChans()[n.id] = n.inChan
-			SetVar(n.subnodes[i], n.name, arr.Index(i).Interface())
+			SetVarNodes(n.subnodes[i], n.name, arr.Index(i).Interface())
 		}
 	} else {
 		panic("Invalid array type")
@@ -84,12 +87,7 @@ func (n *ForNode) Run() {
 		}
 
 		for _, parent := range n.parentChans {
-			parent <- msg
+			parent <- Msg{StreamMsg, n.id, true, msg.Data}
 		}
 	}
-}
-
-func (n *ForNode) Clone(globals *Globals) Node {
-	clonedCollection := n.collection.Clone(globals)
-	return NewForNode(globals, n.name, clonedCollection, n.body)
 }

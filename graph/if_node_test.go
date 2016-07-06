@@ -57,6 +57,3 @@ func TestIfNode(t *testing.T) {
 		}
 	}
 }
-
-func TestIfNodeIsLoop(t *testing.T) {
-}

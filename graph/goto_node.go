@@ -31,6 +31,7 @@ func (n *GotoNode) ID() int                       { return n.id }
 func (n *GotoNode) Chan() chan Msg                { return n.inChan }
 func (n *GotoNode) ParentChans() map[int]chan Msg { return n.parentChans }
 func (n *GotoNode) Dependencies() []Node          { return []Node{n.url} }
+func (n *GotoNode) Clone(g *Globals) Node         { return NewGotoNode(g, n.url.Clone(g)) }
 
 func (n *GotoNode) Run() {
 	defer destroyNode(n)
@@ -53,9 +54,4 @@ func (n *GotoNode) Run() {
 	for _, parent := range n.parentChans {
 		parent <- data
 	}
-}
-
-func (n *GotoNode) Clone(globals *Globals) Node {
-	clonedURL := n.url.Clone(globals)
-	return NewGotoNode(globals, clonedURL)
 }

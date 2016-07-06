@@ -65,9 +65,8 @@ func (n *BinOpNode) Run() {
 	}
 }
 
-func (n *BinOpNode) Clone(globals *Globals) Node {
-	clonedA, clonedB := n.a.Clone(globals), n.b.Clone(globals)
-	return NewBinOpNode(globals, n.operator, clonedA, clonedB)
+func (n *BinOpNode) Clone(g *Globals) Node {
+	return NewBinOpNode(g, n.operator, n.a.Clone(g), n.b.Clone(g))
 }
 
 func applyBinOp(a interface{}, b interface{}, op tokens.Token) (interface{}, error) {

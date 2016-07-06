@@ -51,6 +51,7 @@ func (n *SelectorNode) ID() int                       { return n.id }
 func (n *SelectorNode) Chan() chan Msg                { return n.inChan }
 func (n *SelectorNode) ParentChans() map[int]chan Msg { return n.parentChans }
 func (n *SelectorNode) Dependencies() []Node          { return nil }
+func (n *SelectorNode) Clone(g *Globals) Node         { return NewSelectorNode(g, n.gotoNode, n.selectors) }
 
 func (n *SelectorNode) Run() {
 	defer n.destroy()
@@ -78,10 +79,6 @@ func (n *SelectorNode) Run() {
 	for _, parent := range n.parentChans {
 		parent <- data
 	}
-}
-
-func (n *SelectorNode) Clone(globals *Globals) Node {
-	return NewSelectorNode(globals, n.gotoNode, n.selectors)
 }
 
 func (n *SelectorNode) destroy() {

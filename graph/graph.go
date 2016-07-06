@@ -5,6 +5,7 @@ type MsgType int
 const (
 	QuitMsg MsgType = iota
 	ValueMsg
+	StreamMsg
 	ErrMsg
 )
 
@@ -40,9 +41,9 @@ type Node interface {
 	Dependencies() []Node
 }
 
-// IsLoop returns true if a node is a loop node or
+// ContainsLoopNode returns true if a node is a loop node or
 // depends on a loop node and false otherwise.
-func IsLoop(node Node) bool {
+func ContainsLoopNode(node Node) bool {
 	var queue []Node
 	queue = append(queue, node)
 
@@ -61,8 +62,8 @@ func IsLoop(node Node) bool {
 	return false
 }
 
-// SetVar traverses the graph setting variable nodes.
-func SetVar(node Node, name string, value interface{}) {
+// SetVarNodes traverses the graph setting variable nodes.
+func SetVarNodes(node Node, name string, value interface{}) {
 	var queue []Node
 	queue = append(queue, node)
 

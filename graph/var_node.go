@@ -23,6 +23,7 @@ func (n *VarNode) ID() int                       { return n.id }
 func (n *VarNode) Chan() chan Msg                { return n.inChan }
 func (n *VarNode) ParentChans() map[int]chan Msg { return n.parentChans }
 func (n *VarNode) Dependencies() []Node          { return nil }
+func (n *VarNode) Clone(globals *Globals) Node   { return NewVarNode(globals, n.name) }
 
 func (n *VarNode) Run() {
 	msg := <-n.inChan
@@ -31,8 +32,4 @@ func (n *VarNode) Run() {
 			parent <- msg
 		}
 	}
-}
-
-func (n *VarNode) Clone(globals *Globals) Node {
-	return NewVarNode(globals, n.name)
 }
