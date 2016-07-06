@@ -43,7 +43,7 @@ func (n *BinOpNode) ParentChans() map[int]chan Msg { return n.parentChans }
 func (n *BinOpNode) Dependencies() []Node          { return []Node{n.a, n.b} }
 
 func (n *BinOpNode) Run() {
-	defer n.destroy()
+	defer destroyNode(n)
 
 	val1 := <-n.aChan
 	val2 := <-n.bChan
@@ -68,11 +68,6 @@ func (n *BinOpNode) Run() {
 func (n *BinOpNode) Clone(globals *Globals) Node {
 	clonedA, clonedB := n.a.Clone(globals), n.b.Clone(globals)
 	return NewBinOpNode(globals, n.operator, clonedA, clonedB)
-}
-
-func (n *BinOpNode) destroy() {
-	delete(n.a.ParentChans(), n.id)
-	delete(n.b.ParentChans(), n.id)
 }
 
 func applyBinOp(a interface{}, b interface{}, op tokens.Token) (interface{}, error) {

@@ -33,6 +33,8 @@ func (n *GotoNode) ParentChans() map[int]chan Msg { return n.parentChans }
 func (n *GotoNode) Dependencies() []Node          { return []Node{n.url} }
 
 func (n *GotoNode) Run() {
+	defer destroyNode(n)
+
 	msg := <-n.inChan
 	if msg.Type == QuitMsg {
 		return

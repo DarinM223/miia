@@ -79,3 +79,30 @@ func SetVar(node Node, name string, value interface{}) {
 		}
 	}
 }
+
+// startNode starts a node and its dependencies.
+// Only to be used when a node is created dynamically
+// and needs to be started after the other nodes.
+func startNode(globals *Globals, node Node) {
+	var queue []Node
+	queue = append(queue, node)
+
+	for len(queue) > 0 {
+		n := queue[0]
+		queue = queue[1:]
+
+		go n.Run()
+
+		for _, dep := range n.Dependencies() {
+			queue = append(queue, dep)
+		}
+	}
+}
+
+// destroyNode is called when a node is destroyed
+// so that it can remove itself from its dependencies.
+func destroyNode(node Node) {
+	for _, dep := range node.Dependencies() {
+		delete(dep.ParentChans(), node.ID())
+	}
+}

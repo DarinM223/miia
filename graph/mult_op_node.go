@@ -51,7 +51,7 @@ func (n *MultOpNode) ParentChans() map[int]chan Msg { return n.parentChans }
 func (n *MultOpNode) Dependencies() []Node          { return n.nodes }
 
 func (n *MultOpNode) Run() {
-	defer n.destroy()
+	defer destroyNode(n)
 
 	passUpCount := 0
 	for {
@@ -91,12 +91,6 @@ func (n *MultOpNode) Clone(globals *Globals) Node {
 		clonedNodes[i] = n.nodes[i].Clone(globals)
 	}
 	return NewMultOpNode(globals, n.operator, clonedNodes)
-}
-
-func (n *MultOpNode) destroy() {
-	for _, node := range n.nodes {
-		delete(node.ParentChans(), n.id)
-	}
 }
 
 func applyMultOp(data []interface{}, op tokens.Token) (interface{}, error) {

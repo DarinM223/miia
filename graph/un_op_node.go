@@ -37,7 +37,7 @@ func (n *UnOpNode) ParentChans() map[int]chan Msg { return n.parentChans }
 func (n *UnOpNode) Dependencies() []Node          { return []Node{n.node} }
 
 func (n *UnOpNode) Run() {
-	defer n.destroy()
+	defer destroyNode(n)
 
 	val := <-n.inChan
 
@@ -61,8 +61,4 @@ func (n *UnOpNode) Run() {
 func (n *UnOpNode) Clone(globals *Globals) Node {
 	clonedNode := n.node.Clone(globals)
 	return NewUnOpNode(globals, n.operator, clonedNode)
-}
-
-func (n *UnOpNode) destroy() {
-	delete(n.node.ParentChans(), n.id)
 }

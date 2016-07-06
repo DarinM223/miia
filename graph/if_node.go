@@ -49,6 +49,8 @@ func (n *IfNode) ParentChans() map[int]chan Msg { return n.parentChans }
 func (n *IfNode) Dependencies() []Node          { return []Node{n.pred, n.conseq, n.alt} }
 
 func (n *IfNode) Run() {
+	defer destroyNode(n)
+
 	data := Msg{ErrMsg, n.id, true, IfPredicateErr}
 
 	msg := <-n.inChan

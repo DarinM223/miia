@@ -43,15 +43,11 @@ func (n *ForNode) ParentChans() map[int]chan Msg { return n.parentChans }
 func (n *ForNode) Dependencies() []Node          { return []Node{n.collection, n.body} }
 
 func (n *ForNode) Run() {
-	defer n.destroy()
+	defer destroyNode(n)
 
 	isLoop := IsLoop(n.body) // true if the node's body contains a loop node
 	currNode := 0            // the index of the current node if the for loop is sequential
 	collectionMsg := <-n.collectionChan
-
-	// TODO(DarinM223): refactor globals so that it can arbitrarily start up nodes and their dependencies
-	// instead of creating a new globals object.
-	globals := NewGlobals()
 
 	// On receiving an array, allocate the subnodes
 	arr := reflect.ValueOf(collectionMsg.Data)
@@ -59,7 +55,7 @@ func (n *ForNode) Run() {
 		n.subnodes = make([]Node, arr.Len())
 		n.inChan = make(chan Msg, arr.Len())
 		for i := 0; i < arr.Len(); i++ {
-			n.subnodes[i] = n.body.Clone(globals)
+			n.subnodes[i] = n.body.Clone(n.globals)
 			n.subnodes[i].ParentChans()[n.id] = n.inChan
 			SetVar(n.subnodes[i], n.name, arr.Index(i).Interface())
 		}
@@ -71,18 +67,19 @@ func (n *ForNode) Run() {
 	// If it is, then run each subnode and listen for input sequentially,
 	// otherwise run all of the subnodes in parallel and listen for all of them.
 	if !isLoop {
-		globals.Run()
+		for _, node := range n.subnodes {
+			startNode(n.globals, node)
+		}
 	}
 
 	for passUpCount := 0; passUpCount < len(n.subnodes); passUpCount++ {
 		msg := <-n.inChan
 
 		// If sequential run the next node.
-		// TODO(DarinM223): this doesn't work because it doesn't start the subnodes.
 		if isLoop {
 			currNode++
 			if currNode < len(n.subnodes) {
-				go n.subnodes[currNode].Run()
+				startNode(n.globals, n.subnodes[currNode])
 			}
 		}
 
@@ -95,10 +92,4 @@ func (n *ForNode) Run() {
 func (n *ForNode) Clone(globals *Globals) Node {
 	clonedCollection := n.collection.Clone(globals)
 	return NewForNode(globals, n.name, clonedCollection, n.body)
-}
-
-func (n *ForNode) destroy() {
-	for _, node := range n.subnodes {
-		delete(node.ParentChans(), n.id)
-	}
 }
