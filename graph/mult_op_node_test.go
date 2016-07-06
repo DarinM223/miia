@@ -79,14 +79,14 @@ func TestMultOpNodeIsLoop(t *testing.T) {
 	valueNodes[1] = NewForNode(globals, "i", NewValueNode(globals, 3), NewValueNode(globals, 3))
 
 	multOpNode := NewMultOpNode(globals, tokens.AddToken, valueNodes)
-	if multOpNode.isLoop() == false {
-		t.Errorf("MultOp node with for loop node has isLoop() return false instead of true")
+	if IsLoop(multOpNode) == false {
+		t.Errorf("MultOp node with for loop node has IsLoop() return false instead of true")
 	}
 
 	valueNodes[1] = NewValueNode(globals, 3)
 
 	multOpNode2 := NewMultOpNode(globals, tokens.AddToken, valueNodes)
-	if multOpNode2.isLoop() == true {
-		t.Errorf("MultOp node without for loop node has isLoop() return true instead of false")
+	if IsLoop(multOpNode2) == true {
+		t.Errorf("MultOp node without for loop node has IsLoop() return true instead of false")
 	}
 }

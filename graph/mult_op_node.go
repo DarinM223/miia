@@ -48,23 +48,11 @@ func NewMultOpNode(globals *Globals, operator tokens.Token, nodes []Node) *MultO
 func (n *MultOpNode) ID() int                       { return n.id }
 func (n *MultOpNode) Chan() chan Msg                { return n.inChan }
 func (n *MultOpNode) ParentChans() map[int]chan Msg { return n.parentChans }
-func (n *MultOpNode) isLoop() bool {
-	isLoop := false
-	for _, node := range n.nodes {
-		if node.isLoop() {
-			isLoop = true
-			break
-		}
-	}
-	return isLoop
-}
-func (n *MultOpNode) setVar(name string, value interface{}) {
-	for _, node := range n.nodes {
-		node.setVar(name, value)
-	}
-}
+func (n *MultOpNode) Dependencies() []Node          { return n.nodes }
 
 func (n *MultOpNode) Run() {
+	defer n.destroy()
+
 	passUpCount := 0
 	for {
 		msg := <-n.inChan
@@ -72,7 +60,6 @@ func (n *MultOpNode) Run() {
 			for _, node := range n.nodes {
 				node.Chan() <- msg
 			}
-			n.destroy()
 			return
 		} else if msg.PassUp {
 			// Store the result and break when all the nodes have finished.
@@ -96,7 +83,6 @@ func (n *MultOpNode) Run() {
 	for _, parent := range n.parentChans {
 		parent <- msg
 	}
-	n.destroy()
 }
 
 func (n *MultOpNode) Clone(globals *Globals) Node {

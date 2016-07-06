@@ -40,15 +40,13 @@ func NewForNode(globals *Globals, name string, collection Node, body Node) *ForN
 func (n *ForNode) ID() int                       { return n.id }
 func (n *ForNode) Chan() chan Msg                { return n.inChan }
 func (n *ForNode) ParentChans() map[int]chan Msg { return n.parentChans }
-func (n *ForNode) isLoop() bool                  { return true }
-func (n *ForNode) setVar(name string, value interface{}) {
-	n.collection.setVar(name, value)
-	n.body.setVar(name, value)
-}
+func (n *ForNode) Dependencies() []Node          { return []Node{n.collection, n.body} }
 
 func (n *ForNode) Run() {
-	isLoop := n.body.isLoop() // true if the node's body contains a loop node
-	currNode := 0             // the index of the current node if the for loop is sequential
+	defer n.destroy()
+
+	isLoop := IsLoop(n.body) // true if the node's body contains a loop node
+	currNode := 0            // the index of the current node if the for loop is sequential
 	collectionMsg := <-n.collectionChan
 
 	// TODO(DarinM223): refactor globals so that it can arbitrarily start up nodes and their dependencies
@@ -63,7 +61,7 @@ func (n *ForNode) Run() {
 		for i := 0; i < arr.Len(); i++ {
 			n.subnodes[i] = n.body.Clone(globals)
 			n.subnodes[i].ParentChans()[n.id] = n.inChan
-			n.subnodes[i].setVar(n.name, arr.Index(i).Interface())
+			SetVar(n.subnodes[i], n.name, arr.Index(i).Interface())
 		}
 	} else {
 		panic("Invalid array type")
@@ -92,8 +90,6 @@ func (n *ForNode) Run() {
 			parent <- msg
 		}
 	}
-
-	n.destroy()
 }
 
 func (n *ForNode) Clone(globals *Globals) Node {

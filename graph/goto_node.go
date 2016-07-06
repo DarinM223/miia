@@ -30,10 +30,7 @@ func NewGotoNode(globals *Globals, url Node) *GotoNode {
 func (n *GotoNode) ID() int                       { return n.id }
 func (n *GotoNode) Chan() chan Msg                { return n.inChan }
 func (n *GotoNode) ParentChans() map[int]chan Msg { return n.parentChans }
-func (n *GotoNode) isLoop() bool                  { return false }
-func (n *GotoNode) setVar(name string, value interface{}) {
-	n.url.setVar(name, value)
-}
+func (n *GotoNode) Dependencies() []Node          { return []Node{n.url} }
 
 func (n *GotoNode) Run() {
 	msg := <-n.inChan

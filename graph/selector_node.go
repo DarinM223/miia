@@ -47,13 +47,14 @@ func NewSelectorNode(globals *Globals, gotoNode Node, selectors []Selector) *Sel
 	return selectorNode
 }
 
-func (n *SelectorNode) ID() int                               { return n.id }
-func (n *SelectorNode) Chan() chan Msg                        { return n.inChan }
-func (n *SelectorNode) ParentChans() map[int]chan Msg         { return n.parentChans }
-func (n *SelectorNode) isLoop() bool                          { return false }
-func (n *SelectorNode) setVar(name string, value interface{}) {}
+func (n *SelectorNode) ID() int                       { return n.id }
+func (n *SelectorNode) Chan() chan Msg                { return n.inChan }
+func (n *SelectorNode) ParentChans() map[int]chan Msg { return n.parentChans }
+func (n *SelectorNode) Dependencies() []Node          { return nil }
 
 func (n *SelectorNode) Run() {
+	defer n.destroy()
+
 	msg := <-n.inChan
 	if msg.Type == QuitMsg {
 		return
@@ -77,8 +78,6 @@ func (n *SelectorNode) Run() {
 	for _, parent := range n.parentChans {
 		parent <- data
 	}
-
-	n.destroy()
 }
 
 func (n *SelectorNode) Clone(globals *Globals) Node {

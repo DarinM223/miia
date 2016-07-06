@@ -22,12 +22,7 @@ func NewVarNode(globals *Globals, name string) *VarNode {
 func (n *VarNode) ID() int                       { return n.id }
 func (n *VarNode) Chan() chan Msg                { return n.inChan }
 func (n *VarNode) ParentChans() map[int]chan Msg { return n.parentChans }
-func (n *VarNode) isLoop() bool                  { return false }
-func (n *VarNode) setVar(name string, value interface{}) {
-	if name == n.name {
-		n.inChan <- Msg{ValueMsg, n.id, true, value}
-	}
-}
+func (n *VarNode) Dependencies() []Node          { return nil }
 
 func (n *VarNode) Run() {
 	msg := <-n.inChan

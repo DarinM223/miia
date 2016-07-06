@@ -36,9 +36,46 @@ type Node interface {
 	ParentChans() map[int]chan Msg
 	// Clone returns a cloned Node.
 	Clone(*Globals) Node
+	// Dependencies returns the dependency nodes for the node.
+	Dependencies() []Node
+}
 
-	// isLoop is true if the node or any of the subnodes is a loop node.
-	isLoop() bool
-	// setVar traverses through the graph setting variable nodes.
-	setVar(name string, value interface{})
+// IsLoop returns true if a node is a loop node or
+// depends on a loop node and false otherwise.
+func IsLoop(node Node) bool {
+	var queue []Node
+	queue = append(queue, node)
+
+	for len(queue) > 0 {
+		n := queue[0]
+		queue = queue[1:]
+
+		if _, ok := n.(*ForNode); ok {
+			return true
+		} else {
+			for _, dep := range n.Dependencies() {
+				queue = append(queue, dep)
+			}
+		}
+	}
+	return false
+}
+
+// SetVar traverses the graph setting variable nodes.
+func SetVar(node Node, name string, value interface{}) {
+	var queue []Node
+	queue = append(queue, node)
+
+	for len(queue) > 0 {
+		n := queue[0]
+		queue = queue[1:]
+
+		if varNode, ok := n.(*VarNode); ok && varNode.name == name {
+			varNode.inChan <- Msg{ValueMsg, node.ID(), true, value}
+		} else {
+			for _, dep := range n.Dependencies() {
+				queue = append(queue, dep)
+			}
+		}
+	}
 }

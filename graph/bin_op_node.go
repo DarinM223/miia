@@ -40,13 +40,11 @@ func NewBinOpNode(globals *Globals, operator tokens.Token, a Node, b Node) *BinO
 func (n *BinOpNode) ID() int                       { return n.id }
 func (n *BinOpNode) Chan() chan Msg                { return n.aChan }
 func (n *BinOpNode) ParentChans() map[int]chan Msg { return n.parentChans }
-func (n *BinOpNode) isLoop() bool                  { return n.a.isLoop() || n.b.isLoop() }
-func (n *BinOpNode) setVar(name string, value interface{}) {
-	n.a.setVar(name, value)
-	n.b.setVar(name, value)
-}
+func (n *BinOpNode) Dependencies() []Node          { return []Node{n.a, n.b} }
 
 func (n *BinOpNode) Run() {
+	defer n.destroy()
+
 	val1 := <-n.aChan
 	val2 := <-n.bChan
 
@@ -65,7 +63,6 @@ func (n *BinOpNode) Run() {
 	for _, parent := range n.parentChans {
 		parent <- data
 	}
-	n.destroy()
 }
 
 func (n *BinOpNode) Clone(globals *Globals) Node {

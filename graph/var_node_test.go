@@ -12,7 +12,7 @@ func TestVarNode(t *testing.T) {
 	varNode := NewVarNode(globals, "a")
 	valueNode := NewValueNode(globals, 2)
 	multOpNode := NewMultOpNode(globals, tokens.AddToken, []Node{varNode, valueNode})
-	multOpNode.setVar("a", 1)
+	SetVar(multOpNode, "a", 1)
 	multOpNode.ParentChans()[20] = parentChan
 
 	globals.Run()
