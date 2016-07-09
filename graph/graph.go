@@ -18,6 +18,9 @@ type Msg struct {
 	// PassUp is true when completed data is being
 	// sent backwards from the child to the parent.
 	PassUp bool
+	// Idx is an attribute only used for stream messages
+	// so that the receiver can collect the messages in order.
+	Idx int
 	// Data is the data contained in the message being sent.
 	Data interface{}
 }
@@ -72,7 +75,7 @@ func SetVarNodes(node Node, name string, value interface{}) {
 		queue = queue[1:]
 
 		if varNode, ok := n.(*VarNode); ok && varNode.name == name {
-			varNode.inChan <- Msg{ValueMsg, node.ID(), true, value}
+			varNode.inChan <- Msg{ValueMsg, node.ID(), true, -1, value}
 		} else {
 			for _, dep := range n.Dependencies() {
 				queue = append(queue, dep)

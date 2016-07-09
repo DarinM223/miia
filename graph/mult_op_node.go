@@ -75,9 +75,9 @@ func (n *MultOpNode) Run() {
 	var msg Msg
 	data, err := applyMultOp(n.results, n.operator)
 	if err != nil {
-		msg = Msg{ErrMsg, n.id, true, err}
+		msg = Msg{ErrMsg, n.id, true, -1, err}
 	} else {
-		msg = Msg{ValueMsg, n.id, true, data}
+		msg = Msg{ValueMsg, n.id, true, -1, data}
 	}
 
 	for _, parent := range n.parentChans {

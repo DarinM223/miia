@@ -27,7 +27,7 @@ func (n *ValueNode) Dependencies() []Node          { return nil }
 func (n *ValueNode) Clone(globals *Globals) Node   { return NewValueNode(globals, n.value) }
 
 func (n *ValueNode) Run() {
-	data := Msg{ValueMsg, n.id, true, n.value}
+	data := Msg{ValueMsg, n.id, true, -1, n.value}
 	for _, parent := range n.parentChans {
 		parent <- data
 	}

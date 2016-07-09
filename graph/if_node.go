@@ -51,7 +51,7 @@ func (n *IfNode) Dependencies() []Node          { return []Node{n.pred, n.conseq
 func (n *IfNode) Run() {
 	defer destroyNode(n)
 
-	data := Msg{ErrMsg, n.id, true, IfPredicateErr}
+	data := Msg{ErrMsg, n.id, true, -1, IfPredicateErr}
 
 	msg := <-n.inChan
 	if pred, ok := msg.Data.(bool); ok {

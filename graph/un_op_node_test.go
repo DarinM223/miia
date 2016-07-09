@@ -15,7 +15,7 @@ func TestUnOp(t *testing.T) {
 
 	globals.Run()
 
-	expected := Msg{ValueMsg, unOpNode.ID(), true, false}
+	expected := Msg{ValueMsg, unOpNode.ID(), true, -1, false}
 
 	if msg, ok := <-parentChan; ok {
 		if !reflect.DeepEqual(msg, expected) {

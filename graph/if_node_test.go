@@ -13,15 +13,15 @@ var ifNodeTests = []struct {
 }{
 	{
 		true, "Conseq", "Alt",
-		Msg{ValueMsg, 3, true, "Conseq"},
+		Msg{ValueMsg, 3, true, -1, "Conseq"},
 	},
 	{
 		false, "Conseq", "Alt",
-		Msg{ValueMsg, 3, true, "Alt"},
+		Msg{ValueMsg, 3, true, -1, "Alt"},
 	},
 	{
 		1, "Conseq", "Alt",
-		Msg{ErrMsg, 3, true, IfPredicateErr},
+		Msg{ErrMsg, 3, true, -1, IfPredicateErr},
 	},
 }
 

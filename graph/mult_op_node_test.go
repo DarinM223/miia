@@ -14,27 +14,27 @@ var multOpNodeTests = []struct {
 	{
 		tokens.AddToken,
 		[]interface{}{1, 2, 3, 4, 5, 6},
-		Msg{ValueMsg, 6, true, 21},
+		Msg{ValueMsg, 6, true, -1, 21},
 	},
 	{
 		tokens.MulToken,
 		[]interface{}{1, 2, 3, 4, 5, 6},
-		Msg{ValueMsg, 6, true, 720},
+		Msg{ValueMsg, 6, true, -1, 720},
 	},
 	{
 		tokens.AddToken,
 		[]interface{}{"a", "b", "c", "d", "e"},
-		Msg{ValueMsg, 5, true, "abcde"},
+		Msg{ValueMsg, 5, true, -1, "abcde"},
 	},
 	{
 		tokens.SubToken,
 		[]interface{}{10, 2, 2, 1, 1},
-		Msg{ValueMsg, 5, true, 4},
+		Msg{ValueMsg, 5, true, -1, 4},
 	},
 	{
 		tokens.DivToken,
 		[]interface{}{6, 3, 2},
-		Msg{ValueMsg, 3, true, 1},
+		Msg{ValueMsg, 3, true, -1, 1},
 	},
 }
 

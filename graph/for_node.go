@@ -15,6 +15,7 @@ type ForNode struct {
 	collectionChan chan Msg
 	parentChans    map[int]chan Msg
 	globals        *Globals
+	nodeToIdx      map[int]int
 }
 
 func NewForNode(globals *Globals, name string, collection Node, body Node) *ForNode {
@@ -32,6 +33,7 @@ func NewForNode(globals *Globals, name string, collection Node, body Node) *ForN
 		collectionChan: collectionChan,
 		parentChans:    make(map[int]chan Msg),
 		globals:        globals,
+		nodeToIdx:      make(map[int]int),
 	}
 	globals.RegisterNode(id, forNode)
 	return forNode
@@ -50,20 +52,23 @@ func (n *ForNode) Run() {
 	currNode := 0                      // the index of the current node if the for loop is sequential
 	collectionMsg := <-n.collectionChan
 
-	// TODO(DarinM223): check if message type is a value or a stream.
-
-	// On receiving an array, allocate the subnodes
-	arr := reflect.ValueOf(collectionMsg.Data)
-	if arr.Kind() == reflect.Array || arr.Kind() == reflect.Slice {
-		n.subnodes = make([]Node, arr.Len())
-		n.inChan = make(chan Msg, arr.Len())
-		for i := 0; i < arr.Len(); i++ {
-			n.subnodes[i] = n.body.Clone(n.globals)
-			n.subnodes[i].ParentChans()[n.id] = n.inChan
-			SetVarNodes(n.subnodes[i], n.name, arr.Index(i).Interface())
+	if collectionMsg.Type == ValueMsg {
+		// On receiving an array, allocate the subnodes
+		arr := reflect.ValueOf(collectionMsg.Data)
+		if arr.Kind() == reflect.Array || arr.Kind() == reflect.Slice {
+			n.subnodes = make([]Node, arr.Len())
+			n.inChan = make(chan Msg, arr.Len())
+			for i := 0; i < arr.Len(); i++ {
+				n.subnodes[i] = n.body.Clone(n.globals)
+				n.subnodes[i].ParentChans()[n.id] = n.inChan
+				n.nodeToIdx[n.subnodes[i].ID()] = i
+				SetVarNodes(n.subnodes[i], n.name, arr.Index(i).Interface())
+			}
+		} else {
+			panic("Invalid array type")
 		}
-	} else {
-		panic("Invalid array type")
+	} else if collectionMsg.Type == StreamMsg {
+		// TODO(DarinM223): collect stream message
 	}
 
 	// Check if the body node is a loop node.
@@ -73,6 +78,9 @@ func (n *ForNode) Run() {
 		for _, node := range n.subnodes {
 			startNode(n.globals, node)
 		}
+	} else {
+		// Run first subnode.
+		startNode(n.globals, n.subnodes[currNode])
 	}
 
 	for passUpCount := 0; passUpCount < len(n.subnodes); passUpCount++ {
@@ -86,8 +94,10 @@ func (n *ForNode) Run() {
 			}
 		}
 
+		data := Msg{StreamMsg, n.id, true, n.nodeToIdx[msg.ID], msg.Data}
+
 		for _, parent := range n.parentChans {
-			parent <- Msg{StreamMsg, n.id, true, msg.Data}
+			parent <- data
 		}
 	}
 }

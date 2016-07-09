@@ -61,18 +61,18 @@ func (n *SelectorNode) Run() {
 		return
 	}
 
-	data := Msg{ErrMsg, n.id, true, errors.New("Message received is not a HTTP response")}
+	data := Msg{ErrMsg, n.id, true, -1, errors.New("Message received is not a HTTP response")}
 
 	if resp, ok := msg.Data.(*http.Response); ok {
 		doc, err := goquery.NewDocumentFromResponse(resp)
 		if err != nil {
-			data = Msg{ErrMsg, n.id, true, err}
+			data = Msg{ErrMsg, n.id, true, -1, err}
 		} else {
 			bindings := make(map[string]string)
 			for _, selector := range n.selectors {
 				bindings[selector.Name] = doc.Find(selector.Selector).First().Text()
 			}
-			data = Msg{ValueMsg, n.id, true, bindings}
+			data = Msg{ValueMsg, n.id, true, -1, bindings}
 		}
 	}
 

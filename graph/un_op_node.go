@@ -46,12 +46,12 @@ func (n *UnOpNode) Run() {
 	switch n.operator {
 	case tokens.NotToken:
 		if data, ok := val.Data.(bool); ok {
-			msg = Msg{ValueMsg, n.id, true, !data}
+			msg = Msg{ValueMsg, n.id, true, -1, !data}
 		} else {
-			msg = Msg{ErrMsg, n.id, true, errors.New("Invalid type for UnOp NotToken")}
+			msg = Msg{ErrMsg, n.id, true, -1, errors.New("Invalid type for UnOp NotToken")}
 		}
 	default:
-		msg = Msg{ErrMsg, n.id, true, errors.New("Invalid UnOp operator")}
+		msg = Msg{ErrMsg, n.id, true, -1, errors.New("Invalid UnOp operator")}
 	}
 
 	for _, parent := range n.parentChans {

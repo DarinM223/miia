@@ -13,52 +13,52 @@ var binOpNodeTests = []struct {
 	{
 		tokens.RangeToken,
 		5, 10,
-		Msg{ValueMsg, 2, true, []int{5, 6, 7, 8, 9}},
+		Msg{ValueMsg, 2, true, -1, []int{5, 6, 7, 8, 9}},
 	},
 	{
 		tokens.RangeToken,
 		10, 5,
-		Msg{ValueMsg, 2, true, []int{10, 9, 8, 7, 6}},
+		Msg{ValueMsg, 2, true, -1, []int{10, 9, 8, 7, 6}},
 	},
 	{
 		tokens.EqualsToken,
 		2, 2,
-		Msg{ValueMsg, 2, true, true},
+		Msg{ValueMsg, 2, true, -1, true},
 	},
 	{
 		tokens.EqualsToken,
 		2, 3,
-		Msg{ValueMsg, 2, true, false},
+		Msg{ValueMsg, 2, true, -1, false},
 	},
 	{
 		tokens.EqualsToken,
 		"hello", "hello",
-		Msg{ValueMsg, 2, true, true},
+		Msg{ValueMsg, 2, true, -1, true},
 	},
 	{
 		tokens.EqualsToken,
 		"hello", "world",
-		Msg{ValueMsg, 2, true, false},
+		Msg{ValueMsg, 2, true, -1, false},
 	},
 	{
 		tokens.OrToken,
 		true, false,
-		Msg{ValueMsg, 2, true, true},
+		Msg{ValueMsg, 2, true, -1, true},
 	},
 	{
 		tokens.OrToken,
 		false, false,
-		Msg{ValueMsg, 2, true, false},
+		Msg{ValueMsg, 2, true, -1, false},
 	},
 	{
 		tokens.AndToken,
 		true, false,
-		Msg{ValueMsg, 2, true, false},
+		Msg{ValueMsg, 2, true, -1, false},
 	},
 	{
 		tokens.AndToken,
 		true, true,
-		Msg{ValueMsg, 2, true, true},
+		Msg{ValueMsg, 2, true, -1, true},
 	},
 }
 

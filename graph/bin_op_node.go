@@ -52,12 +52,12 @@ func (n *BinOpNode) Run() {
 	if val1.Type != ErrMsg && val2.Type != ErrMsg {
 		result, err := applyBinOp(val1.Data, val2.Data, n.operator)
 		if err != nil {
-			data = Msg{ErrMsg, n.id, true, err}
+			data = Msg{ErrMsg, n.id, true, -1, err}
 		} else {
-			data = Msg{ValueMsg, n.id, true, result}
+			data = Msg{ValueMsg, n.id, true, -1, result}
 		}
 	} else {
-		data = Msg{ErrMsg, n.id, true, errors.New("Error with BinOp values")}
+		data = Msg{ErrMsg, n.id, true, -1, errors.New("Error with BinOp values")}
 	}
 
 	for _, parent := range n.parentChans {

@@ -22,7 +22,6 @@ var forNodeTests = []struct {
 }
 
 func TestForNode(t *testing.T) {
-
 	for _, test := range forNodeTests {
 		globals := NewGlobals()
 		parentChan := make(chan Msg, 6)
@@ -35,9 +34,9 @@ func TestForNode(t *testing.T) {
 
 		globals.Run()
 
-		expectedValues := make(map[int]bool, len(test.expectedValues))
-		for _, v := range test.expectedValues {
-			expectedValues[v] = true
+		expectedValues := make(map[int]int, len(test.expectedValues))
+		for i, v := range test.expectedValues {
+			expectedValues[v] = i
 		}
 
 		for len(expectedValues) > 0 {
@@ -48,7 +47,7 @@ func TestForNode(t *testing.T) {
 
 				value := msg.Data.(int)
 
-				if _, ok := expectedValues[value]; ok {
+				if _, ok := expectedValues[value]; ok && test.expectedValues[msg.Idx] == value {
 					delete(expectedValues, value)
 				} else {
 					t.Errorf("Received unexpected message %v", msg.Data)
