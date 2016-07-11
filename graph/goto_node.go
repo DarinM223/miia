@@ -36,19 +36,16 @@ func (n *GotoNode) Clone(g *Globals) Node         { return NewGotoNode(g, n.url.
 func (n *GotoNode) Run() {
 	defer destroyNode(n)
 
-	msg := <-n.inChan
-	if msg.Type == QuitMsg {
-		return
-	}
+	msg, msgOk := (<-n.inChan).(*ValueMsg)
 
-	data := Msg{ErrMsg, n.id, true, -1, errors.New("Message received is not a string")}
-	if url, ok := msg.Data.(string); ok {
+	var data Msg = NewErrMsg(n.id, true, errors.New("Message received is not a string"))
+	if url, ok := msg.Data.(string); msgOk && ok {
 		// Send an HTTP request to get and pass up the response.
 		resp, err := http.Get(url)
 		if err != nil {
-			data = Msg{ErrMsg, n.id, true, -1, err}
+			data = NewErrMsg(n.id, true, err)
 		} else {
-			data = Msg{ValueMsg, n.id, true, -1, resp}
+			data = NewValueMsg(n.id, true, resp)
 		}
 	}
 	for _, parent := range n.parentChans {

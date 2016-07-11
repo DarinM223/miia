@@ -17,16 +17,24 @@ func TestGotoNode(t *testing.T) {
 	globals.Run()
 
 	if msg, ok := <-parentChan1; ok {
-		if _, ok := msg.Data.(*http.Response); !ok {
-			t.Errorf("Message is not an HTTP response: got %v", msg.Data)
+		if msg, ok := msg.(*ValueMsg); ok {
+			if _, ok := msg.Data.(*http.Response); !ok {
+				t.Errorf("Message is not an HTTP response: got %v", msg.Data)
+			}
+		} else {
+			t.Errorf("Message is not a Value message, got %v", msg)
 		}
 	} else {
 		t.Errorf("Parent channel 1 closed")
 	}
 
 	if msg, ok := <-parentChan2; ok {
-		if _, ok := msg.Data.(*http.Response); !ok {
-			t.Errorf("Message is not an HTTP response: got %v", msg.Data)
+		if msg, ok := msg.(*ValueMsg); ok {
+			if _, ok := msg.Data.(*http.Response); !ok {
+				t.Errorf("Message is not an HTTP response: got %v", msg.Data)
+			}
+		} else {
+			t.Errorf("Message is not a Value message, got %v", msg)
 		}
 	} else {
 		t.Errorf("Parent channel 2 closed")
@@ -44,8 +52,8 @@ func TestGotoNodeErrsOnNonString(t *testing.T) {
 	globals.Run()
 
 	if msg, ok := <-parentChan; ok {
-		if msg.Type != ErrMsg {
-			t.Errorf("Message is not an error: got %v", msg.Data)
+		if _, ok := msg.(*ErrMsg); !ok {
+			t.Errorf("Message is not an error: got %v", msg)
 		}
 	} else {
 		t.Errorf("Parent channel closed")
@@ -63,8 +71,8 @@ func TestGotoNodeErrsOnNonHTTP(t *testing.T) {
 	globals.Run()
 
 	if msg, ok := <-parentChan; ok {
-		if msg.Type != ErrMsg {
-			t.Errorf("Message is not an error: got %v", msg.Data)
+		if _, ok := msg.(*ErrMsg); !ok {
+			t.Errorf("Message is not an error: got %v", msg)
 		}
 	} else {
 		t.Errorf("Parent channel closed")

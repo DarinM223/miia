@@ -13,7 +13,7 @@ var selectorNodeTests = []struct {
 	{
 		"http://motherfuckingwebsite.com/",
 		[]Selector{Selector{"why", "h2"}},
-		Msg{ValueMsg, 2, true, -1, map[string]string{"why": "Seriously, what the fuck else do you want?"}},
+		NewValueMsg(2, true, map[string]string{"why": "Seriously, what the fuck else do you want?"}),
 	},
 }
 

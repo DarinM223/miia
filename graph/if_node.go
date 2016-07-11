@@ -51,16 +51,16 @@ func (n *IfNode) Dependencies() []Node          { return []Node{n.pred, n.conseq
 func (n *IfNode) Run() {
 	defer destroyNode(n)
 
-	data := Msg{ErrMsg, n.id, true, -1, IfPredicateErr}
+	var data Msg = NewErrMsg(n.id, true, IfPredicateErr)
 
-	msg := <-n.inChan
-	if pred, ok := msg.Data.(bool); ok {
+	msg, msgOk := (<-n.inChan).(*ValueMsg)
+	if pred, ok := msg.Data.(bool); msgOk && ok {
 		if pred {
 			data = <-n.conseqChan
 		} else {
 			data = <-n.altChan
 		}
-		data.ID = n.id
+		data.setID(n.id)
 	}
 
 	for _, parent := range n.parentChans {

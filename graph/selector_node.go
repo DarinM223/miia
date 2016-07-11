@@ -56,23 +56,19 @@ func (n *SelectorNode) Clone(g *Globals) Node         { return NewSelectorNode(g
 func (n *SelectorNode) Run() {
 	defer n.destroy()
 
-	msg := <-n.inChan
-	if msg.Type == QuitMsg {
-		return
-	}
+	msg, msgOk := (<-n.inChan).(*ValueMsg)
+	var data Msg = NewErrMsg(n.id, true, errors.New("Message received is not a HTTP response"))
 
-	data := Msg{ErrMsg, n.id, true, -1, errors.New("Message received is not a HTTP response")}
-
-	if resp, ok := msg.Data.(*http.Response); ok {
+	if resp, ok := msg.Data.(*http.Response); msgOk && ok {
 		doc, err := goquery.NewDocumentFromResponse(resp)
 		if err != nil {
-			data = Msg{ErrMsg, n.id, true, -1, err}
+			data = NewErrMsg(n.id, true, err)
 		} else {
 			bindings := make(map[string]string)
 			for _, selector := range n.selectors {
 				bindings[selector.Name] = doc.Find(selector.Selector).First().Text()
 			}
-			data = Msg{ValueMsg, n.id, true, -1, bindings}
+			data = NewValueMsg(n.id, true, bindings)
 		}
 	}
 

@@ -1,31 +1,6 @@
 package graph
 
-type MsgType int
-
-const (
-	QuitMsg MsgType = iota
-	ValueMsg
-	StreamMsg
-	ErrMsg
-)
-
-// Msg contains the data being sent/received between Nodes.
-type Msg struct {
-	// Type is the type of the message being sent.
-	Type MsgType
-	// ID is the id of the node sending the message.
-	ID int
-	// PassUp is true when completed data is being
-	// sent backwards from the child to the parent.
-	PassUp bool
-	// Idx is an attribute only used for stream messages
-	// so that the receiver can collect the messages in order.
-	Idx int
-	// Data is the data contained in the message being sent.
-	Data interface{}
-}
-
-// The size of the input channel buffers for nodes.
+// The default size of the input channel buffers for nodes.
 const InChanSize = 5
 
 // Node is a contained "actor" that sends/receives messages.
@@ -75,7 +50,7 @@ func SetVarNodes(node Node, name string, value interface{}) {
 		queue = queue[1:]
 
 		if varNode, ok := n.(*VarNode); ok && varNode.name == name {
-			varNode.inChan <- Msg{ValueMsg, node.ID(), true, -1, value}
+			varNode.inChan <- NewValueMsg(node.ID(), true, value)
 		} else {
 			for _, dep := range n.Dependencies() {
 				queue = append(queue, dep)

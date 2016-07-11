@@ -41,17 +41,17 @@ func TestForNode(t *testing.T) {
 
 		for len(expectedValues) > 0 {
 			if msg, ok := <-parentChan; ok {
-				if msg.Type != StreamMsg {
-					t.Errorf("Expected Stream Message Type, got %d", msg.Type)
-				}
+				if msg, ok := msg.(*StreamMsg); ok {
+					value := msg.Data.(int)
 
-				value := msg.Data.(int)
-
-				if _, ok := expectedValues[value]; ok && test.expectedValues[msg.Idx] == value {
-					delete(expectedValues, value)
+					if _, ok := expectedValues[value]; ok && test.expectedValues[msg.Idx] == value {
+						delete(expectedValues, value)
+					} else {
+						t.Errorf("Received unexpected message %v", msg.Data)
+						break
+					}
 				} else {
-					t.Errorf("Received unexpected message %v", msg.Data)
-					break
+					t.Errorf("Expected Stream Message, got %v", msg)
 				}
 			}
 		}

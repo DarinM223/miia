@@ -45,19 +45,19 @@ func (n *BinOpNode) Dependencies() []Node          { return []Node{n.a, n.b} }
 func (n *BinOpNode) Run() {
 	defer destroyNode(n)
 
-	val1 := <-n.aChan
-	val2 := <-n.bChan
+	val1, val1Ok := (<-n.aChan).(*ValueMsg)
+	val2, val2Ok := (<-n.bChan).(*ValueMsg)
 
 	var data Msg
-	if val1.Type != ErrMsg && val2.Type != ErrMsg {
+	if val1Ok && val2Ok {
 		result, err := applyBinOp(val1.Data, val2.Data, n.operator)
 		if err != nil {
-			data = Msg{ErrMsg, n.id, true, -1, err}
+			data = NewErrMsg(n.id, true, err)
 		} else {
-			data = Msg{ValueMsg, n.id, true, -1, result}
+			data = NewValueMsg(n.id, true, result)
 		}
 	} else {
-		data = Msg{ErrMsg, n.id, true, -1, errors.New("Error with BinOp values")}
+		data = NewErrMsg(n.id, true, errors.New("Error with BinOp values"))
 	}
 
 	for _, parent := range n.parentChans {

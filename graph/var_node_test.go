@@ -17,7 +17,7 @@ func TestVarNode(t *testing.T) {
 
 	globals.Run()
 
-	expected := Msg{ValueMsg, multOpNode.ID(), true, -1, 3}
+	expected := NewValueMsg(multOpNode.ID(), true, 3)
 
 	if msg, ok := <-parentChan; ok {
 		if !reflect.DeepEqual(msg, expected) {

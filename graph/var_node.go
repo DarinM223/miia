@@ -27,9 +27,14 @@ func (n *VarNode) Clone(globals *Globals) Node   { return NewVarNode(globals, n.
 
 func (n *VarNode) Run() {
 	msg := <-n.inChan
-	if msg.Type == ValueMsg {
+	switch m := msg.(type) {
+	case *ValueMsg:
 		for _, parent := range n.parentChans {
-			parent <- msg
+			parent <- m
 		}
+	case *StreamMsg:
+		panic("Stream message as var not implemented yet")
+	default:
+		panic("Unknown var message type")
 	}
 }

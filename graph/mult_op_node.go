@@ -55,29 +55,26 @@ func (n *MultOpNode) Run() {
 
 	passUpCount := 0
 	for {
-		msg := <-n.inChan
-		if msg.Type == QuitMsg {
-			for _, node := range n.nodes {
-				node.Chan() <- msg
-			}
-			return
-		} else if msg.PassUp {
-			// Store the result and break when all the nodes have finished.
-			nodeIdx := n.idMap[msg.ID]
+		msg, msgOk := (<-n.inChan).(*ValueMsg)
+		if msgOk {
+			// Store the result.
+			nodeIdx := n.idMap[msg.ID()]
 			n.results[nodeIdx] = msg.Data
-			passUpCount++
-			if passUpCount >= len(n.nodes) {
-				break
-			}
+		}
+
+		// Break when all the nodes have finished.
+		passUpCount++
+		if passUpCount >= len(n.nodes) {
+			break
 		}
 	}
 
 	var msg Msg
 	data, err := applyMultOp(n.results, n.operator)
 	if err != nil {
-		msg = Msg{ErrMsg, n.id, true, -1, err}
+		msg = NewErrMsg(n.id, true, err)
 	} else {
-		msg = Msg{ValueMsg, n.id, true, -1, data}
+		msg = NewValueMsg(n.id, true, data)
 	}
 
 	for _, parent := range n.parentChans {
