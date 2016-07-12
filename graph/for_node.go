@@ -1,7 +1,6 @@
 package graph
 
 import (
-	"errors"
 	"reflect"
 )
 
@@ -10,11 +9,13 @@ type forNodeType interface {
 }
 
 type valueNodeType struct {
-	currIdx int
+	currIdx       int
+	finishedNodes int
 }
 
 type streamNodeType struct {
 	currIdx          int
+	len              int
 	visitedNodes     map[int]bool
 	startedFirstNode bool
 }
@@ -69,10 +70,9 @@ func (n *ForNode) Dependencies() []Node          { return []Node{n.collection, n
 func (n *ForNode) Clone(g *Globals) Node         { return NewForNode(g, n.name, n.collection.Clone(g), n.body) }
 
 func (n *ForNode) handleValueMsg(isLoop bool, msg *ValueMsg) {
-	if n.nodeType != nil {
-		return
+	if n.nodeType == nil {
+		n.nodeType = &valueNodeType{0, 0}
 	}
-	n.nodeType = &valueNodeType{0}
 
 	// On receiving an array, allocate the subnodes
 	arr := reflect.ValueOf(msg.Data)
@@ -103,10 +103,9 @@ func (n *ForNode) handleStreamMsg(isLoop bool, msg *StreamMsg) {
 	if n.inChan == nil {
 		n.inChan = make(chan Msg, msg.Len)
 	}
-	if n.nodeType != nil {
-		return
+	if n.nodeType == nil {
+		n.nodeType = &streamNodeType{-1, msg.Len, make(map[int]bool), false}
 	}
-	n.nodeType = &streamNodeType{0, make(map[int]bool), false}
 
 	i := msg.Idx
 	n.subnodes[i] = n.body.Clone(n.globals)
@@ -114,59 +113,66 @@ func (n *ForNode) handleStreamMsg(isLoop bool, msg *StreamMsg) {
 	n.nodeToIdx[n.subnodes[i].ID()] = i
 	SetVarNodes(n.subnodes[i], n.name, msg.Data)
 
-	// Start node if the body is not a loop
-	// or if none of the nodes have been started.
+	// Start node if the body is not a loop,
+	// or if the index is -1.
 	if nodeType, ok := n.nodeType.(*streamNodeType); ok {
-		if !isLoop || !nodeType.startedFirstNode || nodeType.currIdx == -1 {
+		if !isLoop || nodeType.currIdx == -1 {
 			startNode(n.globals, n.subnodes[i])
 			nodeType.currIdx = i
-			nodeType.startedFirstNode = true
 		}
 	}
 }
 
-func (n *ForNode) handlePassUpMsg(isLoop bool, msg Msg) {
+func (n *ForNode) handlePassUpMsg(isLoop bool, msg Msg) bool {
+	finished := false
 	var data Msg
 	switch nodeType := n.nodeType.(type) {
 	case *valueNodeType:
-		if isLoop {
+		nodeType.finishedNodes++
+		if nodeType.finishedNodes >= len(n.subnodes) {
+			finished = true
+		} else if isLoop {
 			nodeType.currIdx++
-			if nodeType.currIdx < len(n.subnodes) {
-				startNode(n.globals, n.subnodes[nodeType.currIdx])
-			}
+			startNode(n.globals, n.subnodes[nodeType.currIdx])
 		}
+
 		if valueMsg, ok := msg.(*ValueMsg); ok {
 			data = NewStreamMsg(n.id, true, n.nodeToIdx[valueMsg.ID()], len(n.subnodes), valueMsg.Data)
 		} else {
-			data = NewErrMsg(n.id, true, errors.New("Message is not a value message"))
+			panic("Message is not a value message")
 		}
 	case *streamNodeType:
-		if isLoop {
-			nodeType.visitedNodes[nodeType.currIdx] = true
-			nextNodeIdx := -1
-			for i, _ := range n.subnodes {
-				if visited, ok := nodeType.visitedNodes[i]; !ok || !visited {
-					nextNodeIdx = i
-					break
+		nodeType.visitedNodes[nodeType.currIdx] = true
+		if valueMsg, ok := msg.(*ValueMsg); ok {
+			if len(nodeType.visitedNodes) >= nodeType.len {
+				finished = true
+			} else if isLoop {
+				// Find the next node by looking through the nodes ignoring
+				// already visited nodes. If there are no nodes, set the current
+				// index to -1.
+				nextNodeIdx := -1
+				for i, _ := range n.subnodes {
+					if visited, ok := nodeType.visitedNodes[i]; !ok || !visited {
+						nextNodeIdx = i
+						break
+					}
+				}
+
+				nodeType.currIdx = nextNodeIdx
+				if nextNodeIdx != -1 {
+					startNode(n.globals, n.subnodes[nextNodeIdx])
 				}
 			}
-
-			nodeType.currIdx = nextNodeIdx
-			if nextNodeIdx != -1 {
-				startNode(n.globals, n.subnodes[nextNodeIdx])
-			}
-
-			if streamMsg, ok := msg.(*StreamMsg); ok {
-				data = NewStreamMsg(n.id, true, n.nodeToIdx[streamMsg.ID()], streamMsg.Len, streamMsg.Data)
-			} else {
-				data = NewErrMsg(n.id, true, errors.New("Message is not a stream message"))
-			}
+			data = NewStreamMsg(n.id, true, n.nodeToIdx[valueMsg.ID()], nodeType.len, valueMsg.Data)
+		} else {
+			panic("Message is not a value message")
 		}
 	}
 
 	for _, parent := range n.parentChans {
 		parent <- data
 	}
+	return finished
 }
 
 func (n *ForNode) Run() {
@@ -186,7 +192,9 @@ func (n *ForNode) Run() {
 				panic("Invalid message from collectionChan received")
 			}
 		case msg := <-n.inChan:
-			n.handlePassUpMsg(isLoop, msg)
+			if finished := n.handlePassUpMsg(isLoop, msg); finished {
+				break
+			}
 		}
 	}
 }

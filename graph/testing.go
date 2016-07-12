@@ -51,95 +51,66 @@ func (t *Testing) GenerateTestNode(g *Globals, node Node) Node {
 
 func (t *Testing) NewBinOpNode(operator tokens.Token, a Node, b Node) Node {
 	return &BinOpNode{
-		id:          -1,
-		operator:    operator,
-		a:           a,
-		b:           b,
-		parentChans: nil,
+		id:       -1,
+		operator: operator,
+		a:        a,
+		b:        b,
 	}
 }
 
 func (t *Testing) NewForNode(name string, collection Node, body Node) Node {
 	return &ForNode{
-		id:             -1,
-		name:           name,
-		collection:     collection,
-		body:           body,
-		inChan:         nil,
-		collectionChan: nil,
-		parentChans:    nil,
-		globals:        nil,
+		id:         -1,
+		name:       name,
+		collection: collection,
+		body:       body,
 	}
 }
 
 func (t *Testing) NewGotoNode(url Node) Node {
 	return &GotoNode{
-		id:          -1,
-		url:         url,
-		inChan:      nil,
-		parentChans: nil,
+		id:  -1,
+		url: url,
 	}
 }
 
 func (t *Testing) NewIfNode(pred Node, conseq Node, alt Node) Node {
 	return &IfNode{
-		id:          -1,
-		pred:        pred,
-		conseq:      conseq,
-		alt:         alt,
-		inChan:      nil,
-		conseqChan:  nil,
-		altChan:     nil,
-		parentChans: nil,
+		id:     -1,
+		pred:   pred,
+		conseq: conseq,
+		alt:    alt,
 	}
 }
 
 func (t *Testing) NewMultOpNode(operator tokens.Token, nodes []Node) Node {
 	return &MultOpNode{
-		id:          -1,
-		operator:    operator,
-		nodes:       nodes,
-		inChan:      nil,
-		parentChans: nil,
-		results:     nil,
-		idMap:       nil,
+		id:       -1,
+		operator: operator,
+		nodes:    nodes,
 	}
 }
 
 func (t *Testing) NewSelectorNode(gotoNode Node, selectors []Selector) Node {
 	return &SelectorNode{
-		id:          -1,
-		selectors:   selectors,
-		gotoNode:    gotoNode,
-		inChan:      nil,
-		parentChans: nil,
+		id:        -1,
+		selectors: selectors,
+		gotoNode:  gotoNode,
 	}
 }
 
 func (t *Testing) NewUnOpNode(operator tokens.Token, node Node) Node {
 	return &UnOpNode{
-		id:          -1,
-		operator:    operator,
-		inChan:      nil,
-		node:        node,
-		parentChans: nil,
+		id:       -1,
+		operator: operator,
+		node:     node,
 	}
 }
 
 func (t *Testing) NewValueNode(value interface{}) Node {
-	return &ValueNode{
-		id:          -1,
-		value:       value,
-		inChan:      nil,
-		parentChans: nil,
-	}
+	return &ValueNode{id: -1, value: value}
 }
 
 func (t *Testing) NewVarNode(name string) Node {
-	return &VarNode{
-		id:          -1,
-		name:        name,
-		inChan:      nil,
-		parentChans: nil,
-	}
+	return &VarNode{id: -1, name: name}
 }
