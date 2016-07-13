@@ -1,0 +1,4 @@
+(block
+  (set url "http://motherfuckingwebsite.com/")
+  (goto url)
+  (sel "what" "h1" "why" "h2"))
