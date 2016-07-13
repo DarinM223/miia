@@ -2,6 +2,7 @@ package graph
 
 import (
 	"github.com/DarinM223/http-scraper/tokens"
+	"reflect"
 )
 
 // Testing contains utility methods for generating nodes
@@ -9,6 +10,59 @@ import (
 type Testing struct{}
 
 var testUtils Testing = Testing{}
+
+func (t *Testing) CompareTestNodeToRealNode(testNode Node, realNode Node) bool {
+	if reflect.TypeOf(testNode) != reflect.TypeOf(realNode) {
+		return false
+	}
+
+	switch n := testNode.(type) {
+	case *BinOpNode:
+		compare := realNode.(*BinOpNode)
+		compareA := t.CompareTestNodeToRealNode(n.a, compare.a)
+		compareB := t.CompareTestNodeToRealNode(n.b, compare.b)
+		return n.operator == compare.operator && compareA && compareB
+	case *ForNode:
+		compare := realNode.(*ForNode)
+		compareColl := t.CompareTestNodeToRealNode(n.collection, compare.collection)
+		compareBody := t.CompareTestNodeToRealNode(n.body, compare.body)
+		return n.name == compare.name && compareColl && compareBody
+	case *GotoNode:
+		return t.CompareTestNodeToRealNode(n.url, realNode.(*GotoNode).url)
+	case *IfNode:
+		compare := realNode.(*IfNode)
+		comparePred := t.CompareTestNodeToRealNode(n.pred, compare.pred)
+		compareConseq := t.CompareTestNodeToRealNode(n.conseq, compare.conseq)
+		compareAlt := t.CompareTestNodeToRealNode(n.alt, compare.alt)
+		return comparePred && compareConseq && compareAlt
+	case *MultOpNode:
+		compare := realNode.(*MultOpNode)
+		if len(n.nodes) != len(compare.nodes) {
+			return false
+		}
+
+		compareNodes := true
+		for i := 0; i < len(n.nodes); i++ {
+			if !t.CompareTestNodeToRealNode(n.nodes[i], compare.nodes[i]) {
+				compareNodes = false
+				break
+			}
+		}
+		return n.operator == compare.operator && compareNodes
+	case *SelectorNode:
+		compare := realNode.(*SelectorNode)
+		return n.gotoNode == compare.gotoNode && reflect.DeepEqual(n.selectors, compare.selectors)
+	case *UnOpNode:
+		compare := realNode.(*UnOpNode)
+		return n.operator == compare.operator && t.CompareTestNodeToRealNode(n.node, compare.node)
+	case *ValueNode:
+		return reflect.DeepEqual(n.value, realNode.(*ValueNode).value)
+	case *VarNode:
+		return n.name == realNode.(*VarNode).name
+	default:
+		panic("Invalid node type for CompareTestNodeToRealNode()")
+	}
+}
 
 func (t *Testing) GenerateTestNode(g *Globals, node Node) Node {
 	if _, ok := g.nodeMap[node.ID()]; ok && node.ID() != -1 {

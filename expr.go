@@ -21,6 +21,11 @@ type StringExpr struct {
 	Value string
 }
 
+// BoolExpr is a boolean expression like `true` or `false`.
+type BoolExpr struct {
+	Value bool
+}
+
 // SelectorExpr retrieves data from the current page.
 type SelectorExpr struct {
 	Selectors []graph.Selector
@@ -84,6 +89,7 @@ type UnOp struct {
 
 func (e IntExpr) expr()      {}
 func (e StringExpr) expr()   {}
+func (e BoolExpr) expr()     {}
 func (e SelectorExpr) expr() {}
 func (e VarExpr) expr()      {}
 func (e ForExpr) expr()      {}

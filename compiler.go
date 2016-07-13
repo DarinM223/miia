@@ -38,6 +38,12 @@ func (s *Scope) set(name string, value graph.Node) {
 
 func CompileExpr(globals *graph.Globals, expr Expr, scope *Scope) (graph.Node, error) {
 	switch e := expr.(type) {
+	case IntExpr:
+		return graph.NewValueNode(globals, e.Value), nil
+	case StringExpr:
+		return graph.NewValueNode(globals, e.Value), nil
+	case BoolExpr:
+		return graph.NewValueNode(globals, e.Value), nil
 	case SelectorExpr:
 		if scope.Page == nil {
 			return nil, errors.New("Attempting to apply selector before loading a page")
