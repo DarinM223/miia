@@ -51,7 +51,8 @@ func (t *Testing) CompareTestNodeToRealNode(testNode Node, realNode Node) bool {
 		return n.operator == compare.operator && compareNodes
 	case *SelectorNode:
 		compare := realNode.(*SelectorNode)
-		return n.gotoNode == compare.gotoNode && reflect.DeepEqual(n.selectors, compare.selectors)
+		compareGoto := t.CompareTestNodeToRealNode(n.gotoNode, compare.gotoNode)
+		return compareGoto && reflect.DeepEqual(n.selectors, compare.selectors)
 	case *UnOpNode:
 		compare := realNode.(*UnOpNode)
 		return n.operator == compare.operator && t.CompareTestNodeToRealNode(n.node, compare.node)

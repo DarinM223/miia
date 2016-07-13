@@ -2,6 +2,7 @@ package main
 
 import (
 	"github.com/DarinM223/http-scraper/graph"
+	"github.com/DarinM223/http-scraper/tokens"
 	"testing"
 )
 
@@ -40,6 +41,59 @@ var compilerTests = []struct {
 		},
 		graphTestUtils.NewValueNode("http://www.google.com"),
 	},
+	{
+		GotoExpr{StringExpr{"http://www.google.com"}},
+		graphTestUtils.NewGotoNode(graphTestUtils.NewValueNode("http://www.google.com")),
+	},
+	{
+		BlockExpr{
+			[]Expr{
+				GotoExpr{StringExpr{"http://www.google.com"}},
+				SelectorExpr{[]graph.Selector{{"a", "b"}, {"c", "d"}}},
+			},
+		},
+		graphTestUtils.NewSelectorNode(
+			graphTestUtils.NewGotoNode(graphTestUtils.NewValueNode("http://www.google.com")),
+			[]graph.Selector{{"a", "b"}, {"c", "d"}},
+		),
+	},
+	{
+		UnOp{
+			tokens.NotToken,
+			BoolExpr{true},
+		},
+		graphTestUtils.NewUnOpNode(tokens.NotToken, graphTestUtils.NewValueNode(true)),
+	},
+	{
+		BinOp{
+			tokens.AndToken,
+			BoolExpr{true},
+			BoolExpr{false},
+		},
+		graphTestUtils.NewBinOpNode(
+			tokens.AndToken,
+			graphTestUtils.NewValueNode(true),
+			graphTestUtils.NewValueNode(false),
+		),
+	},
+	{
+		MultOp{
+			tokens.AddToken,
+			[]Expr{
+				IntExpr{2},
+				IntExpr{3},
+				IntExpr{4},
+			},
+		},
+		graphTestUtils.NewMultOpNode(
+			tokens.AddToken,
+			[]graph.Node{
+				graphTestUtils.NewValueNode(2),
+				graphTestUtils.NewValueNode(3),
+				graphTestUtils.NewValueNode(4),
+			},
+		),
+	},
 }
 
 func TestCompiler(t *testing.T) {
@@ -54,12 +108,4 @@ func TestCompiler(t *testing.T) {
 			t.Errorf("Different node result: expected %v got %v", test.expected, node)
 		}
 	}
-}
-
-func TestCompileSelector(t *testing.T) {
-	// TODO(DarinM223): implement this
-}
-
-func TestCompileVar(t *testing.T) {
-	// TODO(DarinM223): implement this
 }
