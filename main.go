@@ -49,5 +49,12 @@ func main() {
 
 	if msg, ok := <-resultChan; ok {
 		fmt.Println("Result: ", msg)
+		if streamMsg, ok := msg.(*graph.StreamMsg); ok {
+			for i := 0; i < streamMsg.Len-1; i++ {
+				if nextMsg, ok := <-resultChan; ok {
+					fmt.Println("Stream result: ", nextMsg)
+				}
+			}
+		}
 	}
 }

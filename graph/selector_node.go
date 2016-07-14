@@ -50,8 +50,10 @@ func NewSelectorNode(globals *Globals, gotoNode Node, selectors []Selector) *Sel
 func (n *SelectorNode) ID() int                       { return n.id }
 func (n *SelectorNode) Chan() chan Msg                { return n.inChan }
 func (n *SelectorNode) ParentChans() map[int]chan Msg { return n.parentChans }
-func (n *SelectorNode) Dependencies() []Node          { return nil }
-func (n *SelectorNode) Clone(g *Globals) Node         { return NewSelectorNode(g, n.gotoNode, n.selectors) }
+func (n *SelectorNode) Dependencies() []Node          { return []Node{n.gotoNode} }
+func (n *SelectorNode) Clone(g *Globals) Node {
+	return NewSelectorNode(g, n.gotoNode.Clone(g), n.selectors)
+}
 
 func (n *SelectorNode) Run() {
 	defer n.destroy()

@@ -1,6 +1,7 @@
 package graph
 
 import (
+	"fmt"
 	"reflect"
 )
 
@@ -139,7 +140,7 @@ func (n *ForNode) handlePassUpMsg(isLoop bool, msg Msg) bool {
 		if valueMsg, ok := msg.(*ValueMsg); ok {
 			data = NewStreamMsg(n.id, true, n.nodeToIdx[valueMsg.ID()], len(n.subnodes), valueMsg.Data)
 		} else {
-			panic("Message is not a value message")
+			panic(fmt.Sprintf("Message is not a value message: %v", msg))
 		}
 	case *streamNodeType:
 		nodeType.visitedNodes[nodeType.currIdx] = true
@@ -165,7 +166,7 @@ func (n *ForNode) handlePassUpMsg(isLoop bool, msg Msg) bool {
 			}
 			data = NewStreamMsg(n.id, true, n.nodeToIdx[valueMsg.ID()], nodeType.len, valueMsg.Data)
 		} else {
-			panic("Message is not a value message")
+			panic(fmt.Sprintf("Message is not a value message: %v", msg))
 		}
 	}
 
