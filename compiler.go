@@ -2,7 +2,7 @@ package main
 
 import (
 	"errors"
-	"github.com/DarinM223/http-scraper/graph"
+	"github.com/DarinM223/miia/graph"
 )
 
 type Scope struct {

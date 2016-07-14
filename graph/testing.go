@@ -1,7 +1,7 @@
 package graph
 
 import (
-	"github.com/DarinM223/http-scraper/tokens"
+	"github.com/DarinM223/miia/tokens"
 	"reflect"
 )
 

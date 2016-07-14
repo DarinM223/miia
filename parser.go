@@ -3,8 +3,8 @@ package main
 import (
 	"bytes"
 	"errors"
-	"github.com/DarinM223/http-scraper/graph"
-	"github.com/DarinM223/http-scraper/tokens"
+	"github.com/DarinM223/miia/graph"
+	"github.com/DarinM223/miia/tokens"
 )
 
 var (

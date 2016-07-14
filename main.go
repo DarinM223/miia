@@ -2,7 +2,7 @@ package main
 
 import (
 	"fmt"
-	"github.com/DarinM223/http-scraper/graph"
+	"github.com/DarinM223/miia/graph"
 	"io/ioutil"
 	"os"
 	"path/filepath"

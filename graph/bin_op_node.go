@@ -2,7 +2,7 @@ package graph
 
 import (
 	"errors"
-	"github.com/DarinM223/http-scraper/tokens"
+	"github.com/DarinM223/miia/tokens"
 	"math"
 	"reflect"
 )

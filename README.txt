@@ -25,7 +25,7 @@ When runnning the executable, you have to specify the path to the file to compil
 
 For example, running:
 ```
-./http-scraper test/simple.scrape
+./miia test/simple.scrape
 ```
 in the project directory should run a simple program for the language.
 
