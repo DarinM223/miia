@@ -9,6 +9,7 @@ const (
 	BlockToken
 	SelectorToken
 	RangeToken
+	ListToken
 	ForToken
 	IfToken
 	ElseToken
@@ -42,10 +43,11 @@ var BinOps = map[string]Token{
 }
 
 var MultOps = map[string]Token{
-	"+": AddToken,
-	"-": SubToken,
-	"*": MulToken,
-	"/": DivToken,
+	"+":    AddToken,
+	"-":    SubToken,
+	"*":    MulToken,
+	"/":    DivToken,
+	"list": ListToken,
 }
 
 var UnOps = map[string]Token{

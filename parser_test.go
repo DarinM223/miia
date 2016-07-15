@@ -259,6 +259,18 @@ var parseExprTests = []struct {
 		},
 		nil,
 	},
+	{
+		"( list 1 2 (+ 2 3) )",
+		MultOp{
+			tokens.ListToken,
+			[]Expr{
+				IntExpr{1},
+				IntExpr{2},
+				MultOp{tokens.AddToken, []Expr{IntExpr{2}, IntExpr{3}}},
+			},
+		},
+		nil,
+	},
 }
 
 func TestParseExpr(t *testing.T) {

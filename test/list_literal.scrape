@@ -1,0 +1,4 @@
+(block
+  (for id (list 1 2 3 4 5) (block
+    (set added (+ id 1))
+    added)))

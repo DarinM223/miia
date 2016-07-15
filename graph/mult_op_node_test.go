@@ -36,6 +36,11 @@ var multOpNodeTests = []struct {
 		[]interface{}{6, 3, 2},
 		NewValueMsg(3, true, 1),
 	},
+	{
+		tokens.ListToken,
+		[]interface{}{1, 2, 3},
+		NewValueMsg(3, true, []interface{}{1, 2, 3}),
+	},
 }
 
 func TestMultOpNode(t *testing.T) {
