@@ -271,6 +271,17 @@ var parseExprTests = []struct {
 		},
 		nil,
 	},
+	{
+		"( collect ( for i (.. 1 3) i))",
+		CollectExpr{
+			ForExpr{
+				BinOp{tokens.RangeToken, IntExpr{1}, IntExpr{3}},
+				"i",
+				VarExpr{"i"},
+			},
+		},
+		nil,
+	},
 }
 
 func TestParseExpr(t *testing.T) {

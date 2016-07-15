@@ -87,6 +87,11 @@ type UnOp struct {
 	A        Expr
 }
 
+// CollectExpr collects a stream expression into an array value.
+type CollectExpr struct {
+	A Expr
+}
+
 func (e IntExpr) expr()      {}
 func (e StringExpr) expr()   {}
 func (e BoolExpr) expr()     {}
@@ -100,3 +105,4 @@ func (e BindExpr) expr()     {}
 func (e MultOp) expr()       {}
 func (e BinOp) expr()        {}
 func (e UnOp) expr()         {}
+func (e CollectExpr) expr()  {}

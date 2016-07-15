@@ -175,6 +175,7 @@ func (p *Parser) parseString() (Expr, error) {
 	return nil, StringNotClosedErr
 }
 
+// parseExpr parses an expression from the file.
 func (p *Parser) parseExpr() (Expr, error) {
 	if p.pos >= len(p.text) {
 		return nil, PosOutOfBoundsErr
@@ -196,6 +197,8 @@ func (p *Parser) parseExpr() (Expr, error) {
 			expr, err = p.parseIf()
 		case tok == tokens.ForToken:
 			expr, err = p.parseFor()
+		case tok == tokens.CollectToken:
+			expr, err = p.parseCollect()
 		case tok == tokens.BlockToken:
 			expr, err = p.parseBlock()
 		case tok == tokens.AssignToken:
@@ -302,6 +305,16 @@ func (p *Parser) parseUnOp(token tokens.Token) (Expr, error) {
 	}
 
 	return UnOp{token, expr}, nil
+}
+
+// parseCollect parses a collect operation like (collect (for i nums (+ i 1))).
+func (p *Parser) parseCollect() (Expr, error) {
+	p.parseWhitespace()
+	expr, err := p.parseExpr()
+	if err != nil {
+		return nil, err
+	}
+	return CollectExpr{expr}, nil
 }
 
 // parseBinOp parses a binary operation like (and a b).

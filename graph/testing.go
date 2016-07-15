@@ -22,6 +22,8 @@ func (t *Testing) CompareTestNodeToRealNode(testNode Node, realNode Node) bool {
 		compareA := t.CompareTestNodeToRealNode(n.a, compare.a)
 		compareB := t.CompareTestNodeToRealNode(n.b, compare.b)
 		return n.operator == compare.operator && compareA && compareB
+	case *CollectNode:
+		return t.CompareTestNodeToRealNode(n.node, realNode.(*CollectNode).node)
 	case *ForNode:
 		compare := realNode.(*ForNode)
 		compareColl := t.CompareTestNodeToRealNode(n.collection, compare.collection)
@@ -74,6 +76,8 @@ func (t *Testing) GenerateTestNode(g *Globals, node Node) Node {
 	case *BinOpNode:
 		a, b := t.GenerateTestNode(g, n.a), t.GenerateTestNode(g, n.b)
 		return NewBinOpNode(g, n.operator, a, b)
+	case *CollectNode:
+		return NewCollectNode(g, n.node)
 	case *ForNode:
 		collection, body := t.GenerateTestNode(g, n.collection), t.GenerateTestNode(g, n.body)
 		return NewForNode(g, n.name, collection, body)
@@ -111,6 +115,10 @@ func (t *Testing) NewBinOpNode(operator tokens.Token, a Node, b Node) Node {
 		a:        a,
 		b:        b,
 	}
+}
+
+func (t *Testing) NewCollectNode(node Node) Node {
+	return &CollectNode{id: -1, node: node}
 }
 
 func (t *Testing) NewForNode(name string, collection Node, body Node) Node {

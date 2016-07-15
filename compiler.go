@@ -148,6 +148,12 @@ func CompileExpr(globals *graph.Globals, expr Expr, scope *Scope) (graph.Node, e
 		}
 
 		return graph.NewUnOpNode(globals, e.Operator, node), nil
+	case CollectExpr:
+		node, err := CompileExpr(globals, e.A, scope)
+		if err != nil {
+			return nil, err
+		}
+		return graph.NewCollectNode(globals, node), nil
 	default:
 		return nil, errors.New("Invalid expression type")
 	}

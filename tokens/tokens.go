@@ -10,6 +10,7 @@ const (
 	SelectorToken
 	RangeToken
 	ListToken
+	CollectToken
 	ForToken
 	IfToken
 	ElseToken
@@ -26,13 +27,14 @@ const (
 )
 
 var Keywords = map[string]Token{
-	"block": BlockToken,
-	"for":   ForToken,
-	"if":    IfToken,
-	"else":  ElseToken,
-	"goto":  GotoToken,
-	"sel":   SelectorToken,
-	"set":   AssignToken,
+	"block":   BlockToken,
+	"for":     ForToken,
+	"if":      IfToken,
+	"else":    ElseToken,
+	"goto":    GotoToken,
+	"sel":     SelectorToken,
+	"set":     AssignToken,
+	"collect": CollectToken,
 }
 
 var BinOps = map[string]Token{

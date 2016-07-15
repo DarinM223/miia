@@ -94,6 +94,26 @@ var compilerTests = []struct {
 			},
 		),
 	},
+	{
+		CollectExpr{
+			ForExpr{
+				BinOp{tokens.RangeToken, IntExpr{1}, IntExpr{3}},
+				"i",
+				VarExpr{"i"},
+			},
+		},
+		graphTestUtils.NewCollectNode(
+			graphTestUtils.NewForNode(
+				"i",
+				graphTestUtils.NewBinOpNode(
+					tokens.RangeToken,
+					graphTestUtils.NewValueNode(1),
+					graphTestUtils.NewValueNode(3),
+				),
+				graphTestUtils.NewVarNode("i"),
+			),
+		),
+	},
 }
 
 func TestCompiler(t *testing.T) {
