@@ -13,10 +13,12 @@ type CollectNode struct {
 
 func NewCollectNode(globals *Globals, node Node) *CollectNode {
 	id := globals.GenerateID()
+	inChan := make(chan Msg, InChanSize)
+	node.ParentChans()[id] = inChan
 	collectNode := &CollectNode{
 		id:          id,
 		node:        node,
-		inChan:      make(chan Msg, InChanSize),
+		inChan:      inChan,
 		parentChans: make(map[int]chan Msg),
 	}
 	globals.RegisterNode(id, collectNode)
@@ -41,13 +43,15 @@ func (n *CollectNode) Run() {
 	// Listen for stream messages from node and
 	// collect them into an array and then once all of the messages have
 	// been received, send a value message with the collected data.
-	for i := 0; i < msg.Len; i++ {
+	for i := 0; i < msg.Len-1; i++ {
 		streamMsg, ok := (<-n.inChan).(*StreamMsg)
 		if !ok {
 			panic("CollectNode not receiving a stream messsage")
 		}
 		n.results[streamMsg.Idx] = streamMsg.Data
 	}
+
+	data = NewValueMsg(n.id, true, n.results)
 
 	for _, parentChan := range n.parentChans {
 		parentChan <- data

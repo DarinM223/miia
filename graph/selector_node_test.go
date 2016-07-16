@@ -1,6 +1,7 @@
 package graph
 
 import (
+	"net/http"
 	"reflect"
 	"testing"
 )
@@ -18,6 +19,10 @@ var selectorNodeTests = []struct {
 }
 
 func TestSelectorNode(t *testing.T) {
+	if _, err := http.Get("http://www.google.com"); err != nil {
+		t.Skip("No internet connection")
+	}
+
 	for _, test := range selectorNodeTests {
 		globals := NewGlobals()
 

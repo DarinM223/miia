@@ -11,6 +11,29 @@ type Testing struct{}
 
 var testUtils Testing = Testing{}
 
+func (t *Testing) CompareTestMsgToRealMsg(testMsg Msg, realMsg Msg) bool {
+	if reflect.TypeOf(testMsg) != reflect.TypeOf(realMsg) {
+		return false
+	}
+
+	switch m := testMsg.(type) {
+	case *ValueMsg:
+		compare := realMsg.(*ValueMsg)
+		return m.passUp == compare.passUp && reflect.DeepEqual(m.Data, compare.Data)
+	case *StreamMsg:
+		compare := realMsg.(*StreamMsg)
+		return m.Idx == compare.Idx &&
+			m.Len == compare.Len &&
+			m.passUp == compare.passUp &&
+			reflect.DeepEqual(m.Data, compare.Data)
+	case *ErrMsg:
+		compare := realMsg.(*ErrMsg)
+		return m.passUp == compare.passUp && m.Err == compare.Err
+	default:
+		panic("Invalid msg type for CompareTestMsgToRealMsg()")
+	}
+}
+
 func (t *Testing) CompareTestNodeToRealNode(testNode Node, realNode Node) bool {
 	if reflect.TypeOf(testNode) != reflect.TypeOf(realNode) {
 		return false
@@ -176,4 +199,16 @@ func (t *Testing) NewValueNode(value interface{}) Node {
 
 func (t *Testing) NewVarNode(name string) Node {
 	return &VarNode{id: -1, name: name}
+}
+
+func (t *Testing) NewValueMsg(passUp bool, value interface{}) Msg {
+	return NewValueMsg(-1, passUp, value)
+}
+
+func (t *Testing) NewStreamMsg(passUp bool, idx int, len int, value interface{}) Msg {
+	return NewStreamMsg(-1, passUp, idx, len, value)
+}
+
+func (t *Testing) NewErrMsg(passUp bool, err error) Msg {
+	return NewErrMsg(-1, passUp, err)
 }

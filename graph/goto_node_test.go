@@ -6,6 +6,10 @@ import (
 )
 
 func TestGotoNode(t *testing.T) {
+	if _, err := http.Get("http://www.google.com"); err != nil {
+		t.Skip("No internet connection")
+	}
+
 	globals := NewGlobals()
 	parentChan1, parentChan2 := make(chan Msg, InChanSize), make(chan Msg, InChanSize)
 
