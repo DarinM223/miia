@@ -24,14 +24,13 @@ func TestContainsLoopNode(t *testing.T) {
 	}
 }
 
-// TODO(DarinM223): fix tests to maximize number of nodes running in parallel.
 var setNodesFanOutTests = []struct {
-	totalNodes, bFanout, aFanout int
+	totalNodes, aFanout, bFanout int
 }{
 	{100, 5, 5},
 	{25, 3, 2},
 	{20, 2, 2},
-	{10, 1, 1}, // this test is incorrect
+	{10, 2, 1},
 }
 
 func TestSetNodesFanOut(t *testing.T) {
@@ -49,7 +48,7 @@ func TestSetNodesFanOut(t *testing.T) {
 		forBBody := NewCollectNode(g, forA)
 		forB := NewForNode(g, "i", NewValueNode(g, []interface{}{1, 2, 3, 4, 5}), forBBody)
 
-		setNodesFanOut(forB, test.totalNodes)
+		SetNodesFanOut(forB, test.totalNodes)
 
 		if forB.fanout != test.bFanout {
 			t.Errorf("Error for test %v: expected %v got %v", test, test.bFanout, forB.fanout)

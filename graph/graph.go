@@ -110,6 +110,9 @@ func (t *constFanOut) calcNumNodes() int { return t.numSubnodes }
 func (t *addFanOut) calcNumNodes() int   { return t.a.calcNumNodes() + t.b.calcNumNodes() }
 func (t *multFanOut) calcNumNodes() int  { return t.a.calcNumNodes() * t.b.calcNumNodes() }
 
+// setNodeFanOut is a helper function for
+// SetNodesFanOut that returns the fan out expression
+// for a certain node.
 func setNodeFanOut(node Node, vars *[]*varFanOut) fanOutType {
 	switch n := node.(type) {
 	case *ForNode:
@@ -134,30 +137,48 @@ func setNodeFanOut(node Node, vars *[]*varFanOut) fanOutType {
 	return result
 }
 
-func setNodesFanOut(node Node, totalNodes int) {
+// completelyFilled is a helper function
+// for SetNodesFanOut that returns
+// true when all of the boolean values
+// in the array are true.
+func completelyFilled(filled []bool) bool {
+	completelyFilled := true
+	for _, f := range filled {
+		if !f {
+			completelyFilled = false
+		}
+	}
+	return completelyFilled
+}
+
+func SetNodesFanOut(node Node, totalNodes int) {
 	var vars []*varFanOut
 	fanOut := setNodeFanOut(node, &vars)
 
 	if len(vars) < 1 {
-		panic("Expected length of vars to be greater than 0")
+		return
 	}
 
-	// Increment each var and until the calculated
-	// number of nodes exceeds the total number of nodes.
-	// Then undo the latest increment and break out of the loop.
-	index := 0
+	filled := make([]bool, len(vars))
+
+	index := len(vars) - 1
 	for {
-		v := vars[index]
-		v.numSubnodes++
+		if !filled[index] {
+			v := vars[index]
+			v.numSubnodes++
+			if fanOut.calcNumNodes() > totalNodes {
+				v.numSubnodes--
+				filled[index] = true
 
-		if fanOut.calcNumNodes() > totalNodes {
-			v.numSubnodes--
-			break
-		}
+				if completelyFilled(filled) {
+					break
+				}
+			}
 
-		index++
-		if index >= len(vars) {
-			index = 0
+			index++
+			if index >= len(vars) {
+				index = 0
+			}
 		}
 	}
 
