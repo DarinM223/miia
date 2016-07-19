@@ -1,0 +1,7 @@
+(block
+  (set url "http://example.com/")
+  (for i (.. 1 100)
+    (collect
+      (for j (.. 1 100) 
+        (collect
+          (for k (.. 1 100) 1))))))

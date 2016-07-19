@@ -40,7 +40,6 @@ type ForNode struct {
 	parentChans    map[int]chan Msg
 	globals        *Globals
 	nodeToIdx      map[int]int
-	currIdxs       []int
 }
 
 func NewForNode(globals *Globals, name string, collection Node, body Node) *ForNode {
@@ -51,6 +50,7 @@ func NewForNode(globals *Globals, name string, collection Node, body Node) *ForN
 
 	forNode := &ForNode{
 		id:             id,
+		fanout:         1,
 		nodeType:       nil,
 		subnodes:       make(map[int]Node),
 		name:           name,
@@ -100,8 +100,8 @@ func (n *ForNode) handleValueMsg(isLoop bool, msg *ValueMsg) {
 		nodeType := n.nodeType.(*valueNodeType)
 		// Run fanout number of nodes.
 		for i := 0; i < n.fanout; i++ {
-			nodeType.currIdx++
 			startNode(n.globals, n.subnodes[i])
+			nodeType.currIdx++
 		}
 	}
 }
@@ -142,9 +142,9 @@ func (n *ForNode) handlePassUpMsg(isLoop bool, msg Msg) bool {
 		nodeType.finishedNodes++
 		if nodeType.finishedNodes >= len(n.subnodes) {
 			finished = true
-		} else if isLoop {
-			nodeType.currIdx++
+		} else if isLoop && nodeType.currIdx < len(n.subnodes) {
 			startNode(n.globals, n.subnodes[nodeType.currIdx])
+			nodeType.currIdx++
 		}
 
 		if valueMsg, ok := msg.(*ValueMsg); ok {
@@ -161,7 +161,7 @@ func (n *ForNode) handlePassUpMsg(isLoop bool, msg Msg) bool {
 		if valueMsg, ok := msg.(*ValueMsg); ok {
 			if len(nodeType.visitedNodes) >= nodeType.len {
 				finished = true
-			} else if isLoop {
+			} else {
 				// Find the next node by looking through the saved nodes ignoring
 				// already visited nodes. If there are no saved nodes, don't do anything.
 				nextNodeIdx := -1

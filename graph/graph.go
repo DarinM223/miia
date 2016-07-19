@@ -166,11 +166,10 @@ func SetNodesFanOut(node Node, totalNodes int) {
 					break
 				}
 			}
-
-			index++
-			if index >= len(vars) {
-				index = 0
-			}
+		}
+		index++
+		if index >= len(vars) {
+			index = 0
 		}
 	}
 

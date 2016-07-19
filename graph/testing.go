@@ -100,7 +100,7 @@ func (t *Testing) GenerateTestNode(g *Globals, node Node) Node {
 		a, b := t.GenerateTestNode(g, n.a), t.GenerateTestNode(g, n.b)
 		return NewBinOpNode(g, n.operator, a, b)
 	case *CollectNode:
-		return NewCollectNode(g, n.node)
+		return NewCollectNode(g, t.GenerateTestNode(g, n.node))
 	case *ForNode:
 		collection, body := t.GenerateTestNode(g, n.collection), t.GenerateTestNode(g, n.body)
 		return NewForNode(g, n.name, collection, body)

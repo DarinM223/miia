@@ -15,6 +15,12 @@ func main() {
 	}
 
 	path := os.Args[1]
+	fanout := 20
+	if len(os.Args) > 2 {
+		fanout := os.Args[2]
+		fmt.Println("Using fanout:", fanout)
+	}
+
 	absPath, err := filepath.Abs(path)
 	if err != nil {
 		fmt.Println("Error translating to absolute path: ", err)
@@ -42,6 +48,7 @@ func main() {
 		return
 	}
 
+	graph.SetNodesFanOut(resultNode, fanout)
 	resultChan := make(chan graph.Msg, graph.InChanSize)
 	resultNode.ParentChans()[69] = resultChan
 

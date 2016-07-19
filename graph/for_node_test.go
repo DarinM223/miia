@@ -32,6 +32,42 @@ var forNodeTests = []struct {
 		"i",
 		[]int{0, 1, 2, 3, 4, 5},
 	},
+	{
+		testUtils.NewForNode(
+			"i",
+			testUtils.NewValueNode([]interface{}{1, 2, 3}),
+			testUtils.NewCollectNode(
+				testUtils.NewForNode(
+					"x",
+					testUtils.NewValueNode([]interface{}{1, 2, 3, 4, 5, 6}),
+					testUtils.NewVarNode("x"),
+				),
+			),
+		),
+		testUtils.NewValueNode(1),
+		"a",
+		[]int{1, 1, 1},
+	},
+	{
+		testUtils.NewForNode(
+			"i",
+			testUtils.NewForNode(
+				"a",
+				testUtils.NewValueNode([]interface{}{1, 2, 3, 4, 5}),
+				testUtils.NewVarNode("a"),
+			),
+			testUtils.NewCollectNode(
+				testUtils.NewForNode(
+					"x",
+					testUtils.NewValueNode([]interface{}{1, 2, 3, 4, 5, 6}),
+					testUtils.NewVarNode("x"),
+				),
+			),
+		),
+		testUtils.NewValueNode(1),
+		"b",
+		[]int{1, 1, 1, 1, 1},
+	},
 }
 
 func TestForNode(t *testing.T) {
@@ -43,6 +79,7 @@ func TestForNode(t *testing.T) {
 		bodyNode := testUtils.GenerateTestNode(globals, test.body)
 
 		forNode := NewForNode(globals, test.name, collectionNode, bodyNode)
+		SetNodesFanOut(forNode, 20)
 		forNode.ParentChans()[5] = parentChan
 
 		globals.Run()

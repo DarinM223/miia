@@ -25,7 +25,9 @@ func (n *Globals) GenerateID() int {
 }
 
 func (n *Globals) RegisterNode(id int, node Node) {
+	n.mutex.Lock()
 	n.nodeMap[id] = node
+	n.mutex.Unlock()
 }
 
 func (n *Globals) Run() {

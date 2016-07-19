@@ -2,5 +2,5 @@
   (set url "http://example.com/")
   (collect 
     (for id (.. 1 100) (block
-    (goto url)
-    (sel "title" "h1" "desc" "p")))))
+      (goto url)
+      (sel "title" "h1" "desc" "p")))))
