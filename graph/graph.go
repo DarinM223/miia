@@ -85,3 +85,84 @@ func destroyNode(node Node) {
 		delete(dep.ParentChans(), node.ID())
 	}
 }
+
+type fanOutType interface {
+	calcNumNodes() int
+}
+
+type varFanOut struct {
+	// A variable number of subnodes.
+	numSubnodes int
+	// The for node for the variable.
+	node *ForNode
+}
+
+type constFanOut struct {
+	// A constant number of subnodes.
+	numSubnodes int
+}
+
+type addFanOut struct{ a, b fanOutType }
+type multFanOut struct{ a, b fanOutType }
+
+func (t *varFanOut) calcNumNodes() int   { return t.numSubnodes }
+func (t *constFanOut) calcNumNodes() int { return t.numSubnodes }
+func (t *addFanOut) calcNumNodes() int   { return t.a.calcNumNodes() + t.b.calcNumNodes() }
+func (t *multFanOut) calcNumNodes() int  { return t.a.calcNumNodes() * t.b.calcNumNodes() }
+
+func setNodeFanOut(node Node, vars *[]*varFanOut) fanOutType {
+	switch n := node.(type) {
+	case *ForNode:
+		v := &varFanOut{1, n}
+		*vars = append(*vars, v)
+		body := setNodeFanOut(n.body, vars)
+		return &addFanOut{&multFanOut{v, body}, &constFanOut{1}}
+	case *ValueNode, *VarNode:
+		return &constFanOut{1}
+	}
+
+	var result fanOutType = nil
+	for _, dep := range node.Dependencies() {
+		fanOut := setNodeFanOut(dep, vars)
+		if result == nil {
+			result = fanOut
+		} else {
+			result = &addFanOut{result, fanOut}
+		}
+	}
+	result = &addFanOut{result, &constFanOut{1}}
+	return result
+}
+
+func setNodesFanOut(node Node, totalNodes int) {
+	var vars []*varFanOut
+	fanOut := setNodeFanOut(node, &vars)
+
+	if len(vars) < 1 {
+		panic("Expected length of vars to be greater than 0")
+	}
+
+	// Increment each var and until the calculated
+	// number of nodes exceeds the total number of nodes.
+	// Then undo the latest increment and break out of the loop.
+	index := 0
+	for {
+		v := vars[index]
+		v.numSubnodes++
+
+		if fanOut.calcNumNodes() > totalNodes {
+			v.numSubnodes--
+			break
+		}
+
+		index++
+		if index >= len(vars) {
+			index = 0
+		}
+	}
+
+	// Set the fan outs into the for nodes.
+	for _, v := range vars {
+		v.node.setFanOut(v.numSubnodes)
+	}
+}

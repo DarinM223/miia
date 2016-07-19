@@ -29,6 +29,7 @@ func (t *streamNodeType) forNode() {}
 // into the body node.
 type ForNode struct {
 	id             int
+	fanout         int
 	nodeType       forNodeType
 	subnodes       map[int]Node
 	name           string
@@ -174,6 +175,10 @@ func (n *ForNode) handlePassUpMsg(isLoop bool, msg Msg) bool {
 		parent <- data
 	}
 	return finished
+}
+
+func (n *ForNode) setFanOut(fanout int) {
+	n.fanout = fanout
 }
 
 func (n *ForNode) Run() {

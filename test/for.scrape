@@ -1,5 +1,6 @@
 (block
-  (set url "http://motherfuckingwebsite.com/")
-  (for id (.. 1 100) (block
+  (set url "http://example.com/")
+  (collect 
+    (for id (.. 1 100) (block
     (goto url)
-    (sel "what" "h1" "why" "h2"))))
+    (sel "title" "h1" "desc" "p")))))
