@@ -137,20 +137,10 @@ func setNodeFanOut(node Node, vars *[]*varFanOut) fanOutType {
 	return result
 }
 
-// completelyFilled is a helper function
-// for SetNodesFanOut that returns
-// true when all of the boolean values
-// in the array are true.
-func completelyFilled(filled []bool) bool {
-	completelyFilled := true
-	for _, f := range filled {
-		if !f {
-			completelyFilled = false
-		}
-	}
-	return completelyFilled
-}
-
+// SetNodesFanOut is a function that sets the fanout
+// for all for nodes in the graph starting from the given node
+// given the maximum limit of concurrently running goroutines.
+// This function is to be run before running the nodes in the graph.
 func SetNodesFanOut(node Node, totalNodes int) {
 	var vars []*varFanOut
 	fanOut := setNodeFanOut(node, &vars)
@@ -160,6 +150,7 @@ func SetNodesFanOut(node Node, totalNodes int) {
 	}
 
 	filled := make([]bool, len(vars))
+	numFilled := 0
 
 	index := len(vars) - 1
 	for {
@@ -170,7 +161,8 @@ func SetNodesFanOut(node Node, totalNodes int) {
 				v.numSubnodes--
 				filled[index] = true
 
-				if completelyFilled(filled) {
+				numFilled++
+				if numFilled >= len(vars) {
 					break
 				}
 			}
