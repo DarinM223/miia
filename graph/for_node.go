@@ -15,7 +15,7 @@ type valueNodeType struct {
 }
 
 type streamNodeType struct {
-	currIdx          int
+	numCurrIdxs      int
 	len              int
 	visitedNodes     map[int]bool
 	startedFirstNode bool
@@ -40,6 +40,7 @@ type ForNode struct {
 	parentChans    map[int]chan Msg
 	globals        *Globals
 	nodeToIdx      map[int]int
+	currIdxs       []int
 }
 
 func NewForNode(globals *Globals, name string, collection Node, body Node) *ForNode {
@@ -96,8 +97,12 @@ func (n *ForNode) handleValueMsg(isLoop bool, msg *ValueMsg) {
 			startNode(n.globals, node)
 		}
 	} else {
-		// Run first subnode.
-		startNode(n.globals, n.subnodes[0])
+		nodeType := n.nodeType.(*valueNodeType)
+		// Run fanout number of nodes.
+		for i := 0; i < n.fanout; i++ {
+			nodeType.currIdx++
+			startNode(n.globals, n.subnodes[i])
+		}
 	}
 }
 
@@ -116,11 +121,12 @@ func (n *ForNode) handleStreamMsg(isLoop bool, msg *StreamMsg) {
 	SetVarNodes(n.subnodes[i], n.name, msg.Data)
 
 	// Start node if the body is not a loop,
-	// or if the index is -1.
+	// or if there are less running nodes than the fanout.
 	if nodeType, ok := n.nodeType.(*streamNodeType); ok {
-		if !isLoop || nodeType.currIdx == -1 {
+		if !isLoop || nodeType.numCurrIdxs < n.fanout {
+			nodeType.visitedNodes[i] = true
 			startNode(n.globals, n.subnodes[i])
-			nodeType.currIdx = i
+			nodeType.numCurrIdxs++
 		}
 	}
 }
@@ -130,6 +136,9 @@ func (n *ForNode) handlePassUpMsg(isLoop bool, msg Msg) bool {
 	var data Msg
 	switch nodeType := n.nodeType.(type) {
 	case *valueNodeType:
+		// For a value type since all of the values are already saved
+		// you can start another node right away.
+
 		nodeType.finishedNodes++
 		if nodeType.finishedNodes >= len(n.subnodes) {
 			finished = true
@@ -144,24 +153,28 @@ func (n *ForNode) handlePassUpMsg(isLoop bool, msg Msg) bool {
 			panic(fmt.Sprintf("Message is not a value message: %v", msg))
 		}
 	case *streamNodeType:
-		nodeType.visitedNodes[nodeType.currIdx] = true
+		// For a stream type you can only start another node if that node
+		// has already been saved but not started. Saved nodes are in nodeToIdx.
+
+		nodeType.numCurrIdxs--
+
 		if valueMsg, ok := msg.(*ValueMsg); ok {
 			if len(nodeType.visitedNodes) >= nodeType.len {
 				finished = true
 			} else if isLoop {
-				// Find the next node by looking through the nodes ignoring
-				// already visited nodes. If there are no nodes, set the current
-				// index to -1.
+				// Find the next node by looking through the saved nodes ignoring
+				// already visited nodes. If there are no saved nodes, don't do anything.
 				nextNodeIdx := -1
-				for i, _ := range n.subnodes {
+				for _, i := range n.nodeToIdx {
 					if visited, ok := nodeType.visitedNodes[i]; !ok || !visited {
 						nextNodeIdx = i
 						break
 					}
 				}
 
-				nodeType.currIdx = nextNodeIdx
 				if nextNodeIdx != -1 {
+					nodeType.numCurrIdxs++
+					nodeType.visitedNodes[nextNodeIdx] = true
 					startNode(n.globals, n.subnodes[nextNodeIdx])
 				}
 			}
