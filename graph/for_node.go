@@ -70,7 +70,11 @@ func (n *ForNode) ID() int                       { return n.id }
 func (n *ForNode) Chan() chan Msg                { return n.inChan }
 func (n *ForNode) ParentChans() map[int]chan Msg { return n.parentChans }
 func (n *ForNode) Dependencies() []Node          { return []Node{n.collection, n.body} }
-func (n *ForNode) Clone(g *Globals) Node         { return NewForNode(g, n.name, n.collection.Clone(g), n.body) }
+func (n *ForNode) Clone(g *Globals) Node {
+	forNode := NewForNode(g, n.name, n.collection.Clone(g), n.body.Clone(g))
+	forNode.setFanOut(n.fanout)
+	return forNode
+}
 
 func (n *ForNode) handleValueMsg(isLoop bool, msg *ValueMsg) {
 	if n.nodeType == nil {
