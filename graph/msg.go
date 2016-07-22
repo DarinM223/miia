@@ -15,6 +15,8 @@ type Msg interface {
 	// PassUp is true when completed data is being
 	// sent backwards from the child to the parent.
 	PassUp() bool
+	// GetData returns the data of the message.
+	GetData() interface{}
 
 	// setID sets the id of the message.
 	setID(id int)
@@ -60,3 +62,7 @@ func NewStreamMsg(id int, passUp bool, idx int, len int, data interface{}) *Stre
 func NewErrMsg(id int, passUp bool, err error) *ErrMsg {
 	return &ErrMsg{&msgTag{id, passUp}, err}
 }
+
+func (m *ValueMsg) GetData() interface{}  { return m.Data }
+func (m *StreamMsg) GetData() interface{} { return m.Data }
+func (m *ErrMsg) GetData() interface{}    { return m.Err }

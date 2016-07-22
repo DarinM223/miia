@@ -2,6 +2,7 @@ package graph
 
 import (
 	"errors"
+	"fmt"
 	"github.com/DarinM223/miia/tokens"
 	"math"
 	"reflect"
@@ -86,7 +87,7 @@ func applyBinOp(a interface{}, b interface{}, op tokens.Token) (interface{}, err
 			}
 			return rangeInts, nil
 		}
-		return nil, errors.New("Invalid types for BinOp RangeToken")
+		return nil, errors.New(fmt.Sprintf("Invalid types for BinOp RangeToken: types %v and %v", reflect.TypeOf(a), reflect.TypeOf(b)))
 	case tokens.EqualsToken:
 		if reflect.TypeOf(a) != reflect.TypeOf(b) {
 			return nil, errors.New("Invalid types for BinOp EqualsToken")

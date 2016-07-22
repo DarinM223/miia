@@ -20,6 +20,15 @@ var forNodeTests = []struct {
 		[]int{2, 3, 4, 5, 6, 7},
 	},
 	{
+		testUtils.NewValueNode([]interface{}{1, 2, 3, 4, 5, 6}),
+		testUtils.NewMultOpNode(tokens.AddToken, []Node{
+			testUtils.NewValueNode(1),
+			testUtils.NewVarNode("i"),
+		}),
+		"i",
+		[]int{2, 3, 4, 5, 6, 7},
+	},
+	{
 		testUtils.NewForNode(
 			"a",
 			testUtils.NewValueNode([]interface{}{1, 2, 3, 4, 5, 6}),

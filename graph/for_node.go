@@ -103,7 +103,7 @@ func (n *ForNode) handleValueMsg(isLoop bool, msg *ValueMsg) {
 	} else {
 		nodeType := n.nodeType.(*valueNodeType)
 		// Run fanout number of nodes.
-		for i := 0; i < n.fanout; i++ {
+		for i := 0; i < n.fanout && i < len(n.subnodes); i++ {
 			startNode(n.globals, n.subnodes[i])
 			nodeType.currIdx++
 		}
@@ -154,7 +154,7 @@ func (n *ForNode) handlePassUpMsg(isLoop bool, msg Msg) bool {
 		if valueMsg, ok := msg.(*ValueMsg); ok {
 			data = NewStreamMsg(n.id, true, n.nodeToIdx[valueMsg.ID()], len(n.subnodes), valueMsg.Data)
 		} else {
-			panic(fmt.Sprintf("Message is not a value message: %v", msg))
+			panic(fmt.Sprintf("Message is not a value message: %v instead: %v", msg, reflect.TypeOf(msg)))
 		}
 	case *streamNodeType:
 		// For a stream type you can only start another node if that node
@@ -212,7 +212,7 @@ func (n *ForNode) Run() {
 			case *StreamMsg:
 				n.handleStreamMsg(isLoop, m)
 			default:
-				panic("Invalid message from collectionChan received")
+				panic(fmt.Sprintf("Invalid message from collectionChan received: %v", msg))
 			}
 		case msg := <-n.inChan:
 			if finished := n.handlePassUpMsg(isLoop, msg); finished {
