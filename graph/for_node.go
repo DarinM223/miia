@@ -5,15 +5,20 @@ import (
 	"reflect"
 )
 
+// forNodeType is the current state of the for loop node.
 type forNodeType interface {
 	forNode()
 }
 
+// valueNodeType is the state when a for loop
+// receives a value message in its input channel.
 type valueNodeType struct {
 	currIdx       int
 	finishedNodes int
 }
 
+// streamNodeType is the state when a for loop
+// receives a stream message in its input channel.
 type streamNodeType struct {
 	numCurrIdxs      int
 	len              int

@@ -5,6 +5,9 @@ import (
 	"net/http"
 )
 
+// GotoNode listens for a url value node
+// and sends an http request to the url
+// and passes up the response.
 type GotoNode struct {
 	id          int
 	url         Node

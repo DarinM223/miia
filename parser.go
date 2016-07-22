@@ -409,6 +409,7 @@ func (p *Parser) parseBlock() (Expr, error) {
 	return BlockExpr{exprList}, nil
 }
 
+// parseBindings parses a variable binding expression.
 func (p *Parser) parseBindings() (Expr, error) {
 	if p.pos >= len(p.text) {
 		return nil, PosOutOfBoundsErr

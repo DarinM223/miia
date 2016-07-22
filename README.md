@@ -40,6 +40,6 @@ In order to run the unit tests in all the packages, run `go test ./...` in the p
 - ~~Add array literal support.~~
 - Add more options for selector nodes (right now it only parses the text of the dom element with the selector).
 - Add more options for goto nodes (allow for GET and POST and custom auth types).
-- Determine exactly how many for loop subnodes to run in parallel (right now if a for loop contains a nested for loop
-it only runs each subnode one at a time).
+- ~~Determine exactly how many for loop subnodes to run in parallel (right now if a for loop contains a nested for loop
+it only runs each subnode one at a time).~~
 - Add benchmarks.

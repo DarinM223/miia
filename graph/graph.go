@@ -51,7 +51,7 @@ func SetVarNodes(node Node, name string, value interface{}) {
 
 		if varNode, ok := n.(*VarNode); ok && varNode.name == name {
 			varNode.setMsg(NewValueMsg(node.ID(), true, value))
-			varNode.inChan <- &ValueMsg{}
+			varNode.inChan <- nil
 		} else {
 			for _, dep := range n.Dependencies() {
 				queue = append(queue, dep)

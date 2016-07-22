@@ -5,6 +5,15 @@ import (
 	"time"
 )
 
+// VarNode is a variable node that is set dynamically.
+// A VarNode's message can be set either before it's running
+// or while it's running. If the message is set before, the
+// VarNode will just send the saved message.  If the message is
+// set after, the VarNode will listen on its input channel and
+// only send the saved message once it receives a value.
+//
+// In order to set a VarNode you would first call the setMsg method
+// and then send a nil value to its input channel.
 type VarNode struct {
 	id          int
 	name        string
@@ -38,18 +47,22 @@ func (n *VarNode) Clone(globals *Globals) Node {
 
 func (n *VarNode) Run() {
 	if n.msg != nil {
+		msg := n.msg.Clone()
+		msg.setID(n.id)
 		for _, parent := range n.parentChans {
-			parent <- NewValueMsg(n.id, true, n.msg.GetData())
+			parent <- msg
 		}
 		return
 	}
 
 	select {
 	case <-n.inChan:
-		switch m := n.msg.(type) {
+		switch n.msg.(type) {
 		case *ValueMsg:
+			msg := n.msg.Clone()
+			msg.setID(n.id)
 			for _, parent := range n.parentChans {
-				parent <- NewValueMsg(n.id, true, m.Data)
+				parent <- msg
 			}
 		case *StreamMsg:
 			panic("Stream message as var not implemented yet")
@@ -61,4 +74,5 @@ func (n *VarNode) Run() {
 	}
 }
 
+// setMsg sets the message that the VarNode will send to its parents.
 func (n *VarNode) setMsg(msg Msg) { n.msg = msg }

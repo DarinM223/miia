@@ -15,8 +15,8 @@ type Msg interface {
 	// PassUp is true when completed data is being
 	// sent backwards from the child to the parent.
 	PassUp() bool
-	// GetData returns the data of the message.
-	GetData() interface{}
+	// Clone clones a message.
+	Clone() Msg
 
 	// setID sets the id of the message.
 	setID(id int)
@@ -63,6 +63,6 @@ func NewErrMsg(id int, passUp bool, err error) *ErrMsg {
 	return &ErrMsg{&msgTag{id, passUp}, err}
 }
 
-func (m *ValueMsg) GetData() interface{}  { return m.Data }
-func (m *StreamMsg) GetData() interface{} { return m.Data }
-func (m *ErrMsg) GetData() interface{}    { return m.Err }
+func (m *ValueMsg) Clone() Msg  { return NewValueMsg(m.id, m.passUp, m.Data) }
+func (m *StreamMsg) Clone() Msg { return NewStreamMsg(m.id, m.passUp, m.Idx, m.Len, m.Data) }
+func (m *ErrMsg) Clone() Msg    { return NewErrMsg(m.id, m.passUp, m.Err) }
