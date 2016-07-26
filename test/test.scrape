@@ -1,0 +1,5 @@
+(block
+  (for i (.. 1 10)
+    (collect
+      (for j (.. 1 10)
+        (+ i j)))))
