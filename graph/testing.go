@@ -205,10 +205,18 @@ func (t *Testing) NewValueMsg(passUp bool, value interface{}) Msg {
 	return NewValueMsg(-1, passUp, value)
 }
 
-func (t *Testing) NewStreamMsg(passUp bool, idx int, len int, value interface{}) Msg {
+func (t *Testing) NewStreamMsg(passUp bool, idx *StreamIndex, len *StreamIndex, value interface{}) Msg {
 	return NewStreamMsg(-1, passUp, idx, len, value)
 }
 
 func (t *Testing) NewErrMsg(passUp bool, err error) Msg {
 	return NewErrMsg(-1, passUp, err)
+}
+
+func (t *Testing) NewStreamDataArr(values ...interface{}) DataNode {
+	data := make([]DataNode, len(values))
+	for i := 0; i < len(values); i++ {
+		data[i] = &streamLeaf{values[i]}
+	}
+	return &streamNode{data}
 }

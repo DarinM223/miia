@@ -35,10 +35,10 @@ type StreamMsg struct {
 
 	// Idx is the index of the message
 	// sent over the stream.
-	Idx int
+	Idx *StreamIndex
 	// Len is the total number of messages
 	// sent over the stream.
-	Len int
+	Len *StreamIndex
 	// Data is the data contained in the
 	// stream message.
 	Data interface{}
@@ -55,7 +55,7 @@ func NewValueMsg(id int, passUp bool, data interface{}) *ValueMsg {
 	return &ValueMsg{&msgTag{id, passUp}, data}
 }
 
-func NewStreamMsg(id int, passUp bool, idx int, len int, data interface{}) *StreamMsg {
+func NewStreamMsg(id int, passUp bool, idx *StreamIndex, len *StreamIndex, data interface{}) *StreamMsg {
 	return &StreamMsg{&msgTag{id, passUp}, idx, len, data}
 }
 
@@ -63,6 +63,8 @@ func NewErrMsg(id int, passUp bool, err error) *ErrMsg {
 	return &ErrMsg{&msgTag{id, passUp}, err}
 }
 
-func (m *ValueMsg) Clone() Msg  { return NewValueMsg(m.id, m.passUp, m.Data) }
-func (m *StreamMsg) Clone() Msg { return NewStreamMsg(m.id, m.passUp, m.Idx, m.Len, m.Data) }
-func (m *ErrMsg) Clone() Msg    { return NewErrMsg(m.id, m.passUp, m.Err) }
+func (m *ValueMsg) Clone() Msg { return NewValueMsg(m.id, m.passUp, m.Data) }
+func (m *ErrMsg) Clone() Msg   { return NewErrMsg(m.id, m.passUp, m.Err) }
+func (m *StreamMsg) Clone() Msg {
+	return NewStreamMsg(m.id, m.passUp, m.Idx.Clone(), m.Len.Clone(), m.Data)
+}
