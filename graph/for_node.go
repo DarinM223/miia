@@ -165,22 +165,22 @@ func (n *ForNode) incStreamNode(nodeType *streamNodeType) bool {
 	nodeType.numCurrIdxs--
 	if len(nodeType.visitedNodes) >= nodeType.len.Len() {
 		return true
-	} else {
-		// Find the next node by looking through the saved nodes ignoring
-		// already visited nodes. If there are no saved nodes, don't do anything.
-		var nextNodeIdx *StreamIndex = nil
-		for _, i := range n.nodeToIdx {
-			if visited, ok := nodeType.visitedNodes[i.String()]; !ok || !visited {
-				nextNodeIdx = i
-				break
-			}
-		}
+	}
 
-		if nextNodeIdx != nil {
-			nodeType.numCurrIdxs++
-			nodeType.visitedNodes[nextNodeIdx.String()] = true
-			startNode(n.globals, n.subnodes[nextNodeIdx.String()])
+	// Find the next node by looking through the saved nodes ignoring
+	// already visited nodes. If there are no saved nodes, don't do anything.
+	var nextNodeIdx *StreamIndex = nil
+	for _, i := range n.nodeToIdx {
+		if visited, ok := nodeType.visitedNodes[i.String()]; !ok || !visited {
+			nextNodeIdx = i
+			break
 		}
+	}
+
+	if nextNodeIdx != nil {
+		nodeType.numCurrIdxs++
+		nodeType.visitedNodes[nextNodeIdx.String()] = true
+		startNode(n.globals, n.subnodes[nextNodeIdx.String()])
 	}
 	return false
 }
@@ -193,8 +193,8 @@ func (n *ForNode) handlePassUpMsg(msg Msg) bool {
 		// For a value type since all of the values are already saved
 		// you can start another node right away.
 
+		finished = n.incValueNode(nodeType)
 		if valueMsg, ok := msg.(*ValueMsg); ok {
-			finished = n.incValueNode(nodeType)
 			data = NewStreamMsg(
 				n.id,
 				true,
@@ -203,11 +203,9 @@ func (n *ForNode) handlePassUpMsg(msg Msg) bool {
 				valueMsg.Data,
 			)
 		} else if streamMsg, ok := msg.(*StreamMsg); ok {
-			// TODO(DarinM223): increment node if all streams for a subnode
-			// received.
-			streamMsg.setID(n.id)
 			streamMsg.Idx.Append(n.nodeToIdx[streamMsg.ID()])
 			streamMsg.Len.AddIndex(len(n.subnodes))
+			streamMsg.setID(n.id)
 			data = streamMsg
 		} else {
 			panic(fmt.Sprintf("Message is not a value or stream message: %v instead: %v", msg, reflect.TypeOf(msg)))
@@ -216,8 +214,8 @@ func (n *ForNode) handlePassUpMsg(msg Msg) bool {
 		// For a stream type you can only start another node if that node
 		// has already been saved but not started. Saved nodes are in nodeToIdx.
 
+		finished = n.incStreamNode(nodeType)
 		if valueMsg, ok := msg.(*ValueMsg); ok {
-			finished = n.incStreamNode(nodeType)
 			data = NewStreamMsg(
 				n.id,
 				true,
@@ -226,12 +224,9 @@ func (n *ForNode) handlePassUpMsg(msg Msg) bool {
 				valueMsg.Data,
 			)
 		} else if streamMsg, ok := msg.(*StreamMsg); ok {
-			// TODO(DarinM223): increment node if all streams for a subnode
-			// received.
-			finished = n.incStreamNode(nodeType)
-			streamMsg.setID(n.id)
 			streamMsg.Idx.Append(n.nodeToIdx[streamMsg.ID()])
 			streamMsg.Len.Append(nodeType.len)
+			streamMsg.setID(n.id)
 			data = streamMsg
 		} else {
 			panic(fmt.Sprintf("Message is not a value or stream message: %v", msg))
