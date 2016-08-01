@@ -8,7 +8,7 @@ import (
 
 func TestPopIndex(t *testing.T) {
 	index := NewStreamIndex(3, 2)
-	expected := &StreamIndex{[]int{3, 2}}
+	expected := &StreamIndex{[]int{3, 2}, "32"}
 	if !reflect.DeepEqual(index, expected) {
 		t.Errorf("Different values: expected %v got %v", expected, index)
 	}
@@ -18,7 +18,7 @@ func TestPopIndex(t *testing.T) {
 		t.Errorf("Different values: expected %d got %d", 2, i)
 	}
 
-	expected = &StreamIndex{[]int{3}}
+	expected = &StreamIndex{[]int{3}, "3"}
 	if !reflect.DeepEqual(index, expected) {
 		t.Errorf("Different values: expected %v got %v", expected, index)
 	}
@@ -30,8 +30,8 @@ func TestCloneIndex(t *testing.T) {
 
 	index.AddIndex(3)
 
-	expectedIndex := &StreamIndex{[]int{3, 2, 3}}
-	expectedClone := &StreamIndex{[]int{3, 2}}
+	expectedIndex := &StreamIndex{[]int{3, 2, 3}, "323"}
+	expectedClone := &StreamIndex{[]int{3, 2}, "32"}
 
 	if !reflect.DeepEqual(index, expectedIndex) {
 		t.Errorf("Different values: expected %v got %v", expectedIndex, index)

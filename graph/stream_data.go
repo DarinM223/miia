@@ -1,6 +1,7 @@
 package graph
 
 import (
+	"bytes"
 	"errors"
 	"fmt"
 )
@@ -10,14 +11,35 @@ type StreamIndex struct {
 	// For example [3 1] is the 1st index of the first collection
 	// and the 3rd index of the second collection.
 	Indexes []int
+	s       string
 }
 
 func NewStreamIndex(idxs ...int) *StreamIndex {
-	return &StreamIndex{idxs}
+	var strIdx bytes.Buffer
+	for _, i := range idxs {
+		strIdx.WriteString(fmt.Sprintf("%d", i))
+	}
+
+	return &StreamIndex{idxs, strIdx.String()}
 }
 
 func (s *StreamIndex) AddIndex(index int) {
+	s.s += fmt.Sprintf("%d", index)
 	s.Indexes = append(s.Indexes, index)
+}
+
+// Append adds the parameter index to the beginning of the index
+// (the end of the array).
+// Example: appending [1 2] to [3 4] yields [3 4 1 2]
+func (s *StreamIndex) Append(appendIdx *StreamIndex) {
+	s.s += appendIdx.s
+	s.Indexes = append(s.Indexes, appendIdx.Indexes...)
+}
+
+// String returns the stream index as an indexable string format.
+// Example: [1 3 4] returns "134".
+func (s *StreamIndex) String() string {
+	return s.s
 }
 
 func (s *StreamIndex) Clone() *StreamIndex {
@@ -25,7 +47,7 @@ func (s *StreamIndex) Clone() *StreamIndex {
 	for i := 0; i < len(s.Indexes); i++ {
 		copiedIdxs[i] = s.Indexes[i]
 	}
-	return &StreamIndex{copiedIdxs}
+	return &StreamIndex{copiedIdxs, s.s}
 }
 
 func (s *StreamIndex) PopIndex() int {
@@ -34,7 +56,16 @@ func (s *StreamIndex) PopIndex() int {
 	}
 	poppedIdx := s.Indexes[len(s.Indexes)-1]
 	s.Indexes = s.Indexes[:len(s.Indexes)-1]
+	s.s = s.s[:len(s.s)-1]
 	return poppedIdx
+}
+
+func (s *StreamIndex) PeekIndex() int {
+	if s.Empty() {
+		return -1
+	}
+
+	return s.Indexes[len(s.Indexes)-1]
 }
 
 func (i *StreamIndex) Empty() bool {
@@ -124,6 +155,12 @@ func (s *streamNode) Full(idx *StreamIndex) bool {
 }
 
 func (s *streamNode) Data() interface{} {
+	if len(s.data) == 0 {
+		return nil
+	} else if len(s.data) == 1 {
+		return s.data[0].Data()
+	}
+
 	results := make([]interface{}, len(s.data))
 	for i, data := range s.data {
 		results[i] = data.Data()
