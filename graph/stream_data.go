@@ -23,6 +23,14 @@ func NewStreamIndex(idxs ...int) *StreamIndex {
 	return &StreamIndex{idxs, strIdx.String()}
 }
 
+func NewStreamIndexFromString(s string) *StreamIndex {
+	idxs := make([]int, len(s))
+	for i, ch := range s {
+		idxs[i] = int(ch - '0')
+	}
+	return &StreamIndex{idxs, s}
+}
+
 func (s *StreamIndex) AddIndex(index int) {
 	s.s += fmt.Sprintf("%d", index)
 	s.Indexes = append(s.Indexes, index)

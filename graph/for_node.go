@@ -47,7 +47,7 @@ type ForNode struct {
 	parentChans    map[int]chan Msg
 	globals        *Globals
 	// mapping from node ID to the index of the collected array data.
-	nodeToIdx map[int]*StreamIndex
+	nodeToIdx map[int]string
 	// true if the for node contains a nested for node.
 	isLoop bool
 }
@@ -70,7 +70,7 @@ func NewForNode(globals *Globals, name string, collection Node, body Node) *ForN
 		collectionChan: collectionChan,
 		parentChans:    make(map[int]chan Msg),
 		globals:        globals,
-		nodeToIdx:      make(map[int]*StreamIndex),
+		nodeToIdx:      make(map[int]string),
 		isLoop:         false,
 	}
 	globals.RegisterNode(id, forNode)
@@ -100,7 +100,7 @@ func (n *ForNode) handleValueMsg(msg *ValueMsg) {
 			strIdx := fmt.Sprintf("%d", i)
 			n.subnodes[strIdx] = n.body.Clone(n.globals)
 			n.subnodes[strIdx].ParentChans()[n.id] = n.inChan
-			n.nodeToIdx[n.subnodes[strIdx].ID()] = NewStreamIndex(i)
+			n.nodeToIdx[n.subnodes[strIdx].ID()] = strIdx
 			SetVarNodes(n.subnodes[strIdx], n.name, arr.Index(i).Interface())
 		}
 	}
@@ -127,7 +127,6 @@ func (n *ForNode) handleStreamMsg(msg *StreamMsg) {
 	if n.inChan == nil {
 		n.inChan = make(chan Msg, msg.Len.Len())
 	}
-
 	if n.nodeType == nil {
 		n.nodeType = &streamNodeType{-1, msg.Len, make(map[string]bool), false}
 	}
@@ -135,7 +134,7 @@ func (n *ForNode) handleStreamMsg(msg *StreamMsg) {
 	i := msg.Idx.String()
 	n.subnodes[i] = n.body.Clone(n.globals)
 	n.subnodes[i].ParentChans()[n.id] = n.inChan
-	n.nodeToIdx[n.subnodes[i].ID()] = msg.Idx
+	n.nodeToIdx[n.subnodes[i].ID()] = i
 	SetVarNodes(n.subnodes[i], n.name, msg.Data)
 
 	// Start node if the body is not a loop,
@@ -163,24 +162,24 @@ func (n *ForNode) incValueNode(nodeType *valueNodeType) bool {
 
 func (n *ForNode) incStreamNode(nodeType *streamNodeType) bool {
 	nodeType.numCurrIdxs--
-	if len(nodeType.visitedNodes) >= nodeType.len.Len() {
+	if nodeType.numCurrIdxs < 0 || len(nodeType.visitedNodes) >= nodeType.len.Len() {
 		return true
 	}
 
 	// Find the next node by looking through the saved nodes ignoring
 	// already visited nodes. If there are no saved nodes, don't do anything.
-	var nextNodeIdx *StreamIndex = nil
+	nextNodeIdx := ""
 	for _, i := range n.nodeToIdx {
-		if visited, ok := nodeType.visitedNodes[i.String()]; !ok || !visited {
+		if visited, ok := nodeType.visitedNodes[i]; !ok || !visited {
 			nextNodeIdx = i
 			break
 		}
 	}
 
-	if nextNodeIdx != nil {
+	if nextNodeIdx != "" {
 		nodeType.numCurrIdxs++
-		nodeType.visitedNodes[nextNodeIdx.String()] = true
-		startNode(n.globals, n.subnodes[nextNodeIdx.String()])
+		nodeType.visitedNodes[nextNodeIdx] = true
+		startNode(n.globals, n.subnodes[nextNodeIdx])
 	}
 	return false
 }
@@ -198,12 +197,12 @@ func (n *ForNode) handlePassUpMsg(msg Msg) bool {
 			data = NewStreamMsg(
 				n.id,
 				true,
-				n.nodeToIdx[valueMsg.ID()],
+				NewStreamIndexFromString(n.nodeToIdx[valueMsg.ID()]),
 				NewStreamIndex(len(n.subnodes)),
 				valueMsg.Data,
 			)
 		} else if streamMsg, ok := msg.(*StreamMsg); ok {
-			streamMsg.Idx.Append(n.nodeToIdx[streamMsg.ID()])
+			streamMsg.Idx.Append(NewStreamIndexFromString(n.nodeToIdx[streamMsg.ID()]))
 			streamMsg.Len.AddIndex(len(n.subnodes))
 			streamMsg.setID(n.id)
 			data = streamMsg
@@ -219,12 +218,12 @@ func (n *ForNode) handlePassUpMsg(msg Msg) bool {
 			data = NewStreamMsg(
 				n.id,
 				true,
-				n.nodeToIdx[valueMsg.ID()],
+				NewStreamIndexFromString(n.nodeToIdx[valueMsg.ID()]),
 				nodeType.len,
 				valueMsg.Data,
 			)
 		} else if streamMsg, ok := msg.(*StreamMsg); ok {
-			streamMsg.Idx.Append(n.nodeToIdx[streamMsg.ID()])
+			streamMsg.Idx.Append(NewStreamIndexFromString(n.nodeToIdx[streamMsg.ID()]))
 			streamMsg.Len.Append(nodeType.len)
 			streamMsg.setID(n.id)
 			data = streamMsg
