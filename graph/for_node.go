@@ -21,8 +21,8 @@ type valueNodeType struct {
 // receives a stream message in its input channel.
 type streamNodeType struct {
 	numCurrIdxs      int
-	len              int
-	visitedNodes     map[int]bool
+	len              string
+	visitedNodes     map[string]bool
 	startedFirstNode bool
 }
 
@@ -33,10 +33,12 @@ func (t *streamNodeType) forNode() {}
 // passes up values as they are passed up from the subnodes
 // into the body node.
 type ForNode struct {
-	id             int
-	fanout         int
+	id int
+	// the number of nodes to run concurrently at a time.
+	fanout int
+	// the state of the for node (whether the collection is a value type or a stream type).
 	nodeType       forNodeType
-	subnodes       map[int]Node
+	subnodes       map[string]Node
 	name           string
 	collection     Node
 	body           Node
@@ -44,7 +46,10 @@ type ForNode struct {
 	collectionChan chan Msg
 	parentChans    map[int]chan Msg
 	globals        *Globals
-	nodeToIdx      map[int]int
+	// mapping from node ID to the index of the collected array data.
+	nodeToIdx map[int]string
+	// true if the for node contains a nested for node.
+	isLoop bool
 }
 
 func NewForNode(globals *Globals, name string, collection Node, body Node) *ForNode {
@@ -57,7 +62,7 @@ func NewForNode(globals *Globals, name string, collection Node, body Node) *ForN
 		id:             id,
 		fanout:         1,
 		nodeType:       nil,
-		subnodes:       make(map[int]Node),
+		subnodes:       make(map[string]Node),
 		name:           name,
 		collection:     collection,
 		body:           body,
@@ -65,7 +70,8 @@ func NewForNode(globals *Globals, name string, collection Node, body Node) *ForN
 		collectionChan: collectionChan,
 		parentChans:    make(map[int]chan Msg),
 		globals:        globals,
-		nodeToIdx:      make(map[int]int),
+		nodeToIdx:      make(map[int]string),
+		isLoop:         false,
 	}
 	globals.RegisterNode(id, forNode)
 	return forNode
@@ -81,7 +87,7 @@ func (n *ForNode) Clone(g *Globals) Node {
 	return forNode
 }
 
-func (n *ForNode) handleValueMsg(isLoop bool, msg *ValueMsg) {
+func (n *ForNode) handleValueMsg(msg *ValueMsg) {
 	if n.nodeType == nil {
 		n.nodeType = &valueNodeType{0, 0}
 	}
@@ -91,17 +97,18 @@ func (n *ForNode) handleValueMsg(isLoop bool, msg *ValueMsg) {
 	if arr.Kind() == reflect.Array || arr.Kind() == reflect.Slice {
 		n.inChan = make(chan Msg, arr.Len())
 		for i := 0; i < arr.Len(); i++ {
-			n.subnodes[i] = n.body.Clone(n.globals)
-			n.subnodes[i].ParentChans()[n.id] = n.inChan
-			n.nodeToIdx[n.subnodes[i].ID()] = i
-			SetVarNodes(n.subnodes[i], n.name, arr.Index(i).Interface())
+			strIdx := fmt.Sprintf("%d", i)
+			n.subnodes[strIdx] = n.body.Clone(n.globals)
+			n.subnodes[strIdx].ParentChans()[n.id] = n.inChan
+			n.nodeToIdx[n.subnodes[strIdx].ID()] = strIdx
+			SetVarNodes(n.subnodes[strIdx], n.name, arr.Index(i).Interface())
 		}
 	}
 
 	// Check if the body node is a loop node.
 	// If it is, then run each subnode and listen for input sequentially,
 	// otherwise run all of the subnodes in parallel and listen for all of them.
-	if !isLoop {
+	if !n.isLoop {
 		for _, node := range n.subnodes {
 			startNode(n.globals, node)
 		}
@@ -109,21 +116,22 @@ func (n *ForNode) handleValueMsg(isLoop bool, msg *ValueMsg) {
 		nodeType := n.nodeType.(*valueNodeType)
 		// Run fanout number of nodes.
 		for i := 0; i < n.fanout && i < len(n.subnodes); i++ {
-			startNode(n.globals, n.subnodes[i])
+			strIdx := fmt.Sprintf("%d", i)
+			startNode(n.globals, n.subnodes[strIdx])
 			nodeType.currIdx++
 		}
 	}
 }
 
-func (n *ForNode) handleStreamMsg(isLoop bool, msg *StreamMsg) {
+func (n *ForNode) handleStreamMsg(msg *StreamMsg) {
 	if n.inChan == nil {
-		n.inChan = make(chan Msg, msg.Len)
+		n.inChan = make(chan Msg, msg.Len.Len())
 	}
 	if n.nodeType == nil {
-		n.nodeType = &streamNodeType{-1, msg.Len, make(map[int]bool), false}
+		n.nodeType = &streamNodeType{-1, msg.Len.String(), make(map[string]bool), false}
 	}
 
-	i := msg.Idx
+	i := msg.Idx.String()
 	n.subnodes[i] = n.body.Clone(n.globals)
 	n.subnodes[i].ParentChans()[n.id] = n.inChan
 	n.nodeToIdx[n.subnodes[i].ID()] = i
@@ -132,7 +140,7 @@ func (n *ForNode) handleStreamMsg(isLoop bool, msg *StreamMsg) {
 	// Start node if the body is not a loop,
 	// or if there are less running nodes than the fanout.
 	if nodeType, ok := n.nodeType.(*streamNodeType); ok {
-		if !isLoop || nodeType.numCurrIdxs < n.fanout {
+		if !n.isLoop || nodeType.numCurrIdxs < n.fanout {
 			nodeType.visitedNodes[i] = true
 			startNode(n.globals, n.subnodes[i])
 			nodeType.numCurrIdxs++
@@ -140,7 +148,43 @@ func (n *ForNode) handleStreamMsg(isLoop bool, msg *StreamMsg) {
 	}
 }
 
-func (n *ForNode) handlePassUpMsg(isLoop bool, msg Msg) bool {
+func (n *ForNode) incValueNode(nodeType *valueNodeType) bool {
+	nodeType.finishedNodes++
+	if nodeType.finishedNodes >= len(n.subnodes) {
+		return true
+	} else if n.isLoop && nodeType.currIdx < len(n.subnodes) {
+		currIdx := fmt.Sprintf("%d", nodeType.currIdx)
+		startNode(n.globals, n.subnodes[currIdx])
+		nodeType.currIdx++
+	}
+	return false
+}
+
+func (n *ForNode) incStreamNode(nodeType *streamNodeType) bool {
+	nodeType.numCurrIdxs--
+	if len(nodeType.visitedNodes) >= NewStreamIndexFromString(nodeType.len).Len() {
+		return true
+	}
+
+	// Find the next node by looking through the saved nodes ignoring
+	// already visited nodes. If there are no saved nodes, don't do anything.
+	nextNodeIdx := ""
+	for _, i := range n.nodeToIdx {
+		if visited, ok := nodeType.visitedNodes[i]; !ok || !visited {
+			nextNodeIdx = i
+			break
+		}
+	}
+
+	if nextNodeIdx != "" {
+		nodeType.numCurrIdxs++
+		nodeType.visitedNodes[nextNodeIdx] = true
+		startNode(n.globals, n.subnodes[nextNodeIdx])
+	}
+	return false
+}
+
+func (n *ForNode) handlePassUpMsg(msg Msg) bool {
 	finished := false
 	var data Msg
 	switch nodeType := n.nodeType.(type) {
@@ -148,48 +192,43 @@ func (n *ForNode) handlePassUpMsg(isLoop bool, msg Msg) bool {
 		// For a value type since all of the values are already saved
 		// you can start another node right away.
 
-		nodeType.finishedNodes++
-		if nodeType.finishedNodes >= len(n.subnodes) {
-			finished = true
-		} else if isLoop && nodeType.currIdx < len(n.subnodes) {
-			startNode(n.globals, n.subnodes[nodeType.currIdx])
-			nodeType.currIdx++
-		}
-
+		finished = n.incValueNode(nodeType)
 		if valueMsg, ok := msg.(*ValueMsg); ok {
-			data = NewStreamMsg(n.id, true, n.nodeToIdx[valueMsg.ID()], len(n.subnodes), valueMsg.Data)
+			data = NewStreamMsg(
+				n.id,
+				true,
+				NewStreamIndexFromString(n.nodeToIdx[valueMsg.ID()]),
+				NewStreamIndex(len(n.subnodes)),
+				valueMsg.Data,
+			)
+		} else if streamMsg, ok := msg.(*StreamMsg); ok {
+			streamMsg.Idx.Append(NewStreamIndexFromString(n.nodeToIdx[streamMsg.ID()]))
+			streamMsg.Len.AddIndex(len(n.subnodes))
+			streamMsg.setID(n.id)
+			data = streamMsg
 		} else {
-			panic(fmt.Sprintf("Message is not a value message: %v instead: %v", msg, reflect.TypeOf(msg)))
+			panic(fmt.Sprintf("Message is not a value or stream message: %v instead: %v", msg, reflect.TypeOf(msg)))
 		}
 	case *streamNodeType:
 		// For a stream type you can only start another node if that node
 		// has already been saved but not started. Saved nodes are in nodeToIdx.
 
-		nodeType.numCurrIdxs--
-
+		finished = n.incStreamNode(nodeType)
 		if valueMsg, ok := msg.(*ValueMsg); ok {
-			if len(nodeType.visitedNodes) >= nodeType.len {
-				finished = true
-			} else {
-				// Find the next node by looking through the saved nodes ignoring
-				// already visited nodes. If there are no saved nodes, don't do anything.
-				nextNodeIdx := -1
-				for _, i := range n.nodeToIdx {
-					if visited, ok := nodeType.visitedNodes[i]; !ok || !visited {
-						nextNodeIdx = i
-						break
-					}
-				}
-
-				if nextNodeIdx != -1 {
-					nodeType.numCurrIdxs++
-					nodeType.visitedNodes[nextNodeIdx] = true
-					startNode(n.globals, n.subnodes[nextNodeIdx])
-				}
-			}
-			data = NewStreamMsg(n.id, true, n.nodeToIdx[valueMsg.ID()], nodeType.len, valueMsg.Data)
+			data = NewStreamMsg(
+				n.id,
+				true,
+				NewStreamIndexFromString(n.nodeToIdx[valueMsg.ID()]),
+				NewStreamIndexFromString(nodeType.len),
+				valueMsg.Data,
+			)
+		} else if streamMsg, ok := msg.(*StreamMsg); ok {
+			streamMsg.Idx.Append(NewStreamIndexFromString(n.nodeToIdx[streamMsg.ID()]))
+			streamMsg.Len.Append(NewStreamIndexFromString(nodeType.len))
+			streamMsg.setID(n.id)
+			data = streamMsg
 		} else {
-			panic(fmt.Sprintf("Message is not a value message: %v", msg))
+			panic(fmt.Sprintf("Message is not a value or stream message: %v", msg))
 		}
 	}
 
@@ -206,21 +245,21 @@ func (n *ForNode) setFanOut(fanout int) {
 func (n *ForNode) Run() {
 	defer destroyNode(n)
 
-	isLoop := ContainsLoopNode(n.body) // true if the node's body contains a loop node
+	n.isLoop = ContainsLoopNode(n.body) // true if the node's body contains a loop node
 
 	for {
 		select {
 		case msg := <-n.collectionChan:
 			switch m := msg.(type) {
 			case *ValueMsg:
-				n.handleValueMsg(isLoop, m)
+				n.handleValueMsg(m)
 			case *StreamMsg:
-				n.handleStreamMsg(isLoop, m)
+				n.handleStreamMsg(m)
 			default:
 				panic(fmt.Sprintf("Invalid message from collectionChan received: %v", msg))
 			}
 		case msg := <-n.inChan:
-			if finished := n.handlePassUpMsg(isLoop, msg); finished {
+			if finished := n.handlePassUpMsg(msg); finished {
 				break
 			}
 		}

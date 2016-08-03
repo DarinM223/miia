@@ -1,6 +1,7 @@
 package graph
 
 import (
+	"bytes"
 	"errors"
 	"fmt"
 )
@@ -10,14 +11,43 @@ type StreamIndex struct {
 	// For example [3 1] is the 1st index of the first collection
 	// and the 3rd index of the second collection.
 	Indexes []int
+	s       string
 }
 
 func NewStreamIndex(idxs ...int) *StreamIndex {
-	return &StreamIndex{idxs}
+	var strIdx bytes.Buffer
+	for _, i := range idxs {
+		strIdx.WriteString(fmt.Sprintf("%d", i))
+	}
+
+	return &StreamIndex{idxs, strIdx.String()}
+}
+
+func NewStreamIndexFromString(s string) *StreamIndex {
+	idxs := make([]int, len(s))
+	for i, ch := range s {
+		idxs[i] = int(ch - '0')
+	}
+	return &StreamIndex{idxs, s}
 }
 
 func (s *StreamIndex) AddIndex(index int) {
+	s.s += fmt.Sprintf("%d", index)
 	s.Indexes = append(s.Indexes, index)
+}
+
+// Append adds the parameter index to the beginning of the index
+// (the end of the array).
+// Example: appending [1 2] to [3 4] yields [3 4 1 2]
+func (s *StreamIndex) Append(appendIdx *StreamIndex) {
+	s.s += appendIdx.s
+	s.Indexes = append(s.Indexes, appendIdx.Indexes...)
+}
+
+// String returns the stream index as an indexable string format.
+// Example: [1 3 4] returns "134".
+func (s *StreamIndex) String() string {
+	return s.s
 }
 
 func (s *StreamIndex) Clone() *StreamIndex {
@@ -25,7 +55,7 @@ func (s *StreamIndex) Clone() *StreamIndex {
 	for i := 0; i < len(s.Indexes); i++ {
 		copiedIdxs[i] = s.Indexes[i]
 	}
-	return &StreamIndex{copiedIdxs}
+	return &StreamIndex{copiedIdxs, s.s}
 }
 
 func (s *StreamIndex) PopIndex() int {
@@ -34,16 +64,41 @@ func (s *StreamIndex) PopIndex() int {
 	}
 	poppedIdx := s.Indexes[len(s.Indexes)-1]
 	s.Indexes = s.Indexes[:len(s.Indexes)-1]
+	s.s = s.s[:len(s.s)-1]
 	return poppedIdx
+}
+
+func (s *StreamIndex) PeekIndex() int {
+	if s.Empty() {
+		return -1
+	}
+
+	return s.Indexes[len(s.Indexes)-1]
 }
 
 func (i *StreamIndex) Empty() bool {
 	return len(i.Indexes) == 0
 }
 
+func (i *StreamIndex) Len() int {
+	if len(i.Indexes) <= 0 {
+		return 0
+	}
+
+	l := i.Indexes[0]
+	for idx := 1; idx < len(i.Indexes); idx++ {
+		l *= i.Indexes[idx]
+	}
+	return l
+}
+
 type DataNode interface {
+	// Set a value at the index.
 	Set(idx *StreamIndex, data interface{}) error
+	// Get a value at the index.
 	Get(idx *StreamIndex) (interface{}, error)
+	// Return the data representation of the node.
+	Data() interface{}
 }
 
 // NewDataNode creates a new data given a stream index of
@@ -52,11 +107,12 @@ type DataNode interface {
 // nested collection is of length 3, meaning there are 5 * 3 = 15
 // slots total.
 func NewDataNode(lens *StreamIndex) DataNode {
-	l := lens.PopIndex()
+	clonedLens := lens.Clone()
+	l := clonedLens.PopIndex()
 	data := make([]DataNode, l)
-	if !lens.Empty() {
+	if !clonedLens.Empty() {
 		for i := 0; i < l; i++ {
-			data[i] = NewDataNode(lens.Clone())
+			data[i] = NewDataNode(clonedLens.Clone())
 		}
 	} else {
 		for i := 0; i < l; i++ {
@@ -71,19 +127,35 @@ type streamNode struct {
 }
 
 func (s *streamNode) Set(idx *StreamIndex, data interface{}) error {
-	i := idx.PopIndex()
+	clonedIdx := idx.Clone()
+	i := clonedIdx.PopIndex()
 	if i >= len(s.data) || i < 0 {
 		return errors.New(fmt.Sprintf("Set index out of bounds: index: %d, length: %d", i, len(s.data)))
 	}
-	return s.data[i].Set(idx, data)
+	return s.data[i].Set(clonedIdx, data)
 }
 
 func (s *streamNode) Get(idx *StreamIndex) (interface{}, error) {
-	i := idx.PopIndex()
+	clonedIdx := idx.Clone()
+	i := clonedIdx.PopIndex()
 	if i >= len(s.data) || i < 0 {
 		return nil, errors.New(fmt.Sprintf("Get index out of bounds: index: %d, length: %d", i, len(s.data)))
 	}
-	return s.data[i].Get(idx)
+	return s.data[i].Get(clonedIdx)
+}
+
+func (s *streamNode) Data() interface{} {
+	if len(s.data) == 0 {
+		return nil
+	} else if len(s.data) == 1 {
+		return s.data[0].Data()
+	}
+
+	results := make([]interface{}, len(s.data))
+	for i, data := range s.data {
+		results[i] = data.Data()
+	}
+	return results
 }
 
 type streamLeaf struct {
@@ -103,4 +175,8 @@ func (s *streamLeaf) Get(idx *StreamIndex) (interface{}, error) {
 		return s.data, nil
 	}
 	return nil, errors.New("Getting data with non-empty index")
+}
+
+func (s *streamLeaf) Data() interface{} {
+	return s.data
 }

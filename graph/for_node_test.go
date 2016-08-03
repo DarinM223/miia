@@ -2,13 +2,15 @@ package graph
 
 import (
 	"github.com/DarinM223/miia/tokens"
+	"github.com/davecgh/go-spew/spew"
+	"reflect"
 	"testing"
 )
 
 var forNodeTests = []struct {
 	collection, body Node
 	name             string
-	expectedValues   []int
+	expected         interface{}
 }{
 	{
 		testUtils.NewValueNode([]interface{}{1, 2, 3, 4, 5, 6}),
@@ -17,7 +19,7 @@ var forNodeTests = []struct {
 			testUtils.NewValueNode(1),
 		}),
 		"i",
-		[]int{2, 3, 4, 5, 6, 7},
+		[]interface{}{2, 3, 4, 5, 6, 7},
 	},
 	{
 		testUtils.NewValueNode([]interface{}{1, 2, 3, 4, 5, 6}),
@@ -26,7 +28,7 @@ var forNodeTests = []struct {
 			testUtils.NewVarNode("i"),
 		}),
 		"i",
-		[]int{2, 3, 4, 5, 6, 7},
+		[]interface{}{2, 3, 4, 5, 6, 7},
 	},
 	{
 		testUtils.NewForNode(
@@ -39,7 +41,7 @@ var forNodeTests = []struct {
 			testUtils.NewValueNode(1),
 		}),
 		"i",
-		[]int{0, 1, 2, 3, 4, 5},
+		[]interface{}{0, 1, 2, 3, 4, 5},
 	},
 	{
 		testUtils.NewForNode(
@@ -55,7 +57,7 @@ var forNodeTests = []struct {
 		),
 		testUtils.NewValueNode(1),
 		"a",
-		[]int{1, 1, 1},
+		[]interface{}{1, 1, 1},
 	},
 	{
 		testUtils.NewForNode(
@@ -75,7 +77,19 @@ var forNodeTests = []struct {
 		),
 		testUtils.NewValueNode(1),
 		"b",
-		[]int{1, 1, 1, 1, 1},
+		[]interface{}{1, 1, 1, 1, 1},
+	},
+	{
+		testUtils.NewValueNode([]interface{}{1, 2, 3, 4, 5, 6}),
+		testUtils.NewForNode("a", testUtils.NewValueNode([]interface{}{1}), testUtils.NewVarNode("x")),
+		"x",
+		[]interface{}{1, 2, 3, 4, 5, 6},
+	},
+	{
+		testUtils.NewForNode("a", testUtils.NewValueNode([]interface{}{1, 2, 3, 4, 5, 6}), testUtils.NewVarNode("a")),
+		testUtils.NewForNode("a", testUtils.NewValueNode([]interface{}{1}), testUtils.NewVarNode("x")),
+		"x",
+		[]interface{}{1, 2, 3, 4, 5, 6},
 	},
 }
 
@@ -93,31 +107,35 @@ func TestForNode(t *testing.T) {
 
 		globals.Run()
 
-		expectedValues := make(map[int]int, len(test.expectedValues))
-		for i, v := range test.expectedValues {
-			expectedValues[v] = i
+		firstMsg, ok := <-parentChan
+		if !ok {
+			t.Errorf("Error receiving from channel")
 		}
 
-		for len(expectedValues) > 0 {
-			if msg, ok := <-parentChan; ok {
-				if msg, ok := msg.(*StreamMsg); ok {
-					value := msg.Data.(int)
+		firstStreamMsg, ok := firstMsg.(*StreamMsg)
+		if !ok {
+			t.Errorf("Expected Stream Message, got %v", firstMsg)
+		}
 
-					if msg.Len != len(test.expectedValues) {
-						t.Errorf("Stream length different: expected %v got %v", len(test.expectedValues), msg.Len)
-					}
-					if _, ok := expectedValues[value]; ok && test.expectedValues[msg.Idx] == value {
-						delete(expectedValues, value)
-					} else {
-						t.Errorf("Received unexpected message %v", msg.Data)
-						break
-					}
-				} else {
-					t.Errorf("Expected Stream Message, got %v", msg)
-				}
-			} else {
-				t.Errorf("Error with channel")
+		result := NewDataNode(firstStreamMsg.Len)
+		result.Set(firstStreamMsg.Idx, firstStreamMsg.Data)
+
+		for i := 0; i < firstStreamMsg.Len.Len()-1; i++ {
+			msg, ok := <-parentChan
+			if !ok {
+				t.Errorf("Error receiving from channel")
 			}
+
+			streamMsg, ok := msg.(*StreamMsg)
+			if !ok {
+				t.Errorf("Expected Stream Message, got %v", msg)
+			}
+
+			result.Set(streamMsg.Idx, streamMsg.Data)
+		}
+
+		if !reflect.DeepEqual(result.Data(), test.expected) {
+			t.Errorf("Different values: expected %s got %s", spew.Sdump(test.expected), spew.Sdump(result.Data()))
 		}
 	}
 }
