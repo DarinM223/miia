@@ -21,7 +21,7 @@ type valueNodeType struct {
 // receives a stream message in its input channel.
 type streamNodeType struct {
 	numCurrIdxs      int
-	len              *StreamIndex
+	len              string
 	visitedNodes     map[string]bool
 	startedFirstNode bool
 }
@@ -128,7 +128,7 @@ func (n *ForNode) handleStreamMsg(msg *StreamMsg) {
 		n.inChan = make(chan Msg, msg.Len.Len())
 	}
 	if n.nodeType == nil {
-		n.nodeType = &streamNodeType{-1, msg.Len, make(map[string]bool), false}
+		n.nodeType = &streamNodeType{-1, msg.Len.String(), make(map[string]bool), false}
 	}
 
 	i := msg.Idx.String()
@@ -162,7 +162,7 @@ func (n *ForNode) incValueNode(nodeType *valueNodeType) bool {
 
 func (n *ForNode) incStreamNode(nodeType *streamNodeType) bool {
 	nodeType.numCurrIdxs--
-	if nodeType.numCurrIdxs < 0 || len(nodeType.visitedNodes) >= nodeType.len.Len() {
+	if len(nodeType.visitedNodes) >= NewStreamIndexFromString(nodeType.len).Len() {
 		return true
 	}
 
@@ -219,12 +219,12 @@ func (n *ForNode) handlePassUpMsg(msg Msg) bool {
 				n.id,
 				true,
 				NewStreamIndexFromString(n.nodeToIdx[valueMsg.ID()]),
-				nodeType.len,
+				NewStreamIndexFromString(nodeType.len),
 				valueMsg.Data,
 			)
 		} else if streamMsg, ok := msg.(*StreamMsg); ok {
 			streamMsg.Idx.Append(NewStreamIndexFromString(n.nodeToIdx[streamMsg.ID()]))
-			streamMsg.Len.Append(nodeType.len)
+			streamMsg.Len.Append(NewStreamIndexFromString(nodeType.len))
 			streamMsg.setID(n.id)
 			data = streamMsg
 		} else {
