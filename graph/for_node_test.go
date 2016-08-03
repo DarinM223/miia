@@ -10,7 +10,7 @@ import (
 var forNodeTests = []struct {
 	collection, body Node
 	name             string
-	expected         DataNode
+	expected         interface{}
 }{
 	{
 		testUtils.NewValueNode([]interface{}{1, 2, 3, 4, 5, 6}),
@@ -19,7 +19,7 @@ var forNodeTests = []struct {
 			testUtils.NewValueNode(1),
 		}),
 		"i",
-		testUtils.NewStreamDataArr(2, 3, 4, 5, 6, 7),
+		[]interface{}{2, 3, 4, 5, 6, 7},
 	},
 	{
 		testUtils.NewValueNode([]interface{}{1, 2, 3, 4, 5, 6}),
@@ -28,7 +28,7 @@ var forNodeTests = []struct {
 			testUtils.NewVarNode("i"),
 		}),
 		"i",
-		testUtils.NewStreamDataArr(2, 3, 4, 5, 6, 7),
+		[]interface{}{2, 3, 4, 5, 6, 7},
 	},
 	{
 		testUtils.NewForNode(
@@ -41,7 +41,7 @@ var forNodeTests = []struct {
 			testUtils.NewValueNode(1),
 		}),
 		"i",
-		testUtils.NewStreamDataArr(0, 1, 2, 3, 4, 5),
+		[]interface{}{0, 1, 2, 3, 4, 5},
 	},
 	{
 		testUtils.NewForNode(
@@ -57,7 +57,7 @@ var forNodeTests = []struct {
 		),
 		testUtils.NewValueNode(1),
 		"a",
-		testUtils.NewStreamDataArr(1, 1, 1),
+		[]interface{}{1, 1, 1},
 	},
 	{
 		testUtils.NewForNode(
@@ -77,7 +77,19 @@ var forNodeTests = []struct {
 		),
 		testUtils.NewValueNode(1),
 		"b",
-		testUtils.NewStreamDataArr(1, 1, 1, 1, 1),
+		[]interface{}{1, 1, 1, 1, 1},
+	},
+	{
+		testUtils.NewValueNode([]interface{}{1, 2, 3, 4, 5, 6}),
+		testUtils.NewForNode("a", testUtils.NewValueNode([]interface{}{1}), testUtils.NewVarNode("x")),
+		"x",
+		[]interface{}{1, 2, 3, 4, 5, 6},
+	},
+	{
+		testUtils.NewForNode("a", testUtils.NewValueNode([]interface{}{1, 2, 3, 4, 5, 6}), testUtils.NewVarNode("a")),
+		testUtils.NewForNode("a", testUtils.NewValueNode([]interface{}{1}), testUtils.NewVarNode("x")),
+		"x",
+		[]interface{}{1, 2, 3, 4, 5, 6},
 	},
 }
 
@@ -122,8 +134,8 @@ func TestForNode(t *testing.T) {
 			result.Set(streamMsg.Idx, streamMsg.Data)
 		}
 
-		if !reflect.DeepEqual(result, test.expected) {
-			t.Errorf("Different values: expected %s got %s", spew.Sdump(test.expected), spew.Sdump(result))
+		if !reflect.DeepEqual(result.Data(), test.expected) {
+			t.Errorf("Different values: expected %s got %s", spew.Sdump(test.expected), spew.Sdump(result.Data()))
 		}
 	}
 }

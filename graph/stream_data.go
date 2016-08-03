@@ -97,8 +97,6 @@ type DataNode interface {
 	Set(idx *StreamIndex, data interface{}) error
 	// Get a value at the index.
 	Get(idx *StreamIndex) (interface{}, error)
-	// Check if the subnode at the top level index is full.
-	Full(idx *StreamIndex) bool
 	// Return the data representation of the node.
 	Data() interface{}
 }
@@ -146,22 +144,6 @@ func (s *streamNode) Get(idx *StreamIndex) (interface{}, error) {
 	return s.data[i].Get(clonedIdx)
 }
 
-func (s *streamNode) Full(idx *StreamIndex) bool {
-	if idx.Empty() {
-		isFull := true
-		for _, node := range s.data {
-			if !node.Full(idx) {
-				isFull = false
-			}
-		}
-		return isFull
-	}
-
-	clonedIdx := idx.Clone()
-	i := clonedIdx.PopIndex()
-	return s.data[i].Full(clonedIdx)
-}
-
 func (s *streamNode) Data() interface{} {
 	if len(s.data) == 0 {
 		return nil
@@ -193,10 +175,6 @@ func (s *streamLeaf) Get(idx *StreamIndex) (interface{}, error) {
 		return s.data, nil
 	}
 	return nil, errors.New("Getting data with non-empty index")
-}
-
-func (s *streamLeaf) Full(idx *StreamIndex) bool {
-	return s.data != nil
 }
 
 func (s *streamLeaf) Data() interface{} {

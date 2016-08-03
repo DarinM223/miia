@@ -212,11 +212,3 @@ func (t *Testing) NewStreamMsg(passUp bool, idx *StreamIndex, len *StreamIndex, 
 func (t *Testing) NewErrMsg(passUp bool, err error) Msg {
 	return NewErrMsg(-1, passUp, err)
 }
-
-func (t *Testing) NewStreamDataArr(values ...interface{}) DataNode {
-	data := make([]DataNode, len(values))
-	for i := 0; i < len(values); i++ {
-		data[i] = &streamLeaf{values[i]}
-	}
-	return &streamNode{data}
-}
