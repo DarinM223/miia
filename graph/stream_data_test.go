@@ -8,37 +8,23 @@ import (
 
 func TestPopIndex(t *testing.T) {
 	index := NewStreamIndex(3, 2)
-	expected := &StreamIndex{[]int{3, 2}, "32"}
+	expected := StreamIndex{[]int{3, 2}, "32"}
 	if !reflect.DeepEqual(index, expected) {
 		t.Errorf("Different values: expected %v got %v", expected, index)
 	}
 
-	i := index.PopIndex()
+	i, restIdx := index.PopIndex()
 	if i != 2 {
 		t.Errorf("Different values: expected %d got %d", 2, i)
 	}
 
-	expected = &StreamIndex{[]int{3}, "3"}
 	if !reflect.DeepEqual(index, expected) {
 		t.Errorf("Different values: expected %v got %v", expected, index)
 	}
-}
 
-func TestCloneIndex(t *testing.T) {
-	index := NewStreamIndex(3, 2)
-	clone := index.Clone()
-
-	index.AddIndex(3)
-
-	expectedIndex := &StreamIndex{[]int{3, 2, 3}, "323"}
-	expectedClone := &StreamIndex{[]int{3, 2}, "32"}
-
-	if !reflect.DeepEqual(index, expectedIndex) {
-		t.Errorf("Different values: expected %v got %v", expectedIndex, index)
-	}
-
-	if !reflect.DeepEqual(clone, expectedClone) {
-		t.Errorf("Different values: expected %v got %v", expectedClone, clone)
+	expected = StreamIndex{[]int{3}, "3"}
+	if !reflect.DeepEqual(restIdx, expected) {
+		t.Errorf("Different values: expected %v got %v", expected, index)
 	}
 }
 
@@ -89,11 +75,11 @@ func TestGetDataNode(t *testing.T) {
 		index := NewStreamIndex(test.index...)
 
 		node := NewDataNode(lens)
-		if err := node.Set(index.Clone(), test.value); err != nil {
+		if err := node.Set(index, test.value); err != nil {
 			t.Error(err)
 		}
 
-		result, err := node.Get(index.Clone())
+		result, err := node.Get(index)
 		if err != nil {
 			t.Error(err)
 		}

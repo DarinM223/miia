@@ -46,28 +46,24 @@ func (n *VarNode) Clone(globals *Globals) Node {
 	return varNode
 }
 
-func (n *VarNode) run() (data Msg) {
+func (n *VarNode) run() Msg {
 	if n.msg != nil {
-		data = n.msg.Clone()
-		data.setID(n.id)
-		return
+		return n.msg.SetID(n.id)
 	}
 
 	select {
 	case <-n.inChan:
 		switch n.msg.(type) {
-		case *ValueMsg:
-			data := n.msg.Clone()
-			data.setID(n.id)
-		case *StreamMsg:
-			data = NewErrMsg(n.id, true, errors.New("Stream message as var not implemented yet"))
+		case ValueMsg:
+			return n.msg.SetID(n.id)
+		case StreamMsg:
+			return NewErrMsg(n.id, true, errors.New("Stream message as var not implemented yet"))
 		default:
-			data = NewErrMsg(n.id, true, errors.New("Unknown var message type"))
+			return NewErrMsg(n.id, true, errors.New("Unknown var message type"))
 		}
 	case <-time.After(5 * time.Second):
 		panic(fmt.Sprintf("Variable %v timed out", n.name))
 	}
-	return
 }
 
 // setMsg sets the message that the VarNode will send to its parents.

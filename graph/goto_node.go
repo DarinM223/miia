@@ -41,7 +41,7 @@ func (n *GotoNode) run() (data Msg) {
 
 	data = NewErrMsg(n.id, true, errors.New("Message received is not a string"))
 
-	msg, ok := (<-n.inChan).(*ValueMsg)
+	msg, ok := (<-n.inChan).(ValueMsg)
 	if !ok {
 		return
 	}

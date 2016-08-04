@@ -60,7 +60,7 @@ func (n *SelectorNode) run() (data Msg) {
 
 	data = NewErrMsg(n.id, true, errors.New("Message received is not a HTTP response"))
 
-	msg, ok := (<-n.inChan).(*ValueMsg)
+	msg, ok := (<-n.inChan).(ValueMsg)
 	if !ok {
 		return
 	}

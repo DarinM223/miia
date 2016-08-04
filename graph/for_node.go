@@ -87,7 +87,7 @@ func (n *ForNode) Clone(g *Globals) Node {
 	return forNode
 }
 
-func (n *ForNode) handleValueMsg(msg *ValueMsg) {
+func (n *ForNode) handleValueMsg(msg ValueMsg) {
 	if n.nodeType == nil {
 		n.nodeType = &valueNodeType{0, 0}
 	}
@@ -123,7 +123,7 @@ func (n *ForNode) handleValueMsg(msg *ValueMsg) {
 	}
 }
 
-func (n *ForNode) handleStreamMsg(msg *StreamMsg) {
+func (n *ForNode) handleStreamMsg(msg StreamMsg) {
 	if n.inChan == nil {
 		n.inChan = make(chan Msg, msg.Len.Len())
 	}
@@ -193,7 +193,7 @@ func (n *ForNode) handlePassUpMsg(msg Msg) bool {
 		// you can start another node right away.
 
 		finished = n.incValueNode(nodeType)
-		if valueMsg, ok := msg.(*ValueMsg); ok {
+		if valueMsg, ok := msg.(ValueMsg); ok {
 			data = NewStreamMsg(
 				n.id,
 				true,
@@ -201,11 +201,10 @@ func (n *ForNode) handlePassUpMsg(msg Msg) bool {
 				NewStreamIndex(len(n.subnodes)),
 				valueMsg.Data,
 			)
-		} else if streamMsg, ok := msg.(*StreamMsg); ok {
-			streamMsg.Idx.Append(NewStreamIndexFromString(n.nodeToIdx[streamMsg.ID()]))
-			streamMsg.Len.AddIndex(len(n.subnodes))
-			streamMsg.setID(n.id)
-			data = streamMsg
+		} else if streamMsg, ok := msg.(StreamMsg); ok {
+			streamMsg.Idx = streamMsg.Idx.Append(NewStreamIndexFromString(n.nodeToIdx[streamMsg.ID()]))
+			streamMsg.Len = streamMsg.Len.AddIndex(len(n.subnodes))
+			data = streamMsg.SetID(n.id)
 		} else {
 			panic(fmt.Sprintf("Message is not a value or stream message: %v instead: %v", msg, reflect.TypeOf(msg)))
 		}
@@ -214,7 +213,7 @@ func (n *ForNode) handlePassUpMsg(msg Msg) bool {
 		// has already been saved but not started. Saved nodes are in nodeToIdx.
 
 		finished = n.incStreamNode(nodeType)
-		if valueMsg, ok := msg.(*ValueMsg); ok {
+		if valueMsg, ok := msg.(ValueMsg); ok {
 			data = NewStreamMsg(
 				n.id,
 				true,
@@ -222,11 +221,10 @@ func (n *ForNode) handlePassUpMsg(msg Msg) bool {
 				NewStreamIndexFromString(nodeType.len),
 				valueMsg.Data,
 			)
-		} else if streamMsg, ok := msg.(*StreamMsg); ok {
-			streamMsg.Idx.Append(NewStreamIndexFromString(n.nodeToIdx[streamMsg.ID()]))
-			streamMsg.Len.Append(NewStreamIndexFromString(nodeType.len))
-			streamMsg.setID(n.id)
-			data = streamMsg
+		} else if streamMsg, ok := msg.(StreamMsg); ok {
+			streamMsg.Idx = streamMsg.Idx.Append(NewStreamIndexFromString(n.nodeToIdx[streamMsg.ID()]))
+			streamMsg.Len = streamMsg.Len.Append(NewStreamIndexFromString(nodeType.len))
+			data = streamMsg.SetID(n.id)
 		} else {
 			panic(fmt.Sprintf("Message is not a value or stream message: %v", msg))
 		}
@@ -249,9 +247,9 @@ func (n *ForNode) run() Msg {
 		select {
 		case msg := <-n.collectionChan:
 			switch m := msg.(type) {
-			case *ValueMsg:
+			case ValueMsg:
 				n.handleValueMsg(m)
-			case *StreamMsg:
+			case StreamMsg:
 				n.handleStreamMsg(m)
 			default:
 				panic(fmt.Sprintf("Invalid message from collectionChan received: %v", msg))

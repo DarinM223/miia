@@ -17,17 +17,17 @@ func (t *Testing) CompareTestMsgToRealMsg(testMsg Msg, realMsg Msg) bool {
 	}
 
 	switch m := testMsg.(type) {
-	case *ValueMsg:
-		compare := realMsg.(*ValueMsg)
+	case ValueMsg:
+		compare := realMsg.(ValueMsg)
 		return m.passUp == compare.passUp && reflect.DeepEqual(m.Data, compare.Data)
-	case *StreamMsg:
-		compare := realMsg.(*StreamMsg)
-		return m.Idx == compare.Idx &&
-			m.Len == compare.Len &&
+	case StreamMsg:
+		compare := realMsg.(StreamMsg)
+		return reflect.DeepEqual(m.Idx, compare.Idx) &&
+			reflect.DeepEqual(m.Len, compare.Len) &&
 			m.passUp == compare.passUp &&
 			reflect.DeepEqual(m.Data, compare.Data)
-	case *ErrMsg:
-		compare := realMsg.(*ErrMsg)
+	case ErrMsg:
+		compare := realMsg.(ErrMsg)
 		return m.passUp == compare.passUp && m.Err == compare.Err
 	default:
 		panic("Invalid msg type for CompareTestMsgToRealMsg()")
@@ -205,7 +205,7 @@ func (t *Testing) NewValueMsg(passUp bool, value interface{}) Msg {
 	return NewValueMsg(-1, passUp, value)
 }
 
-func (t *Testing) NewStreamMsg(passUp bool, idx *StreamIndex, len *StreamIndex, value interface{}) Msg {
+func (t *Testing) NewStreamMsg(passUp bool, idx StreamIndex, len StreamIndex, value interface{}) Msg {
 	return NewStreamMsg(-1, passUp, idx, len, value)
 }
 
