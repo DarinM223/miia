@@ -1,0 +1,28 @@
+{
+	"ImportPath": "github.com/DarinM223/miia",
+	"GoVersion": "go1.6",
+	"GodepVersion": "v74",
+	"Deps": [
+		{
+			"ImportPath": "github.com/PuerkitoBio/goquery",
+			"Comment": "v0.3.2-93-gf0d7573",
+			"Rev": "f0d75731e0db647903c8611d00c7b85002751317"
+		},
+		{
+			"ImportPath": "github.com/andybalholm/cascadia",
+			"Rev": "3ad29d1ad1c4f2023e355603324348cf1f4b2d48"
+		},
+		{
+			"ImportPath": "github.com/davecgh/go-spew/spew",
+			"Rev": "5215b55f46b2b919f50a1df0eaa5886afe4e3b3d"
+		},
+		{
+			"ImportPath": "golang.org/x/net/html",
+			"Rev": "bc3663df0ac92f928d419e31e0d2af22e683a5a2"
+		},
+		{
+			"ImportPath": "golang.org/x/net/html/atom",
+			"Rev": "bc3663df0ac92f928d419e31e0d2af22e683a5a2"
+		}
+	]
+}
