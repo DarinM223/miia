@@ -56,19 +56,19 @@ func (n *IfNode) Clone(globals *Globals) Node {
 	return NewIfNode(globals, clonedPred, clonedConseq, clonedAlt)
 }
 
-func (n *IfNode) run() (data Msg) {
+func (n *IfNode) run() Msg {
 	defer destroyNode(n)
 
-	data = NewErrMsg(n.id, true, IfPredicateErr)
+	var data Msg = NewErrMsg(n.id, true, IfPredicateErr)
 
-	msg, ok := (<-n.inChan).(*ValueMsg)
+	msg, ok := (<-n.inChan).(ValueMsg)
 	if !ok {
-		return
+		return data
 	}
 
 	pred, ok := msg.Data.(bool)
 	if !ok {
-		return
+		return data
 	}
 
 	if pred {
@@ -77,6 +77,5 @@ func (n *IfNode) run() (data Msg) {
 		data = <-n.altChan
 	}
 
-	data.setID(n.id)
-	return
+	return data.SetID(n.id)
 }

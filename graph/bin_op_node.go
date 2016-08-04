@@ -52,12 +52,12 @@ func (n *BinOpNode) run() (data Msg) {
 
 	data = NewErrMsg(n.id, true, errors.New("Error with BinOp values"))
 
-	val1, ok := (<-n.aChan).(*ValueMsg)
+	val1, ok := (<-n.aChan).(ValueMsg)
 	if !ok {
 		return
 	}
 
-	val2, ok := (<-n.bChan).(*ValueMsg)
+	val2, ok := (<-n.bChan).(ValueMsg)
 	if !ok {
 		return
 	}

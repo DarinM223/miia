@@ -42,7 +42,7 @@ func (n *UnOpNode) run() (data Msg) {
 
 	data = NewErrMsg(n.id, true, errors.New("Invalid type for UnOp NotToken"))
 
-	val, ok := (<-n.inChan).(*ValueMsg)
+	val, ok := (<-n.inChan).(ValueMsg)
 	if !ok {
 		return
 	}

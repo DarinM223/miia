@@ -112,7 +112,7 @@ func TestForNode(t *testing.T) {
 			t.Errorf("Error receiving from channel")
 		}
 
-		firstStreamMsg, ok := firstMsg.(*StreamMsg)
+		firstStreamMsg, ok := firstMsg.(StreamMsg)
 		if !ok {
 			t.Errorf("Expected Stream Message, got %v", firstMsg)
 		}
@@ -126,7 +126,7 @@ func TestForNode(t *testing.T) {
 				t.Errorf("Error receiving from channel")
 			}
 
-			streamMsg, ok := msg.(*StreamMsg)
+			streamMsg, ok := msg.(StreamMsg)
 			if !ok {
 				t.Errorf("Expected Stream Message, got %v", msg)
 			}

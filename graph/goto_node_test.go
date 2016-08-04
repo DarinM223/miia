@@ -17,7 +17,7 @@ func TestGotoNode(t *testing.T) {
 	globals.Run()
 
 	if msg, ok := <-parentChan1; ok {
-		if msg, ok := msg.(*ValueMsg); ok {
+		if msg, ok := msg.(ValueMsg); ok {
 			if _, ok := msg.Data.(*http.Response); !ok {
 				t.Errorf("Message is not an HTTP response: got %v", msg.Data)
 			}
@@ -29,7 +29,7 @@ func TestGotoNode(t *testing.T) {
 	}
 
 	if msg, ok := <-parentChan2; ok {
-		if msg, ok := msg.(*ValueMsg); ok {
+		if msg, ok := msg.(ValueMsg); ok {
 			if _, ok := msg.Data.(*http.Response); !ok {
 				t.Errorf("Message is not an HTTP response: got %v", msg.Data)
 			}
@@ -52,7 +52,7 @@ func TestGotoNodeErrsOnNonString(t *testing.T) {
 	globals.Run()
 
 	if msg, ok := <-parentChan; ok {
-		if _, ok := msg.(*ErrMsg); !ok {
+		if _, ok := msg.(ErrMsg); !ok {
 			t.Errorf("Message is not an error: got %v", msg)
 		}
 	} else {
@@ -71,7 +71,7 @@ func TestGotoNodeErrsOnNonHTTP(t *testing.T) {
 	globals.Run()
 
 	if msg, ok := <-parentChan; ok {
-		if _, ok := msg.(*ErrMsg); !ok {
+		if _, ok := msg.(ErrMsg); !ok {
 			t.Errorf("Message is not an error: got %v", msg)
 		}
 	} else {

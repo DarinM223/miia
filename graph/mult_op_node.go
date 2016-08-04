@@ -65,7 +65,7 @@ func (n *MultOpNode) run() (data Msg) {
 
 	passUpCount := 0
 	for {
-		msg, ok := (<-n.inChan).(*ValueMsg)
+		msg, ok := (<-n.inChan).(ValueMsg)
 		if !ok {
 			return
 		}

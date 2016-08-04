@@ -40,7 +40,7 @@ func (n *CollectNode) Clone(g *Globals) Node {
 func (n *CollectNode) run() (data Msg) {
 	data = NewErrMsg(n.id, true, errors.New("CollectNode not receiving a stream messsage"))
 
-	msg, ok := (<-n.inChan).(*StreamMsg)
+	msg, ok := (<-n.inChan).(StreamMsg)
 	if !ok {
 		return
 	}
@@ -52,7 +52,7 @@ func (n *CollectNode) run() (data Msg) {
 	// collect them into an array and then once all of the messages have
 	// been received, send a value message with the collected data.
 	for i := 0; i < msg.Len.Len()-1; i++ {
-		streamMsg, ok := (<-n.inChan).(*StreamMsg)
+		streamMsg, ok := (<-n.inChan).(StreamMsg)
 		if !ok {
 			return
 		}
