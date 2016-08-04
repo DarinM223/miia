@@ -55,28 +55,32 @@ func (n *SelectorNode) Clone(g *Globals) Node {
 	return NewSelectorNode(g, n.gotoNode.Clone(g), n.selectors)
 }
 
-func (n *SelectorNode) Run() {
+func (n *SelectorNode) run() (data Msg) {
 	defer n.destroy()
 
-	msg, msgOk := (<-n.inChan).(*ValueMsg)
-	var data Msg = NewErrMsg(n.id, true, errors.New("Message received is not a HTTP response"))
+	data = NewErrMsg(n.id, true, errors.New("Message received is not a HTTP response"))
 
-	if resp, ok := msg.Data.(*http.Response); msgOk && ok {
-		doc, err := goquery.NewDocumentFromResponse(resp)
-		if err != nil {
-			data = NewErrMsg(n.id, true, err)
-		} else {
-			bindings := make(map[string]string)
-			for _, selector := range n.selectors {
-				bindings[selector.Name] = doc.Find(selector.Selector).First().Text()
-			}
-			data = NewValueMsg(n.id, true, bindings)
+	msg, ok := (<-n.inChan).(*ValueMsg)
+	if !ok {
+		return
+	}
+
+	resp, ok := msg.Data.(*http.Response)
+	if !ok {
+		return
+	}
+
+	doc, err := goquery.NewDocumentFromResponse(resp)
+	if err != nil {
+		data = NewErrMsg(n.id, true, err)
+	} else {
+		bindings := make(map[string]string)
+		for _, selector := range n.selectors {
+			bindings[selector.Name] = doc.Find(selector.Selector).First().Text()
 		}
+		data = NewValueMsg(n.id, true, bindings)
 	}
-
-	for _, parent := range n.parentChans {
-		parent <- data
-	}
+	return
 }
 
 func (n *SelectorNode) destroy() {

@@ -7,8 +7,6 @@ const InChanSize = 5
 type Node interface {
 	// ID returns the ID of the specified node.
 	ID() int
-	// Run runs the node in a goroutine.
-	Run()
 	// Chan is the input channel for the node.
 	Chan() chan Msg
 	// ParentChans is a map of parent ids to parent input channels.
@@ -17,6 +15,11 @@ type Node interface {
 	Clone(*Globals) Node
 	// Dependencies returns the dependency nodes for the node.
 	Dependencies() []Node
+
+	// run runs the node in a goroutine and returns an optional message for
+	// sending to the parent channels. If it handles the parent channel sending itself
+	// run() should return nil.
+	run() Msg
 }
 
 // ContainsLoopNode returns true if a node is a loop node or
@@ -60,6 +63,14 @@ func SetVarNodes(node Node, name string, value interface{}) {
 	}
 }
 
+// RunNode retrieves a message from the node and sends it to the parent channels
+// if the message is not nil.
+func RunNode(node Node) {
+	if msg := node.run(); msg != nil {
+		BroadcastMsg(msg, node.ParentChans())
+	}
+}
+
 // startNode starts a node and its dependencies.
 // Only to be used when a node is created dynamically
 // and needs to be started after the other nodes.
@@ -71,7 +82,7 @@ func startNode(globals *Globals, node Node) {
 		n := queue[0]
 		queue = queue[1:]
 
-		go n.Run()
+		go RunNode(n)
 
 		for _, dep := range n.Dependencies() {
 			queue = append(queue, dep)

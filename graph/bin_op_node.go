@@ -43,31 +43,32 @@ func (n *BinOpNode) Chan() chan Msg                { return n.aChan }
 func (n *BinOpNode) ParentChans() map[int]chan Msg { return n.parentChans }
 func (n *BinOpNode) Dependencies() []Node          { return []Node{n.a, n.b} }
 
-func (n *BinOpNode) Run() {
-	defer destroyNode(n)
-
-	val1, val1Ok := (<-n.aChan).(*ValueMsg)
-	val2, val2Ok := (<-n.bChan).(*ValueMsg)
-
-	var data Msg
-	if val1Ok && val2Ok {
-		result, err := applyBinOp(val1.Data, val2.Data, n.operator)
-		if err != nil {
-			data = NewErrMsg(n.id, true, err)
-		} else {
-			data = NewValueMsg(n.id, true, result)
-		}
-	} else {
-		data = NewErrMsg(n.id, true, errors.New("Error with BinOp values"))
-	}
-
-	for _, parent := range n.parentChans {
-		parent <- data
-	}
-}
-
 func (n *BinOpNode) Clone(g *Globals) Node {
 	return NewBinOpNode(g, n.operator, n.a.Clone(g), n.b.Clone(g))
+}
+
+func (n *BinOpNode) run() (data Msg) {
+	defer destroyNode(n)
+
+	data = NewErrMsg(n.id, true, errors.New("Error with BinOp values"))
+
+	val1, ok := (<-n.aChan).(*ValueMsg)
+	if !ok {
+		return
+	}
+
+	val2, ok := (<-n.bChan).(*ValueMsg)
+	if !ok {
+		return
+	}
+
+	result, err := applyBinOp(val1.Data, val2.Data, n.operator)
+	if err != nil {
+		data = NewErrMsg(n.id, true, err)
+	} else {
+		data = NewValueMsg(n.id, true, result)
+	}
+	return
 }
 
 func applyBinOp(a interface{}, b interface{}, op tokens.Token) (interface{}, error) {

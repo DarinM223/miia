@@ -1,6 +1,7 @@
 package graph
 
 import (
+	"errors"
 	"fmt"
 	"time"
 )
@@ -45,13 +46,10 @@ func (n *VarNode) Clone(globals *Globals) Node {
 	return varNode
 }
 
-func (n *VarNode) Run() {
+func (n *VarNode) run() (data Msg) {
 	if n.msg != nil {
-		msg := n.msg.Clone()
-		msg.setID(n.id)
-		for _, parent := range n.parentChans {
-			parent <- msg
-		}
+		data = n.msg.Clone()
+		data.setID(n.id)
 		return
 	}
 
@@ -59,19 +57,17 @@ func (n *VarNode) Run() {
 	case <-n.inChan:
 		switch n.msg.(type) {
 		case *ValueMsg:
-			msg := n.msg.Clone()
-			msg.setID(n.id)
-			for _, parent := range n.parentChans {
-				parent <- msg
-			}
+			data := n.msg.Clone()
+			data.setID(n.id)
 		case *StreamMsg:
-			panic("Stream message as var not implemented yet")
+			data = NewErrMsg(n.id, true, errors.New("Stream message as var not implemented yet"))
 		default:
-			panic("Unknown var message type")
+			data = NewErrMsg(n.id, true, errors.New("Unknown var message type"))
 		}
 	case <-time.After(5 * time.Second):
 		panic(fmt.Sprintf("Variable %v timed out", n.name))
 	}
+	return
 }
 
 // setMsg sets the message that the VarNode will send to its parents.

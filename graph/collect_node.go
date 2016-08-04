@@ -1,5 +1,7 @@
 package graph
 
+import "errors"
+
 // CollectNode listens for messages
 // from a node that outputs a stream
 // and collects and sends out a value message.
@@ -31,13 +33,18 @@ func (n *CollectNode) Chan() chan Msg                { return n.inChan }
 func (n *CollectNode) ParentChans() map[int]chan Msg { return n.parentChans }
 func (n *CollectNode) Dependencies() []Node          { return []Node{n.node} }
 
-func (n *CollectNode) Run() {
+func (n *CollectNode) Clone(g *Globals) Node {
+	return NewCollectNode(g, n.node.Clone(g))
+}
+
+func (n *CollectNode) run() (data Msg) {
+	data = NewErrMsg(n.id, true, errors.New("CollectNode not receiving a stream messsage"))
+
 	msg, ok := (<-n.inChan).(*StreamMsg)
 	if !ok {
-		panic("CollectNode not receiving a stream messsage")
+		return
 	}
 
-	var data Msg
 	n.results = NewDataNode(msg.Len)
 	n.results.Set(msg.Idx, msg.Data)
 
@@ -47,18 +54,11 @@ func (n *CollectNode) Run() {
 	for i := 0; i < msg.Len.Len()-1; i++ {
 		streamMsg, ok := (<-n.inChan).(*StreamMsg)
 		if !ok {
-			panic("CollectNode not receiving a stream messsage")
+			return
 		}
 		n.results.Set(streamMsg.Idx, streamMsg.Data)
 	}
 
 	data = NewValueMsg(n.id, true, n.results.Data())
-
-	for _, parentChan := range n.parentChans {
-		parentChan <- data
-	}
-}
-
-func (n *CollectNode) Clone(g *Globals) Node {
-	return NewCollectNode(g, n.node.Clone(g))
+	return
 }

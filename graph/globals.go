@@ -37,6 +37,6 @@ func (n *Globals) RegisterNode(id int, node Node) {
 // Run runs all of the nodes in the map.
 func (n *Globals) Run() {
 	for _, node := range n.nodeMap {
-		go node.Run()
+		go RunNode(node)
 	}
 }
