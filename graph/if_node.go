@@ -48,30 +48,35 @@ func (n *IfNode) Chan() chan Msg                { return n.inChan }
 func (n *IfNode) ParentChans() map[int]chan Msg { return n.parentChans }
 func (n *IfNode) Dependencies() []Node          { return []Node{n.pred, n.conseq, n.alt} }
 
-func (n *IfNode) Run() {
-	defer destroyNode(n)
-
-	var data Msg = NewErrMsg(n.id, true, IfPredicateErr)
-
-	msg, msgOk := (<-n.inChan).(*ValueMsg)
-	if pred, ok := msg.Data.(bool); msgOk && ok {
-		if pred {
-			data = <-n.conseqChan
-		} else {
-			data = <-n.altChan
-		}
-		data.setID(n.id)
-	}
-
-	for _, parent := range n.parentChans {
-		parent <- data
-	}
-}
-
 func (n *IfNode) Clone(globals *Globals) Node {
 	clonedPred := n.pred.Clone(globals)
 	clonedConseq := n.conseq.Clone(globals)
 	clonedAlt := n.alt.Clone(globals)
 
 	return NewIfNode(globals, clonedPred, clonedConseq, clonedAlt)
+}
+
+func (n *IfNode) run() (data Msg) {
+	defer destroyNode(n)
+
+	data = NewErrMsg(n.id, true, IfPredicateErr)
+
+	msg, ok := (<-n.inChan).(*ValueMsg)
+	if !ok {
+		return
+	}
+
+	pred, ok := msg.Data.(bool)
+	if !ok {
+		return
+	}
+
+	if pred {
+		data = <-n.conseqChan
+	} else {
+		data = <-n.altChan
+	}
+
+	data.setID(n.id)
+	return
 }

@@ -36,22 +36,28 @@ func (n *GotoNode) ParentChans() map[int]chan Msg { return n.parentChans }
 func (n *GotoNode) Dependencies() []Node          { return []Node{n.url} }
 func (n *GotoNode) Clone(g *Globals) Node         { return NewGotoNode(g, n.url.Clone(g)) }
 
-func (n *GotoNode) Run() {
+func (n *GotoNode) run() (data Msg) {
 	defer destroyNode(n)
 
-	msg, msgOk := (<-n.inChan).(*ValueMsg)
+	data = NewErrMsg(n.id, true, errors.New("Message received is not a string"))
 
-	var data Msg = NewErrMsg(n.id, true, errors.New("Message received is not a string"))
-	if url, ok := msg.Data.(string); msgOk && ok {
-		// Send an HTTP request to get and pass up the response.
-		resp, err := http.Get(url)
-		if err != nil {
-			data = NewErrMsg(n.id, true, err)
-		} else {
-			data = NewValueMsg(n.id, true, resp)
-		}
+	msg, ok := (<-n.inChan).(*ValueMsg)
+	if !ok {
+		return
 	}
-	for _, parent := range n.parentChans {
-		parent <- data
+
+	url, ok := msg.Data.(string)
+	if !ok {
+		return
 	}
+
+	// Send an HTTP request to get and pass up the response.
+	resp, err := http.Get(url)
+
+	if err != nil {
+		data = NewErrMsg(n.id, true, err)
+	} else {
+		data = NewValueMsg(n.id, true, resp)
+	}
+	return
 }

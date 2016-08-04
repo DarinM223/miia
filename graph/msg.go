@@ -68,3 +68,9 @@ func (m *ErrMsg) Clone() Msg   { return NewErrMsg(m.id, m.passUp, m.Err) }
 func (m *StreamMsg) Clone() Msg {
 	return NewStreamMsg(m.id, m.passUp, m.Idx.Clone(), m.Len.Clone(), m.Data)
 }
+
+func BroadcastMsg(msg Msg, parentChans map[int]chan Msg) {
+	for _, parentChan := range parentChans {
+		parentChan <- msg
+	}
+}

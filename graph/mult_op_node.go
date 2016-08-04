@@ -50,17 +50,28 @@ func (n *MultOpNode) Chan() chan Msg                { return n.inChan }
 func (n *MultOpNode) ParentChans() map[int]chan Msg { return n.parentChans }
 func (n *MultOpNode) Dependencies() []Node          { return n.nodes }
 
-func (n *MultOpNode) Run() {
+func (n *MultOpNode) Clone(globals *Globals) Node {
+	clonedNodes := make([]Node, len(n.nodes))
+	for i := 0; i < len(clonedNodes); i++ {
+		clonedNodes[i] = n.nodes[i].Clone(globals)
+	}
+	return NewMultOpNode(globals, n.operator, clonedNodes)
+}
+
+func (n *MultOpNode) run() (data Msg) {
 	defer destroyNode(n)
+
+	data = NewErrMsg(n.id, true, errors.New("MultOpNode not receiving a Value message"))
 
 	passUpCount := 0
 	for {
-		msg, msgOk := (<-n.inChan).(*ValueMsg)
-		if msgOk {
-			// Store the result.
-			nodeIdx := n.idMap[msg.ID()]
-			n.results[nodeIdx] = msg.Data
+		msg, ok := (<-n.inChan).(*ValueMsg)
+		if !ok {
+			return
 		}
+
+		nodeIdx := n.idMap[msg.ID()]
+		n.results[nodeIdx] = msg.Data
 
 		// Break when all the nodes have finished.
 		passUpCount++
@@ -69,25 +80,13 @@ func (n *MultOpNode) Run() {
 		}
 	}
 
-	var msg Msg
-	data, err := applyMultOp(n.results, n.operator)
+	result, err := applyMultOp(n.results, n.operator)
 	if err != nil {
-		msg = NewErrMsg(n.id, true, err)
+		data = NewErrMsg(n.id, true, err)
 	} else {
-		msg = NewValueMsg(n.id, true, data)
+		data = NewValueMsg(n.id, true, result)
 	}
-
-	for _, parent := range n.parentChans {
-		parent <- msg
-	}
-}
-
-func (n *MultOpNode) Clone(globals *Globals) Node {
-	clonedNodes := make([]Node, len(n.nodes))
-	for i := 0; i < len(clonedNodes); i++ {
-		clonedNodes[i] = n.nodes[i].Clone(globals)
-	}
-	return NewMultOpNode(globals, n.operator, clonedNodes)
+	return
 }
 
 func applyMultOp(data []interface{}, op tokens.Token) (interface{}, error) {

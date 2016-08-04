@@ -232,9 +232,7 @@ func (n *ForNode) handlePassUpMsg(msg Msg) bool {
 		}
 	}
 
-	for _, parent := range n.parentChans {
-		parent <- data
-	}
+	BroadcastMsg(data, n.parentChans)
 	return finished
 }
 
@@ -242,7 +240,7 @@ func (n *ForNode) setFanOut(fanout int) {
 	n.fanout = fanout
 }
 
-func (n *ForNode) Run() {
+func (n *ForNode) run() Msg {
 	defer destroyNode(n)
 
 	n.isLoop = ContainsLoopNode(n.body) // true if the node's body contains a loop node
@@ -264,4 +262,6 @@ func (n *ForNode) Run() {
 			}
 		}
 	}
+
+	return nil
 }

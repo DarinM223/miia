@@ -13,7 +13,7 @@ func TestValueNode(t *testing.T) {
 	node.ParentChans()[1] = parentChan1
 	node.ParentChans()[2] = parentChan2
 
-	go node.Run()
+	go RunNode(node)
 
 	expected := NewValueMsg(0, true, 20)
 
