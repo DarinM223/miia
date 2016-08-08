@@ -2,8 +2,6 @@ package graph
 
 import (
 	"errors"
-	"fmt"
-	"time"
 )
 
 // VarNode is a variable node that is set dynamically.
@@ -61,8 +59,6 @@ func (n *VarNode) run() Msg {
 		default:
 			return NewErrMsg(n.id, true, errors.New("Unknown var message type"))
 		}
-	case <-time.After(5 * time.Second):
-		panic(fmt.Sprintf("Variable %v timed out", n.name))
 	}
 }
 

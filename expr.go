@@ -3,6 +3,7 @@ package main
 import (
 	"github.com/DarinM223/miia/graph"
 	"github.com/DarinM223/miia/tokens"
+	"time"
 )
 
 type Expr interface {
@@ -92,17 +93,26 @@ type CollectExpr struct {
 	A Expr
 }
 
-func (e IntExpr) expr()      {}
-func (e StringExpr) expr()   {}
-func (e BoolExpr) expr()     {}
-func (e SelectorExpr) expr() {}
-func (e VarExpr) expr()      {}
-func (e ForExpr) expr()      {}
-func (e IfExpr) expr()       {}
-func (e GotoExpr) expr()     {}
-func (e BlockExpr) expr()    {}
-func (e BindExpr) expr()     {}
-func (e MultOp) expr()       {}
-func (e BinOp) expr()        {}
-func (e UnOp) expr()         {}
-func (e CollectExpr) expr()  {}
+// RateLimitExpr specifies a rate limit of the maximum number of times a URL can be called
+// in a specified duration.
+type RateLimitExpr struct {
+	URL      string
+	MaxTimes int
+	Duration time.Duration
+}
+
+func (e IntExpr) expr()       {}
+func (e StringExpr) expr()    {}
+func (e BoolExpr) expr()      {}
+func (e SelectorExpr) expr()  {}
+func (e VarExpr) expr()       {}
+func (e ForExpr) expr()       {}
+func (e IfExpr) expr()        {}
+func (e GotoExpr) expr()      {}
+func (e BlockExpr) expr()     {}
+func (e BindExpr) expr()      {}
+func (e MultOp) expr()        {}
+func (e BinOp) expr()         {}
+func (e UnOp) expr()          {}
+func (e CollectExpr) expr()   {}
+func (e RateLimitExpr) expr() {}

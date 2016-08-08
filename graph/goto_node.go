@@ -11,6 +11,7 @@ import (
 type GotoNode struct {
 	id          int
 	url         Node
+	globals     *Globals
 	inChan      chan Msg
 	parentChans map[int]chan Msg
 }
@@ -23,6 +24,7 @@ func NewGotoNode(globals *Globals, url Node) *GotoNode {
 	gotoNode := &GotoNode{
 		id:          id,
 		url:         url,
+		globals:     globals,
 		inChan:      inChan,
 		parentChans: make(map[int]chan Msg),
 	}
@@ -36,28 +38,28 @@ func (n *GotoNode) ParentChans() map[int]chan Msg { return n.parentChans }
 func (n *GotoNode) Dependencies() []Node          { return []Node{n.url} }
 func (n *GotoNode) Clone(g *Globals) Node         { return NewGotoNode(g, n.url.Clone(g)) }
 
-func (n *GotoNode) run() (data Msg) {
+func (n *GotoNode) run() Msg {
 	defer destroyNode(n)
 
-	data = NewErrMsg(n.id, true, errors.New("Message received is not a string"))
+	var errMsg Msg = NewErrMsg(n.id, true, errors.New("Message received is not a string"))
 
 	msg, ok := (<-n.inChan).(ValueMsg)
 	if !ok {
-		return
+		return errMsg
 	}
 
 	url, ok := msg.Data.(string)
 	if !ok {
-		return
+		return errMsg
 	}
 
 	// Send an HTTP request to get and pass up the response.
+	n.globals.RateLimit(url)
 	resp, err := http.Get(url)
 
 	if err != nil {
-		data = NewErrMsg(n.id, true, err)
+		return NewErrMsg(n.id, true, err)
 	} else {
-		data = NewValueMsg(n.id, true, resp)
+		return NewValueMsg(n.id, true, resp)
 	}
-	return
 }

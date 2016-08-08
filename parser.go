@@ -5,6 +5,7 @@ import (
 	"errors"
 	"github.com/DarinM223/miia/graph"
 	"github.com/DarinM223/miia/tokens"
+	"time"
 )
 
 var (
@@ -201,6 +202,8 @@ func (p *Parser) parseExpr() (Expr, error) {
 			expr, err = p.parseCollect()
 		case tok == tokens.BlockToken:
 			expr, err = p.parseBlock()
+		case tok == tokens.RateLimitToken:
+			expr, err = p.parseRateLimit()
 		case tok == tokens.AssignToken:
 			expr, err = p.parseBindings()
 		case tok == tokens.GotoToken:
@@ -407,6 +410,33 @@ func (p *Parser) parseBlock() (Expr, error) {
 		ch = p.text[p.pos]
 	}
 	return BlockExpr{exprList}, nil
+}
+
+// parseRateLimit parses a rate limiter expression.
+func (p *Parser) parseRateLimit() (Expr, error) {
+	p.parseWhitespace()
+	url, err := p.parseString()
+	if err != nil {
+		return nil, err
+	}
+
+	p.parseWhitespace()
+	maxTimes, err := p.parseNumber()
+	if err != nil {
+		return nil, err
+	}
+
+	p.parseWhitespace()
+	duration, err := p.parseNumber()
+	if err != nil {
+		return nil, err
+	}
+
+	return RateLimitExpr{
+		url.(StringExpr).Value,
+		maxTimes.(IntExpr).Value,
+		time.Duration(duration.(IntExpr).Value) * time.Second,
+	}, nil
 }
 
 // parseBindings parses a variable binding expression.

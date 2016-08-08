@@ -1,0 +1,7 @@
+(block
+  (ratelimit "http://www.example.com" 2 5)
+  (collect
+  (for i (.. 1 10) 
+    (block
+      (goto "http://www.example.com")
+      (sel "title" "h1" "desc" "p")))))

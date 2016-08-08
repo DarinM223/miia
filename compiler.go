@@ -119,6 +119,9 @@ func CompileExpr(globals *graph.Globals, expr Expr, scope *Scope) (graph.Node, e
 			scope.set(name, res)
 		}
 		return graph.NewValueNode(globals, nil), nil
+	case RateLimitExpr:
+		globals.SetRateLimit(e.URL, e.MaxTimes, e.Duration)
+		return graph.NewValueNode(globals, nil), nil
 	case MultOp:
 		nodes := make([]graph.Node, len(e.Exprs))
 		for i := 0; i < len(nodes); i++ {
