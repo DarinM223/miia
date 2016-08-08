@@ -1,20 +1,26 @@
 package graph
 
-import "sync"
+import (
+	"github.com/beefsack/go-rate"
+	"sync"
+	"time"
+)
 
 // Globals contains all of the nodes so that
 // they can all be run at the start of the program.
 type Globals struct {
-	currID  int
-	mutex   *sync.Mutex
-	nodeMap map[int]Node
+	currID       int
+	mutex        *sync.Mutex
+	nodeMap      map[int]Node
+	rateLimiters map[string]*rate.RateLimiter
 }
 
 func NewGlobals() *Globals {
 	return &Globals{
-		currID:  0,
-		mutex:   &sync.Mutex{},
-		nodeMap: make(map[int]Node),
+		currID:       0,
+		mutex:        &sync.Mutex{},
+		nodeMap:      make(map[int]Node),
+		rateLimiters: make(map[string]*rate.RateLimiter),
 	}
 }
 
@@ -38,5 +44,17 @@ func (n *Globals) RegisterNode(id int, node Node) {
 func (n *Globals) Run() {
 	for _, node := range n.nodeMap {
 		go RunNode(node)
+	}
+}
+
+// SetRateLimit sets the rate limit for a URL.
+func (n *Globals) SetRateLimit(url string, maxTimes int, duration time.Duration) {
+	n.rateLimiters[url] = rate.New(maxTimes, duration)
+}
+
+// RateLimit blocks until the URL can be called without breaking the rate limit.
+func (n *Globals) RateLimit(url string) {
+	if rateLimiter, ok := n.rateLimiters[url]; ok {
+		rateLimiter.Wait()
 	}
 }

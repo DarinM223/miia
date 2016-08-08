@@ -5,6 +5,7 @@ import (
 	"github.com/DarinM223/miia/tokens"
 	"reflect"
 	"testing"
+	"time"
 )
 
 var parseIdentTests = []struct {
@@ -280,6 +281,11 @@ var parseExprTests = []struct {
 				VarExpr{"i"},
 			},
 		},
+		nil,
+	},
+	{
+		"( ratelimit \"www.google.com\" 5 60 )",
+		RateLimitExpr{"www.google.com", 5, 60 * time.Second},
 		nil,
 	},
 }
