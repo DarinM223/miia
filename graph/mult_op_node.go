@@ -58,16 +58,14 @@ func (n *MultOpNode) Clone(globals *Globals) Node {
 	return NewMultOpNode(globals, n.operator, clonedNodes)
 }
 
-func (n *MultOpNode) run() (data Msg) {
+func (n *MultOpNode) run() Msg {
 	defer destroyNode(n)
-
-	data = NewErrMsg(n.id, true, errors.New("MultOpNode not receiving a Value message"))
 
 	passUpCount := 0
 	for {
 		msg, ok := (<-n.inChan).(ValueMsg)
 		if !ok {
-			return
+			return NewErrMsg(n.id, true, errors.New("MultOpNode not receiving a Value message"))
 		}
 
 		nodeIdx := n.idMap[msg.ID()]
@@ -82,11 +80,10 @@ func (n *MultOpNode) run() (data Msg) {
 
 	result, err := applyMultOp(n.results, n.operator)
 	if err != nil {
-		data = NewErrMsg(n.id, true, err)
-	} else {
-		data = NewValueMsg(n.id, true, result)
+		return NewErrMsg(n.id, true, err)
 	}
-	return
+
+	return NewValueMsg(n.id, true, result)
 }
 
 func applyMultOp(data []interface{}, op tokens.Token) (interface{}, error) {

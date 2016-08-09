@@ -56,10 +56,9 @@ func (n *GotoNode) run() Msg {
 	// Send an HTTP request to get and pass up the response.
 	n.globals.RateLimit(url)
 	resp, err := http.Get(url)
-
 	if err != nil {
 		return NewErrMsg(n.id, true, err)
-	} else {
-		return NewValueMsg(n.id, true, resp)
 	}
+
+	return NewValueMsg(n.id, true, resp)
 }

@@ -37,12 +37,12 @@ func (n *CollectNode) Clone(g *Globals) Node {
 	return NewCollectNode(g, n.node.Clone(g))
 }
 
-func (n *CollectNode) run() (data Msg) {
-	data = NewErrMsg(n.id, true, errors.New("CollectNode not receiving a stream messsage"))
+func (n *CollectNode) run() Msg {
+	var errMsg Msg = NewErrMsg(n.id, true, errors.New("CollectNode not receiving a stream messsage"))
 
 	msg, ok := (<-n.inChan).(StreamMsg)
 	if !ok {
-		return
+		return errMsg
 	}
 
 	n.results = NewDataNode(msg.Len)
@@ -54,11 +54,10 @@ func (n *CollectNode) run() (data Msg) {
 	for i := 0; i < msg.Len.Len()-1; i++ {
 		streamMsg, ok := (<-n.inChan).(StreamMsg)
 		if !ok {
-			return
+			return errMsg
 		}
 		n.results.Set(streamMsg.Idx, streamMsg.Data)
 	}
 
-	data = NewValueMsg(n.id, true, n.results.Data())
-	return
+	return NewValueMsg(n.id, true, n.results.Data())
 }

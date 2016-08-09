@@ -47,28 +47,27 @@ func (n *BinOpNode) Clone(g *Globals) Node {
 	return NewBinOpNode(g, n.operator, n.a.Clone(g), n.b.Clone(g))
 }
 
-func (n *BinOpNode) run() (data Msg) {
+func (n *BinOpNode) run() Msg {
 	defer destroyNode(n)
 
-	data = NewErrMsg(n.id, true, errors.New("Error with BinOp values"))
+	var errMsg Msg = NewErrMsg(n.id, true, errors.New("Error with BinOp values"))
 
 	val1, ok := (<-n.aChan).(ValueMsg)
 	if !ok {
-		return
+		return errMsg
 	}
 
 	val2, ok := (<-n.bChan).(ValueMsg)
 	if !ok {
-		return
+		return errMsg
 	}
 
 	result, err := applyBinOp(val1.Data, val2.Data, n.operator)
 	if err != nil {
-		data = NewErrMsg(n.id, true, err)
-	} else {
-		data = NewValueMsg(n.id, true, result)
+		return NewErrMsg(n.id, true, err)
 	}
-	return
+
+	return NewValueMsg(n.id, true, result)
 }
 
 func applyBinOp(a interface{}, b interface{}, op tokens.Token) (interface{}, error) {

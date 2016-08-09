@@ -37,26 +37,25 @@ func (n *UnOpNode) ParentChans() map[int]chan Msg { return n.parentChans }
 func (n *UnOpNode) Dependencies() []Node          { return []Node{n.node} }
 func (n *UnOpNode) Clone(g *Globals) Node         { return NewUnOpNode(g, n.operator, n.node.Clone(g)) }
 
-func (n *UnOpNode) run() (data Msg) {
+func (n *UnOpNode) run() Msg {
 	defer destroyNode(n)
 
-	data = NewErrMsg(n.id, true, errors.New("Invalid type for UnOp NotToken"))
+	var errMsg Msg = NewErrMsg(n.id, true, errors.New("Invalid type for UnOp NotToken"))
 
 	val, ok := (<-n.inChan).(ValueMsg)
 	if !ok {
-		return
+		return errMsg
 	}
 
 	switch n.operator {
 	case tokens.NotToken:
 		value, ok := val.Data.(bool)
 		if !ok {
-			return
+			return errMsg
 		}
 
-		data = NewValueMsg(n.id, true, !value)
+		return NewValueMsg(n.id, true, !value)
 	default:
-		data = NewErrMsg(n.id, true, errors.New("Invalid UnOp operator"))
+		return NewErrMsg(n.id, true, errors.New("Invalid UnOp operator"))
 	}
-	return
 }
