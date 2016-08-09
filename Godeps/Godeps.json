@@ -13,6 +13,10 @@
 			"Rev": "3ad29d1ad1c4f2023e355603324348cf1f4b2d48"
 		},
 		{
+			"ImportPath": "github.com/beefsack/go-rate",
+			"Rev": "de575b104f4218f4aebdc95ba56f61f38d0dad86"
+		},
+		{
 			"ImportPath": "github.com/davecgh/go-spew/spew",
 			"Rev": "5215b55f46b2b919f50a1df0eaa5886afe4e3b3d"
 		},
