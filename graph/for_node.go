@@ -1,13 +1,23 @@
 package graph
 
 import (
+	"errors"
 	"fmt"
 	"reflect"
 )
 
 // forNodeType is the current state of the for loop node.
 type forNodeType interface {
-	forNode()
+	// increment is called when the passed up value for a node is received and
+	// a new node is needed to replace the just finished node. It checks if all nodes
+	// have finished and if not it finds and starts up the next node to run. It returns
+	// a boolean that is true when all nodes have finished and false otherwise.
+	increment(n *ForNode) bool
+	// handleMsg is called when a the for node receives a passup message.
+	// It handles the passed up message differently depending on the current state
+	// and returns the message that the for node will pass up and a boolean that
+	// is true when the for node is finished and false otherwise.
+	handleMsg(n *ForNode, msg Msg) (Msg, bool)
 }
 
 // valueNodeType is the state when a for loop
@@ -15,6 +25,41 @@ type forNodeType interface {
 type valueNodeType struct {
 	currIdx       int
 	finishedNodes int
+}
+
+func (t *valueNodeType) increment(n *ForNode) bool {
+	t.finishedNodes++
+	if t.finishedNodes >= len(n.subnodes) {
+		return true
+	} else if n.isLoop && t.currIdx < len(n.subnodes) {
+		currIdx := fmt.Sprintf("%d", t.currIdx)
+		startNode(n.globals, n.subnodes[currIdx])
+		t.currIdx++
+	}
+	return false
+}
+
+func (t *valueNodeType) handleMsg(n *ForNode, msg Msg) (Msg, bool) {
+	// For a value type since all of the values are already saved
+	// you can start another node right away.
+
+	finished := t.increment(n)
+	if valueMsg, ok := msg.(ValueMsg); ok {
+		return NewStreamMsg(
+			n.id,
+			true,
+			n.nodeToIdx[valueMsg.ID()],
+			NewStreamIndex(len(n.subnodes)),
+			valueMsg.Data,
+		), finished
+	} else if streamMsg, ok := msg.(StreamMsg); ok {
+		streamMsg.Idx = streamMsg.Idx.Append(n.nodeToIdx[streamMsg.ID()])
+		streamMsg.Len = streamMsg.Len.AddIndex(len(n.subnodes))
+		return streamMsg.SetID(n.id), finished
+	}
+
+	err := errors.New(fmt.Sprintf("Message is not a value or stream message: %v instead: %v", msg, reflect.TypeOf(msg)))
+	return NewErrMsg(n.id, true, err), true
 }
 
 // streamNodeType is the state when a for loop
@@ -26,12 +71,63 @@ type streamNodeType struct {
 	startedFirstNode bool
 }
 
-func (t *valueNodeType) forNode()  {}
-func (t *streamNodeType) forNode() {}
+func (t *streamNodeType) increment(n *ForNode) bool {
+	t.numCurrIdxs--
+	if len(t.visitedNodes) >= t.len.Len() {
+		return true
+	}
 
-// ForNode is a node that listens on the subnodes and
-// passes up values as they are passed up from the subnodes
-// into the body node.
+	// Find the next node by looking through the saved nodes ignoring
+	// already visited nodes. If there are no saved nodes, don't do anything.
+	nextNodeIdx := ""
+	for _, i := range n.nodeToIdx {
+		if visited, ok := t.visitedNodes[i.String()]; !ok || !visited {
+			nextNodeIdx = i.String()
+			break
+		}
+	}
+
+	if nextNodeIdx != "" {
+		t.numCurrIdxs++
+		t.visitedNodes[nextNodeIdx] = true
+		startNode(n.globals, n.subnodes[nextNodeIdx])
+	}
+	return false
+}
+
+func (t *streamNodeType) handleMsg(n *ForNode, msg Msg) (Msg, bool) {
+	// For a stream type you can only start another node if that node
+	// has already been saved but not started. Saved nodes are in nodeToIdx.
+
+	finished := t.increment(n)
+	if valueMsg, ok := msg.(ValueMsg); ok {
+		return NewStreamMsg(
+			n.id,
+			true,
+			n.nodeToIdx[valueMsg.ID()],
+			t.len,
+			valueMsg.Data,
+		), finished
+	} else if streamMsg, ok := msg.(StreamMsg); ok {
+		streamMsg.Idx = streamMsg.Idx.Append(n.nodeToIdx[streamMsg.ID()])
+		streamMsg.Len = streamMsg.Len.Append(t.len)
+		return streamMsg.SetID(n.id), finished
+	}
+
+	err := errors.New(fmt.Sprintf("Message is not a value or stream message: %v", msg))
+	return NewErrMsg(n.id, true, err), true
+}
+
+// ForNode is a node that listens to a collection and
+// creates subnodes for every message received from the collection
+// and sets the variable nodes for each subnode with the data in the message.
+//
+// For nodes always pass up data as stream messages and they can handle stream messages
+// passed up in either the collection or the body.
+//
+// If the for node doesn't have nested for nodes in the body it runs all of the subnodes at once.
+// Otherwise the number of nodes concurrently running at a time is determined by the fanout
+// set from the SetNodesFanOut function in the same package.
 type ForNode struct {
 	id int
 	// the number of nodes to run concurrently at a time.
@@ -71,7 +167,7 @@ func NewForNode(globals *Globals, name string, collection Node, body Node) *ForN
 		parentChans:    make(map[int]chan Msg),
 		globals:        globals,
 		nodeToIdx:      make(map[int]StreamIndex),
-		isLoop:         false,
+		isLoop:         ContainsLoopNode(body),
 	}
 	globals.RegisterNode(id, forNode)
 	return forNode
@@ -87,6 +183,8 @@ func (n *ForNode) Clone(g *Globals) Node {
 	return forNode
 }
 
+// handleValueMsg is called when the for node receives a value message
+// from the collection channel.
 func (n *ForNode) handleValueMsg(msg ValueMsg) {
 	if n.nodeType == nil {
 		n.nodeType = &valueNodeType{0, 0}
@@ -123,6 +221,8 @@ func (n *ForNode) handleValueMsg(msg ValueMsg) {
 	}
 }
 
+// handleStreamMsg is called when the for node receives a stream message
+// from the collection channel.
 func (n *ForNode) handleStreamMsg(msg StreamMsg) {
 	if n.inChan == nil {
 		n.inChan = make(chan Msg, msg.Len.Len())
@@ -148,88 +248,8 @@ func (n *ForNode) handleStreamMsg(msg StreamMsg) {
 	}
 }
 
-func (n *ForNode) incValueNode(nodeType *valueNodeType) bool {
-	nodeType.finishedNodes++
-	if nodeType.finishedNodes >= len(n.subnodes) {
-		return true
-	} else if n.isLoop && nodeType.currIdx < len(n.subnodes) {
-		currIdx := fmt.Sprintf("%d", nodeType.currIdx)
-		startNode(n.globals, n.subnodes[currIdx])
-		nodeType.currIdx++
-	}
-	return false
-}
-
-func (n *ForNode) incStreamNode(nodeType *streamNodeType) bool {
-	nodeType.numCurrIdxs--
-	if len(nodeType.visitedNodes) >= nodeType.len.Len() {
-		return true
-	}
-
-	// Find the next node by looking through the saved nodes ignoring
-	// already visited nodes. If there are no saved nodes, don't do anything.
-	nextNodeIdx := ""
-	for _, i := range n.nodeToIdx {
-		if visited, ok := nodeType.visitedNodes[i.String()]; !ok || !visited {
-			nextNodeIdx = i.String()
-			break
-		}
-	}
-
-	if nextNodeIdx != "" {
-		nodeType.numCurrIdxs++
-		nodeType.visitedNodes[nextNodeIdx] = true
-		startNode(n.globals, n.subnodes[nextNodeIdx])
-	}
-	return false
-}
-
 func (n *ForNode) handlePassUpMsg(msg Msg) bool {
-	finished := false
-	var data Msg
-	switch nodeType := n.nodeType.(type) {
-	case *valueNodeType:
-		// For a value type since all of the values are already saved
-		// you can start another node right away.
-
-		finished = n.incValueNode(nodeType)
-		if valueMsg, ok := msg.(ValueMsg); ok {
-			data = NewStreamMsg(
-				n.id,
-				true,
-				n.nodeToIdx[valueMsg.ID()],
-				NewStreamIndex(len(n.subnodes)),
-				valueMsg.Data,
-			)
-		} else if streamMsg, ok := msg.(StreamMsg); ok {
-			streamMsg.Idx = streamMsg.Idx.Append(n.nodeToIdx[streamMsg.ID()])
-			streamMsg.Len = streamMsg.Len.AddIndex(len(n.subnodes))
-			data = streamMsg.SetID(n.id)
-		} else {
-			panic(fmt.Sprintf("Message is not a value or stream message: %v instead: %v", msg, reflect.TypeOf(msg)))
-		}
-	case *streamNodeType:
-		// For a stream type you can only start another node if that node
-		// has already been saved but not started. Saved nodes are in nodeToIdx.
-
-		finished = n.incStreamNode(nodeType)
-		if valueMsg, ok := msg.(ValueMsg); ok {
-			data = NewStreamMsg(
-				n.id,
-				true,
-				n.nodeToIdx[valueMsg.ID()],
-				nodeType.len,
-				valueMsg.Data,
-			)
-		} else if streamMsg, ok := msg.(StreamMsg); ok {
-			streamMsg.Idx = streamMsg.Idx.Append(n.nodeToIdx[streamMsg.ID()])
-			streamMsg.Len = streamMsg.Len.Append(nodeType.len)
-			data = streamMsg.SetID(n.id)
-		} else {
-			panic(fmt.Sprintf("Message is not a value or stream message: %v", msg))
-		}
-	}
-
+	data, finished := n.nodeType.handleMsg(n, msg)
 	BroadcastMsg(data, n.parentChans)
 	return finished
 }
@@ -240,8 +260,6 @@ func (n *ForNode) setFanOut(fanout int) {
 
 func (n *ForNode) run() Msg {
 	defer destroyNode(n)
-
-	n.isLoop = ContainsLoopNode(n.body) // true if the node's body contains a loop node
 
 	for {
 		select {
