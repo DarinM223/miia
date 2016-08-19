@@ -6,13 +6,6 @@ import (
 	"net/http"
 )
 
-type SelectorType byte
-
-const (
-	SelectorClass SelectorType = '.' // A CSS class to retrieve.
-	SelectorID                 = '#' // A CSS id to retrieve.
-)
-
 // Selector is binding from a css string like `#id`
 // to the name of the key in the output map after
 // parsing all of the selectors like { button: ... }
