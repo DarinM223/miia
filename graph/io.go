@@ -69,7 +69,7 @@ func WriteInterface(w io.Writer, i interface{}) error {
  * Implementations for reading nodes from files.
  */
 
-func ReadNode(r io.Reader) (Node, error) {
+func ReadNode(r io.Reader, g *Globals) (Node, error) {
 	typeByte := make([]byte, 1)
 	if _, err := r.Read(typeByte); err != nil {
 		return nil, err
@@ -78,31 +78,31 @@ func ReadNode(r io.Reader) (Node, error) {
 	typeTag := NodeType(typeByte[0])
 	switch typeTag {
 	case BinOpType:
-		return readBinOpNode(r)
+		return readBinOpNode(r, g)
 	case CollectType:
-		return readCollectNode(r)
+		return readCollectNode(r, g)
 	case ForType:
-		return readForNode(r)
+		return readForNode(r, g)
 	case GotoType:
-		return readGotoNode(r)
+		return readGotoNode(r, g)
 	case IfType:
-		return readIfNode(r)
+		return readIfNode(r, g)
 	case MultOpType:
-		return readMultOpNode(r)
+		return readMultOpNode(r, g)
 	case SelectorType:
-		return readSelectorNode(r)
+		return readSelectorNode(r, g)
 	case UnOpType:
-		return readUnOpNode(r)
+		return readUnOpNode(r, g)
 	case ValueType:
-		return readValueNode(r)
+		return readValueNode(r, g)
 	case VarType:
-		return readVarNode(r)
+		return readVarNode(r, g)
 	default:
 		return nil, errors.New("Invalid node type")
 	}
 }
 
-func readBinOpNode(r io.Reader) (*BinOpNode, error) {
+func readBinOpNode(r io.Reader, g *Globals) (*BinOpNode, error) {
 	id, err := ReadInt(r)
 	if err != nil {
 		return nil, err
@@ -113,56 +113,34 @@ func readBinOpNode(r io.Reader) (*BinOpNode, error) {
 		return nil, err
 	}
 
-	a, err := ReadNode(r)
+	a, err := ReadNode(r, g)
 	if err != nil {
 		return nil, err
 	}
 
-	b, err := ReadNode(r)
+	b, err := ReadNode(r, g)
 	if err != nil {
 		return nil, err
 	}
 
-	aChan := make(chan Msg, 1)
-	bChan := make(chan Msg, 1)
-	a.ParentChans()[id] = aChan
-	b.ParentChans()[id] = bChan
-
-	return &BinOpNode{
-		id:          id,
-		operator:    tokens.Token(operator),
-		aChan:       aChan,
-		bChan:       bChan,
-		a:           a,
-		b:           b,
-		parentChans: make(map[int]chan Msg),
-	}, nil
+	return NewBinOpNode(g, id, tokens.Token(operator), a, b), nil
 }
 
-func readCollectNode(r io.Reader) (*CollectNode, error) {
+func readCollectNode(r io.Reader, g *Globals) (*CollectNode, error) {
 	id, err := ReadInt(r)
 	if err != nil {
 		return nil, err
 	}
 
-	node, err := ReadNode(r)
+	node, err := ReadNode(r, g)
 	if err != nil {
 		return nil, err
 	}
 
-	inChan := make(chan Msg, InChanSize)
-	node.ParentChans()[id] = inChan
-
-	return &CollectNode{
-		id:          id,
-		node:        node,
-		inChan:      inChan,
-		parentChans: make(map[int]chan Msg),
-		results:     nil,
-	}, nil
+	return NewCollectNode(g, id, node), nil
 }
 
-func readForNode(r io.Reader) (*ForNode, error) {
+func readForNode(r io.Reader, g *Globals) (*ForNode, error) {
 	id, err := ReadInt(r)
 	if err != nil {
 		return nil, err
@@ -183,99 +161,61 @@ func readForNode(r io.Reader) (*ForNode, error) {
 		return nil, err
 	}
 
-	collection, err := ReadNode(r)
+	collection, err := ReadNode(r, g)
 	if err != nil {
 		return nil, err
 	}
 
-	body, err := ReadNode(r)
+	body, err := ReadNode(r, g)
 	if err != nil {
 		return nil, err
 	}
 
-	collectionChan := make(chan Msg, InChanSize)
-	collection.ParentChans()[id] = collectionChan
-
-	return &ForNode{
-		id:             id,
-		fanout:         fanout,
-		nodeType:       nodeType.(forNodeType),
-		subnodes:       make(map[string]Node),
-		name:           name,
-		collection:     collection,
-		body:           body,
-		inChan:         nil,
-		collectionChan: collectionChan,
-		parentChans:    make(map[int]chan Msg),
-		nodeToIdx:      make(map[int]StreamIndex),
-		isLoop:         ContainsLoopNode(body),
-	}, nil
+	forNode := NewForNode(g, id, name, collection, body)
+	forNode.nodeType = nodeType.(forNodeType)
+	forNode.setFanOut(fanout)
+	return forNode, nil
 }
 
-func readGotoNode(r io.Reader) (*GotoNode, error) {
+func readGotoNode(r io.Reader, g *Globals) (*GotoNode, error) {
 	id, err := ReadInt(r)
 	if err != nil {
 		return nil, err
 	}
 
-	url, err := ReadNode(r)
+	url, err := ReadNode(r, g)
 	if err != nil {
 		return nil, err
 	}
 
-	inChan := make(chan Msg, InChanSize)
-	url.ParentChans()[id] = inChan
-
-	return &GotoNode{
-		id:          id,
-		url:         url,
-		inChan:      inChan,
-		parentChans: make(map[int]chan Msg),
-	}, nil
+	return NewGotoNode(g, id, url), nil
 }
 
-func readIfNode(r io.Reader) (*IfNode, error) {
+func readIfNode(r io.Reader, g *Globals) (*IfNode, error) {
 	id, err := ReadInt(r)
 	if err != nil {
 		return nil, err
 	}
 
-	pred, err := ReadNode(r)
+	pred, err := ReadNode(r, g)
 	if err != nil {
 		return nil, err
 	}
 
-	conseq, err := ReadNode(r)
+	conseq, err := ReadNode(r, g)
 	if err != nil {
 		return nil, err
 	}
 
-	alt, err := ReadNode(r)
+	alt, err := ReadNode(r, g)
 	if err != nil {
 		return nil, err
 	}
 
-	inChan := make(chan Msg, InChanSize)
-	conseqChan := make(chan Msg, InChanSize)
-	altChan := make(chan Msg, InChanSize)
-
-	pred.ParentChans()[id] = inChan
-	conseq.ParentChans()[id] = conseqChan
-	alt.ParentChans()[id] = altChan
-
-	return &IfNode{
-		id:          id,
-		pred:        pred,
-		conseq:      conseq,
-		alt:         alt,
-		inChan:      inChan,
-		conseqChan:  conseqChan,
-		altChan:     altChan,
-		parentChans: make(map[int]chan Msg),
-	}, nil
+	return NewIfNode(g, id, pred, conseq, alt), nil
 }
 
-func readMultOpNode(r io.Reader) (*MultOpNode, error) {
+func readMultOpNode(r io.Reader, g *Globals) (*MultOpNode, error) {
 	id, err := ReadInt(r)
 	if err != nil {
 		return nil, err
@@ -292,39 +232,25 @@ func readMultOpNode(r io.Reader) (*MultOpNode, error) {
 	}
 
 	nodes := make([]Node, nodesLen)
-	inChan := make(chan Msg, len(nodes))
-	idMap := make(map[int]int, len(nodes))
-
 	for i := 0; i < nodesLen; i++ {
-		node, err := ReadNode(r)
+		node, err := ReadNode(r, g)
 		if err != nil {
 			return nil, err
 		}
 
-		node.ParentChans()[id] = inChan
-		idMap[node.ID()] = i
-
 		nodes[i] = node
 	}
 
-	return &MultOpNode{
-		id:          id,
-		operator:    tokens.Token(operator),
-		nodes:       nodes,
-		inChan:      inChan,
-		parentChans: make(map[int]chan Msg),
-		results:     make([]interface{}, len(nodes)),
-		idMap:       idMap,
-	}, nil
+	return NewMultOpNode(g, id, tokens.Token(operator), nodes), nil
 }
 
-func readSelectorNode(r io.Reader) (*SelectorNode, error) {
+func readSelectorNode(r io.Reader, g *Globals) (*SelectorNode, error) {
 	id, err := ReadInt(r)
 	if err != nil {
 		return nil, err
 	}
 
-	gotoNode, err := ReadNode(r)
+	gotoNode, err := ReadNode(r, g)
 	if err != nil {
 		return nil, err
 	}
@@ -352,19 +278,10 @@ func readSelectorNode(r io.Reader) (*SelectorNode, error) {
 		}
 	}
 
-	inChan := make(chan Msg, InChanSize)
-	gotoNode.ParentChans()[id] = inChan
-
-	return &SelectorNode{
-		id:          id,
-		selectors:   selectors,
-		gotoNode:    gotoNode,
-		inChan:      inChan,
-		parentChans: make(map[int]chan Msg),
-	}, nil
+	return NewSelectorNode(g, id, gotoNode, selectors), nil
 }
 
-func readUnOpNode(r io.Reader) (*UnOpNode, error) {
+func readUnOpNode(r io.Reader, g *Globals) (*UnOpNode, error) {
 	id, err := ReadInt(r)
 	if err != nil {
 		return nil, err
@@ -375,24 +292,15 @@ func readUnOpNode(r io.Reader) (*UnOpNode, error) {
 		return nil, err
 	}
 
-	node, err := ReadNode(r)
+	node, err := ReadNode(r, g)
 	if err != nil {
 		return nil, err
 	}
 
-	inChan := make(chan Msg, 1)
-	node.ParentChans()[id] = inChan
-
-	return &UnOpNode{
-		id:          id,
-		operator:    tokens.Token(operator),
-		inChan:      inChan,
-		node:        node,
-		parentChans: make(map[int]chan Msg),
-	}, nil
+	return NewUnOpNode(g, id, tokens.Token(operator), node), nil
 }
 
-func readValueNode(r io.Reader) (*ValueNode, error) {
+func readValueNode(r io.Reader, g *Globals) (*ValueNode, error) {
 	id, err := ReadInt(r)
 	if err != nil {
 		return nil, err
@@ -403,15 +311,10 @@ func readValueNode(r io.Reader) (*ValueNode, error) {
 		return nil, err
 	}
 
-	return &ValueNode{
-		id:          id,
-		value:       value,
-		inChan:      make(chan Msg, InChanSize),
-		parentChans: make(map[int]chan Msg),
-	}, nil
+	return NewValueNode(g, id, value), nil
 }
 
-func readVarNode(r io.Reader) (*VarNode, error) {
+func readVarNode(r io.Reader, g *Globals) (*VarNode, error) {
 	id, err := ReadInt(r)
 	if err != nil {
 		return nil, err
@@ -422,13 +325,7 @@ func readVarNode(r io.Reader) (*VarNode, error) {
 		return nil, err
 	}
 
-	return &VarNode{
-		id:          id,
-		name:        name,
-		msg:         nil,
-		inChan:      make(chan Msg, 1),
-		parentChans: make(map[int]chan Msg),
-	}, nil
+	return NewVarNode(g, id, name), nil
 }
 
 /*
