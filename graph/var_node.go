@@ -1,8 +1,6 @@
 package graph
 
-import (
-	"errors"
-)
+import "errors"
 
 // VarNode is a variable node that is set dynamically.
 // A VarNode's message can be set either before it's running
@@ -49,17 +47,11 @@ func (n *VarNode) run() Msg {
 		return n.msg.SetID(n.id)
 	}
 
-	select {
-	case <-n.inChan:
-		switch n.msg.(type) {
-		case ValueMsg:
-			return n.msg.SetID(n.id)
-		case StreamMsg:
-			return NewErrMsg(n.id, true, errors.New("Stream message as var not implemented yet"))
-		default:
-			return NewErrMsg(n.id, true, errors.New("Unknown var message type"))
-		}
+	if _, ok := <-n.inChan; !ok {
+		return NewErrMsg(n.id, true, errors.New("Error receiving from channel"))
 	}
+
+	return n.msg.SetID(n.id)
 }
 
 // setMsg sets the message that the VarNode will send to its parents.

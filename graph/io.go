@@ -9,42 +9,58 @@ import (
  * Helper functions for reading and writing to files.
  */
 
-func ReadInt(r io.Reader) int {
-	// TODO(DarinM223): implement this
-	return 0
+func ReadInt(r io.Reader) (int, error) {
+	buf := make([]byte, 4)
+	if _, err := r.Read(buf); err != nil {
+		return -1, err
+	}
+
+	return int(buf[0] + (buf[1] << 8) + (buf[2] << 16) + (buf[3] << 24)), nil
 }
 
-func ReadString(r io.Reader) string {
-	// TODO(DarinM223): implement this
-	return ""
-}
+func ReadString(r io.Reader) (string, error) {
+	len, err := ReadInt(r)
+	if err != nil {
+		return "", err
+	}
 
-func ReadByte(r io.Reader) byte {
-	// TODO(DarinM223): implement this
-	return 0
+	buf := make([]byte, len)
+	if _, err := r.Read(buf); err != nil {
+		return "", err
+	}
+
+	return string(buf[:]), nil
 }
 
 func ReadInterface(r io.Reader) (result interface{}, err error) {
 	decoder := gob.NewDecoder(r)
-	err = decoder.Decode(result)
+	err = decoder.Decode(&result)
 	return
 }
 
-func WriteInt(w io.Writer, i int) {
-	// TODO(DarinM223): implement this
+func WriteInt(w io.Writer, i int) error {
+	b3 := byte((i >> 24) & (0xFF))
+	b2 := byte((i >> 16) & (0xFF))
+	b1 := byte((i >> 8) & (0xFF))
+	b0 := byte(i & 0xFF)
+
+	_, err := w.Write([]byte{b0, b1, b2, b3})
+	return err
 }
 
-func WriteString(w io.Writer, s string) {
-	// TODO(DarinM223): implement this
-}
+func WriteString(w io.Writer, s string) error {
+	if err := WriteInt(w, len(s)); err != nil {
+		return err
+	}
 
-func WriteByte(w io.Writer, b byte) {
-	// TODO(DarinM223): implement this
+	bytes := []byte(s)
+	_, err := w.Write(bytes)
+	return err
 }
 
 func WriteInterface(w io.Writer, i interface{}) error {
 	encoder := gob.NewEncoder(w)
-	return encoder.Encode(i)
+	return encoder.Encode(&i)
 }
 
 /*
