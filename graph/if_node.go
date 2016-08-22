@@ -19,8 +19,7 @@ type IfNode struct {
 	parentChans map[int]chan Msg
 }
 
-func NewIfNode(globals *Globals, pred Node, conseq Node, alt Node) *IfNode {
-	id := globals.GenerateID()
+func NewIfNode(globals *Globals, id int, pred Node, conseq Node, alt Node) *IfNode {
 	inChan := make(chan Msg, InChanSize)
 	conseqChan := make(chan Msg, InChanSize)
 	altChan := make(chan Msg, InChanSize)
@@ -48,12 +47,12 @@ func (n *IfNode) Chan() chan Msg                { return n.inChan }
 func (n *IfNode) ParentChans() map[int]chan Msg { return n.parentChans }
 func (n *IfNode) Dependencies() []Node          { return []Node{n.pred, n.conseq, n.alt} }
 
-func (n *IfNode) Clone(globals *Globals) Node {
-	clonedPred := n.pred.Clone(globals)
-	clonedConseq := n.conseq.Clone(globals)
-	clonedAlt := n.alt.Clone(globals)
+func (n *IfNode) Clone(g *Globals) Node {
+	clonedPred := n.pred.Clone(g)
+	clonedConseq := n.conseq.Clone(g)
+	clonedAlt := n.alt.Clone(g)
 
-	return NewIfNode(globals, clonedPred, clonedConseq, clonedAlt)
+	return NewIfNode(g, g.GenerateID(), clonedPred, clonedConseq, clonedAlt)
 }
 
 func (n *IfNode) run() Msg {

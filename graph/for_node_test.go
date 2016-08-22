@@ -101,7 +101,7 @@ func TestForNode(t *testing.T) {
 		collectionNode := testUtils.GenerateTestNode(globals, test.collection)
 		bodyNode := testUtils.GenerateTestNode(globals, test.body)
 
-		forNode := NewForNode(globals, test.name, collectionNode, bodyNode)
+		forNode := NewForNode(globals, globals.GenerateID(), test.name, collectionNode, bodyNode)
 		SetNodesFanOut(forNode, 20)
 		forNode.ParentChans()[5] = parentChan
 

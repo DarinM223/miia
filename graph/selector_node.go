@@ -24,8 +24,7 @@ type SelectorNode struct {
 	parentChans map[int]chan Msg
 }
 
-func NewSelectorNode(globals *Globals, gotoNode Node, selectors []Selector) *SelectorNode {
-	id := globals.GenerateID()
+func NewSelectorNode(globals *Globals, id int, gotoNode Node, selectors []Selector) *SelectorNode {
 	inChan := make(chan Msg, InChanSize)
 	gotoNode.ParentChans()[id] = inChan
 
@@ -45,7 +44,7 @@ func (n *SelectorNode) Chan() chan Msg                { return n.inChan }
 func (n *SelectorNode) ParentChans() map[int]chan Msg { return n.parentChans }
 func (n *SelectorNode) Dependencies() []Node          { return []Node{n.gotoNode} }
 func (n *SelectorNode) Clone(g *Globals) Node {
-	return NewSelectorNode(g, n.gotoNode.Clone(g), n.selectors)
+	return NewSelectorNode(g, g.GenerateID(), n.gotoNode.Clone(g), n.selectors)
 }
 
 func (n *SelectorNode) run() (data Msg) {

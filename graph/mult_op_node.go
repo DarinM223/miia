@@ -23,8 +23,7 @@ type MultOpNode struct {
 	idMap map[int]int
 }
 
-func NewMultOpNode(globals *Globals, operator tokens.Token, nodes []Node) *MultOpNode {
-	id := globals.GenerateID()
+func NewMultOpNode(globals *Globals, id int, operator tokens.Token, nodes []Node) *MultOpNode {
 	inChan := make(chan Msg, len(nodes))
 	idMap := make(map[int]int, len(nodes))
 	for i, node := range nodes {
@@ -50,12 +49,12 @@ func (n *MultOpNode) Chan() chan Msg                { return n.inChan }
 func (n *MultOpNode) ParentChans() map[int]chan Msg { return n.parentChans }
 func (n *MultOpNode) Dependencies() []Node          { return n.nodes }
 
-func (n *MultOpNode) Clone(globals *Globals) Node {
+func (n *MultOpNode) Clone(g *Globals) Node {
 	clonedNodes := make([]Node, len(n.nodes))
 	for i := 0; i < len(clonedNodes); i++ {
-		clonedNodes[i] = n.nodes[i].Clone(globals)
+		clonedNodes[i] = n.nodes[i].Clone(g)
 	}
-	return NewMultOpNode(globals, n.operator, clonedNodes)
+	return NewMultOpNode(g, g.GenerateID(), n.operator, clonedNodes)
 }
 
 func (n *MultOpNode) run() Msg {

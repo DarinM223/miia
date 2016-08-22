@@ -19,8 +19,7 @@ type VarNode struct {
 	parentChans map[int]chan Msg
 }
 
-func NewVarNode(globals *Globals, name string) *VarNode {
-	id := globals.GenerateID()
+func NewVarNode(globals *Globals, id int, name string) *VarNode {
 	varNode := &VarNode{
 		id:          id,
 		name:        name,
@@ -36,8 +35,8 @@ func (n *VarNode) ID() int                       { return n.id }
 func (n *VarNode) Chan() chan Msg                { return n.inChan }
 func (n *VarNode) ParentChans() map[int]chan Msg { return n.parentChans }
 func (n *VarNode) Dependencies() []Node          { return nil }
-func (n *VarNode) Clone(globals *Globals) Node {
-	varNode := NewVarNode(globals, n.name)
+func (n *VarNode) Clone(g *Globals) Node {
+	varNode := NewVarNode(g, g.GenerateID(), n.name)
 	varNode.msg = n.msg
 	return varNode
 }

@@ -7,8 +7,14 @@ import (
 func TestCollectNode(t *testing.T) {
 	parentChan := make(chan Msg, 1)
 	g := NewGlobals()
-	streamNode := NewForNode(g, "i", NewValueNode(g, []interface{}{1, 2, 3}), NewVarNode(g, "i"))
-	collectNode := NewCollectNode(g, streamNode)
+	streamNode := NewForNode(
+		g,
+		g.GenerateID(),
+		"i",
+		NewValueNode(g, g.GenerateID(), []interface{}{1, 2, 3}),
+		NewVarNode(g, g.GenerateID(), "i"),
+	)
+	collectNode := NewCollectNode(g, g.GenerateID(), streamNode)
 	collectNode.ParentChans()[69] = parentChan
 
 	g.Run()

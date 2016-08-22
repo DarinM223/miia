@@ -7,13 +7,13 @@ import (
 )
 
 func TestUnOp(t *testing.T) {
-	globals := NewGlobals()
+	g := NewGlobals()
 	parentChan := make(chan Msg, InChanSize)
-	node := NewValueNode(globals, true)
-	unOpNode := NewUnOpNode(globals, tokens.NotToken, node)
+	node := NewValueNode(g, g.GenerateID(), true)
+	unOpNode := NewUnOpNode(g, g.GenerateID(), tokens.NotToken, node)
 	unOpNode.ParentChans()[2] = parentChan
 
-	globals.Run()
+	g.Run()
 
 	expected := NewValueMsg(unOpNode.ID(), true, false)
 

@@ -27,18 +27,18 @@ var ifNodeTests = []struct {
 
 func TestIfNode(t *testing.T) {
 	for _, test := range ifNodeTests {
-		globals := NewGlobals()
+		g := NewGlobals()
 		parentChan1, parentChan2 := make(chan Msg, InChanSize), make(chan Msg, InChanSize)
 
-		pred := NewValueNode(globals, test.pred)
-		conseq := NewValueNode(globals, test.conseq)
-		alt := NewValueNode(globals, test.alt)
+		pred := NewValueNode(g, g.GenerateID(), test.pred)
+		conseq := NewValueNode(g, g.GenerateID(), test.conseq)
+		alt := NewValueNode(g, g.GenerateID(), test.alt)
 
-		ifNode := NewIfNode(globals, pred, conseq, alt)
+		ifNode := NewIfNode(g, g.GenerateID(), pred, conseq, alt)
 		ifNode.ParentChans()[50] = parentChan1
 		ifNode.ParentChans()[51] = parentChan2
 
-		globals.Run()
+		g.Run()
 
 		if msg, ok := <-parentChan1; ok {
 			if !reflect.DeepEqual(msg, test.expected) {

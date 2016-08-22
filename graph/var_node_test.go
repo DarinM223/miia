@@ -8,14 +8,14 @@ import (
 
 func TestVarNode(t *testing.T) {
 	parentChan := make(chan Msg, 1)
-	globals := NewGlobals()
-	varNode := NewVarNode(globals, "a")
-	valueNode := NewValueNode(globals, 2)
-	multOpNode := NewMultOpNode(globals, tokens.AddToken, []Node{varNode, valueNode})
+	g := NewGlobals()
+	varNode := NewVarNode(g, g.GenerateID(), "a")
+	valueNode := NewValueNode(g, g.GenerateID(), 2)
+	multOpNode := NewMultOpNode(g, g.GenerateID(), tokens.AddToken, []Node{varNode, valueNode})
 	SetVarNodes(multOpNode, "a", 1)
 	multOpNode.ParentChans()[20] = parentChan
 
-	globals.Run()
+	g.Run()
 
 	expected := NewValueMsg(multOpNode.ID(), true, 3)
 

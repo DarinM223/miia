@@ -18,8 +18,7 @@ type BinOpNode struct {
 	parentChans  map[int]chan Msg
 }
 
-func NewBinOpNode(globals *Globals, operator tokens.Token, a Node, b Node) *BinOpNode {
-	id := globals.GenerateID()
+func NewBinOpNode(globals *Globals, id int, operator tokens.Token, a Node, b Node) *BinOpNode {
 	aChan := make(chan Msg, 1)
 	bChan := make(chan Msg, 1)
 	a.ParentChans()[id] = aChan
@@ -44,7 +43,7 @@ func (n *BinOpNode) ParentChans() map[int]chan Msg { return n.parentChans }
 func (n *BinOpNode) Dependencies() []Node          { return []Node{n.a, n.b} }
 
 func (n *BinOpNode) Clone(g *Globals) Node {
-	return NewBinOpNode(g, n.operator, n.a.Clone(g), n.b.Clone(g))
+	return NewBinOpNode(g, g.GenerateID(), n.operator, n.a.Clone(g), n.b.Clone(g))
 }
 
 func (n *BinOpNode) run() Msg {

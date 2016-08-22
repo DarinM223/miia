@@ -6,10 +6,10 @@ import (
 )
 
 func TestValueNode(t *testing.T) {
-	globals := NewGlobals()
+	g := NewGlobals()
 	parentChan1, parentChan2 := make(chan Msg, InChanSize), make(chan Msg, InChanSize)
 
-	node := NewValueNode(globals, 20)
+	node := NewValueNode(g, g.GenerateID(), 20)
 	node.ParentChans()[1] = parentChan1
 	node.ParentChans()[2] = parentChan2
 

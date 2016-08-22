@@ -148,8 +148,7 @@ type ForNode struct {
 	isLoop bool
 }
 
-func NewForNode(globals *Globals, name string, collection Node, body Node) *ForNode {
-	id := globals.GenerateID()
+func NewForNode(globals *Globals, id int, name string, collection Node, body Node) *ForNode {
 	collectionChan := make(chan Msg, InChanSize)
 	// Listen for collection's result
 	collection.ParentChans()[id] = collectionChan
@@ -178,7 +177,7 @@ func (n *ForNode) Chan() chan Msg                { return n.inChan }
 func (n *ForNode) ParentChans() map[int]chan Msg { return n.parentChans }
 func (n *ForNode) Dependencies() []Node          { return []Node{n.collection, n.body} }
 func (n *ForNode) Clone(g *Globals) Node {
-	forNode := NewForNode(g, n.name, n.collection.Clone(g), n.body.Clone(g))
+	forNode := NewForNode(g, g.GenerateID(), n.name, n.collection.Clone(g), n.body.Clone(g))
 	forNode.setFanOut(n.fanout)
 	return forNode
 }

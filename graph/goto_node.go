@@ -16,8 +16,7 @@ type GotoNode struct {
 	parentChans map[int]chan Msg
 }
 
-func NewGotoNode(globals *Globals, url Node) *GotoNode {
-	id := globals.GenerateID()
+func NewGotoNode(globals *Globals, id int, url Node) *GotoNode {
 	inChan := make(chan Msg, InChanSize)
 	url.ParentChans()[id] = inChan
 
@@ -36,7 +35,7 @@ func (n *GotoNode) ID() int                       { return n.id }
 func (n *GotoNode) Chan() chan Msg                { return n.inChan }
 func (n *GotoNode) ParentChans() map[int]chan Msg { return n.parentChans }
 func (n *GotoNode) Dependencies() []Node          { return []Node{n.url} }
-func (n *GotoNode) Clone(g *Globals) Node         { return NewGotoNode(g, n.url.Clone(g)) }
+func (n *GotoNode) Clone(g *Globals) Node         { return NewGotoNode(g, g.GenerateID(), n.url.Clone(g)) }
 
 func (n *GotoNode) run() Msg {
 	defer destroyNode(n)

@@ -6,19 +6,19 @@ import (
 )
 
 func TestContainsLoopNode(t *testing.T) {
-	globals := NewGlobals()
+	g := NewGlobals()
 	valueNodes := make([]Node, 2)
-	valueNodes[0] = NewValueNode(globals, 2)
-	valueNodes[1] = NewForNode(globals, "i", NewValueNode(globals, 3), NewValueNode(globals, 3))
+	valueNodes[0] = NewValueNode(g, g.GenerateID(), 2)
+	valueNodes[1] = NewForNode(g, g.GenerateID(), "i", NewValueNode(g, g.GenerateID(), 3), NewValueNode(g, g.GenerateID(), 3))
 
-	multOpNode := NewMultOpNode(globals, tokens.AddToken, valueNodes)
+	multOpNode := NewMultOpNode(g, g.GenerateID(), tokens.AddToken, valueNodes)
 	if ContainsLoopNode(multOpNode) == false {
 		t.Errorf("MultOp node with for loop node has ContainsLoopNode() return false instead of true")
 	}
 
-	valueNodes[1] = NewValueNode(globals, 3)
+	valueNodes[1] = NewValueNode(g, g.GenerateID(), 3)
 
-	multOpNode2 := NewMultOpNode(globals, tokens.AddToken, valueNodes)
+	multOpNode2 := NewMultOpNode(g, g.GenerateID(), tokens.AddToken, valueNodes)
 	if ContainsLoopNode(multOpNode2) == true {
 		t.Errorf("MultOp node without for loop node has ContainsLoopNode() return true instead of false")
 	}
@@ -43,10 +43,15 @@ func TestSetNodesFanOut(t *testing.T) {
 		// for B -> collect -> for A -> + ->
 		//                                   \
 		//                                    1
-		forABody := NewMultOpNode(g, tokens.AddToken, []Node{NewVarNode(g, "x"), NewValueNode(g, 1)})
-		forA := NewForNode(g, "x", NewValueNode(g, []interface{}{1, 2, 3, 4, 5}), forABody)
-		forBBody := NewCollectNode(g, forA)
-		forB := NewForNode(g, "i", NewValueNode(g, []interface{}{1, 2, 3, 4, 5}), forBBody)
+		forABody := NewMultOpNode(
+			g,
+			g.GenerateID(),
+			tokens.AddToken,
+			[]Node{NewVarNode(g, g.GenerateID(), "x"), NewValueNode(g, g.GenerateID(), 1)},
+		)
+		forA := NewForNode(g, g.GenerateID(), "x", NewValueNode(g, g.GenerateID(), []interface{}{1, 2, 3, 4, 5}), forABody)
+		forBBody := NewCollectNode(g, g.GenerateID(), forA)
+		forB := NewForNode(g, g.GenerateID(), "i", NewValueNode(g, g.GenerateID(), []interface{}{1, 2, 3, 4, 5}), forBBody)
 
 		SetNodesFanOut(forB, test.totalNodes)
 
