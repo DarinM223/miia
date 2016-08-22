@@ -48,10 +48,10 @@ func TestMultOpNode(t *testing.T) {
 		g := NewGlobals()
 		valuesNodes := make([]Node, len(test.values))
 		for i, value := range test.values {
-			valuesNodes[i] = NewValueNode(g, g.GenerateID(), value)
+			valuesNodes[i] = NewValueNode(g, g.GenID(), value)
 		}
 
-		multOpNode := NewMultOpNode(g, g.GenerateID(), test.op, valuesNodes)
+		multOpNode := NewMultOpNode(g, g.GenID(), test.op, valuesNodes)
 
 		parentChan1, parentChan2 := make(chan Msg, InChanSize), make(chan Msg, InChanSize)
 		multOpNode.ParentChans()[len(test.values)+1] = parentChan1

@@ -9,8 +9,8 @@ import (
 func TestUnOp(t *testing.T) {
 	g := NewGlobals()
 	parentChan := make(chan Msg, InChanSize)
-	node := NewValueNode(g, g.GenerateID(), true)
-	unOpNode := NewUnOpNode(g, g.GenerateID(), tokens.NotToken, node)
+	node := NewValueNode(g, g.GenID(), true)
+	unOpNode := NewUnOpNode(g, g.GenID(), tokens.NotToken, node)
 	unOpNode.ParentChans()[2] = parentChan
 
 	g.Run()

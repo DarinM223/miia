@@ -35,7 +35,7 @@ func (n *UnOpNode) Chan() chan Msg                { return n.inChan }
 func (n *UnOpNode) ParentChans() map[int]chan Msg { return n.parentChans }
 func (n *UnOpNode) Dependencies() []Node          { return []Node{n.node} }
 func (n *UnOpNode) Clone(g *Globals) Node {
-	return NewUnOpNode(g, g.GenerateID(), n.operator, n.node.Clone(g))
+	return NewUnOpNode(g, g.GenID(), n.operator, n.node.Clone(g))
 }
 
 func (n *UnOpNode) run() Msg {

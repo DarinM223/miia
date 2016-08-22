@@ -177,7 +177,7 @@ func (n *ForNode) Chan() chan Msg                { return n.inChan }
 func (n *ForNode) ParentChans() map[int]chan Msg { return n.parentChans }
 func (n *ForNode) Dependencies() []Node          { return []Node{n.collection, n.body} }
 func (n *ForNode) Clone(g *Globals) Node {
-	forNode := NewForNode(g, g.GenerateID(), n.name, n.collection.Clone(g), n.body.Clone(g))
+	forNode := NewForNode(g, g.GenID(), n.name, n.collection.Clone(g), n.body.Clone(g))
 	forNode.setFanOut(n.fanout)
 	return forNode
 }

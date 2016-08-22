@@ -44,7 +44,7 @@ func (n *SelectorNode) Chan() chan Msg                { return n.inChan }
 func (n *SelectorNode) ParentChans() map[int]chan Msg { return n.parentChans }
 func (n *SelectorNode) Dependencies() []Node          { return []Node{n.gotoNode} }
 func (n *SelectorNode) Clone(g *Globals) Node {
-	return NewSelectorNode(g, g.GenerateID(), n.gotoNode.Clone(g), n.selectors)
+	return NewSelectorNode(g, g.GenID(), n.gotoNode.Clone(g), n.selectors)
 }
 
 func (n *SelectorNode) run() (data Msg) {

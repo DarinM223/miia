@@ -23,7 +23,7 @@ func (n *ValueNode) ID() int                       { return n.id }
 func (n *ValueNode) Chan() chan Msg                { return n.inChan }
 func (n *ValueNode) ParentChans() map[int]chan Msg { return n.parentChans }
 func (n *ValueNode) Dependencies() []Node          { return nil }
-func (n *ValueNode) Clone(g *Globals) Node         { return NewValueNode(g, g.GenerateID(), n.value) }
+func (n *ValueNode) Clone(g *Globals) Node         { return NewValueNode(g, g.GenID(), n.value) }
 
 func (n *ValueNode) run() Msg {
 	return NewValueMsg(n.id, true, n.value)

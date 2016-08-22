@@ -36,7 +36,7 @@ func (n *VarNode) Chan() chan Msg                { return n.inChan }
 func (n *VarNode) ParentChans() map[int]chan Msg { return n.parentChans }
 func (n *VarNode) Dependencies() []Node          { return nil }
 func (n *VarNode) Clone(g *Globals) Node {
-	varNode := NewVarNode(g, g.GenerateID(), n.name)
+	varNode := NewVarNode(g, g.GenID(), n.name)
 	varNode.msg = n.msg
 	return varNode
 }

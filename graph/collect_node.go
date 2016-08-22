@@ -33,7 +33,7 @@ func (n *CollectNode) ParentChans() map[int]chan Msg { return n.parentChans }
 func (n *CollectNode) Dependencies() []Node          { return []Node{n.node} }
 
 func (n *CollectNode) Clone(g *Globals) Node {
-	return NewCollectNode(g, g.GenerateID(), n.node.Clone(g))
+	return NewCollectNode(g, g.GenID(), n.node.Clone(g))
 }
 
 func (n *CollectNode) run() Msg {

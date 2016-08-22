@@ -22,9 +22,9 @@ func TestSelectorNode(t *testing.T) {
 		g := NewGlobals()
 
 		parentChan := make(chan Msg, InChanSize)
-		stringNode := NewValueNode(g, g.GenerateID(), test.url)
-		gotoNode := NewGotoNode(g, g.GenerateID(), stringNode)
-		selectorNode := NewSelectorNode(g, g.GenerateID(), gotoNode, test.selectors)
+		stringNode := NewValueNode(g, g.GenID(), test.url)
+		gotoNode := NewGotoNode(g, g.GenID(), stringNode)
+		selectorNode := NewSelectorNode(g, g.GenID(), gotoNode, test.selectors)
 		selectorNode.ParentChans()[3] = parentChan
 
 		g.Run()

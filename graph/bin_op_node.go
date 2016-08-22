@@ -43,7 +43,7 @@ func (n *BinOpNode) ParentChans() map[int]chan Msg { return n.parentChans }
 func (n *BinOpNode) Dependencies() []Node          { return []Node{n.a, n.b} }
 
 func (n *BinOpNode) Clone(g *Globals) Node {
-	return NewBinOpNode(g, g.GenerateID(), n.operator, n.a.Clone(g), n.b.Clone(g))
+	return NewBinOpNode(g, g.GenID(), n.operator, n.a.Clone(g), n.b.Clone(g))
 }
 
 func (n *BinOpNode) run() Msg {

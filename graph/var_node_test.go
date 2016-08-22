@@ -9,9 +9,9 @@ import (
 func TestVarNode(t *testing.T) {
 	parentChan := make(chan Msg, 1)
 	g := NewGlobals()
-	varNode := NewVarNode(g, g.GenerateID(), "a")
-	valueNode := NewValueNode(g, g.GenerateID(), 2)
-	multOpNode := NewMultOpNode(g, g.GenerateID(), tokens.AddToken, []Node{varNode, valueNode})
+	varNode := NewVarNode(g, g.GenID(), "a")
+	valueNode := NewValueNode(g, g.GenID(), 2)
+	multOpNode := NewMultOpNode(g, g.GenID(), tokens.AddToken, []Node{varNode, valueNode})
 	SetVarNodes(multOpNode, "a", 1)
 	multOpNode.ParentChans()[20] = parentChan
 

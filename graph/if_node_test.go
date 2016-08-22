@@ -30,11 +30,11 @@ func TestIfNode(t *testing.T) {
 		g := NewGlobals()
 		parentChan1, parentChan2 := make(chan Msg, InChanSize), make(chan Msg, InChanSize)
 
-		pred := NewValueNode(g, g.GenerateID(), test.pred)
-		conseq := NewValueNode(g, g.GenerateID(), test.conseq)
-		alt := NewValueNode(g, g.GenerateID(), test.alt)
+		pred := NewValueNode(g, g.GenID(), test.pred)
+		conseq := NewValueNode(g, g.GenID(), test.conseq)
+		alt := NewValueNode(g, g.GenID(), test.alt)
 
-		ifNode := NewIfNode(g, g.GenerateID(), pred, conseq, alt)
+		ifNode := NewIfNode(g, g.GenID(), pred, conseq, alt)
 		ifNode.ParentChans()[50] = parentChan1
 		ifNode.ParentChans()[51] = parentChan2
 

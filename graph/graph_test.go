@@ -8,17 +8,17 @@ import (
 func TestContainsLoopNode(t *testing.T) {
 	g := NewGlobals()
 	valueNodes := make([]Node, 2)
-	valueNodes[0] = NewValueNode(g, g.GenerateID(), 2)
-	valueNodes[1] = NewForNode(g, g.GenerateID(), "i", NewValueNode(g, g.GenerateID(), 3), NewValueNode(g, g.GenerateID(), 3))
+	valueNodes[0] = NewValueNode(g, g.GenID(), 2)
+	valueNodes[1] = NewForNode(g, g.GenID(), "i", NewValueNode(g, g.GenID(), 3), NewValueNode(g, g.GenID(), 3))
 
-	multOpNode := NewMultOpNode(g, g.GenerateID(), tokens.AddToken, valueNodes)
+	multOpNode := NewMultOpNode(g, g.GenID(), tokens.AddToken, valueNodes)
 	if ContainsLoopNode(multOpNode) == false {
 		t.Errorf("MultOp node with for loop node has ContainsLoopNode() return false instead of true")
 	}
 
-	valueNodes[1] = NewValueNode(g, g.GenerateID(), 3)
+	valueNodes[1] = NewValueNode(g, g.GenID(), 3)
 
-	multOpNode2 := NewMultOpNode(g, g.GenerateID(), tokens.AddToken, valueNodes)
+	multOpNode2 := NewMultOpNode(g, g.GenID(), tokens.AddToken, valueNodes)
 	if ContainsLoopNode(multOpNode2) == true {
 		t.Errorf("MultOp node without for loop node has ContainsLoopNode() return true instead of false")
 	}
@@ -45,13 +45,13 @@ func TestSetNodesFanOut(t *testing.T) {
 		//                                    1
 		forABody := NewMultOpNode(
 			g,
-			g.GenerateID(),
+			g.GenID(),
 			tokens.AddToken,
-			[]Node{NewVarNode(g, g.GenerateID(), "x"), NewValueNode(g, g.GenerateID(), 1)},
+			[]Node{NewVarNode(g, g.GenID(), "x"), NewValueNode(g, g.GenID(), 1)},
 		)
-		forA := NewForNode(g, g.GenerateID(), "x", NewValueNode(g, g.GenerateID(), []interface{}{1, 2, 3, 4, 5}), forABody)
-		forBBody := NewCollectNode(g, g.GenerateID(), forA)
-		forB := NewForNode(g, g.GenerateID(), "i", NewValueNode(g, g.GenerateID(), []interface{}{1, 2, 3, 4, 5}), forBBody)
+		forA := NewForNode(g, g.GenID(), "x", NewValueNode(g, g.GenID(), []interface{}{1, 2, 3, 4, 5}), forABody)
+		forBBody := NewCollectNode(g, g.GenID(), forA)
+		forB := NewForNode(g, g.GenID(), "i", NewValueNode(g, g.GenID(), []interface{}{1, 2, 3, 4, 5}), forBBody)
 
 		SetNodesFanOut(forB, test.totalNodes)
 

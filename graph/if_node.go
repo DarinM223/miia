@@ -52,7 +52,7 @@ func (n *IfNode) Clone(g *Globals) Node {
 	clonedConseq := n.conseq.Clone(g)
 	clonedAlt := n.alt.Clone(g)
 
-	return NewIfNode(g, g.GenerateID(), clonedPred, clonedConseq, clonedAlt)
+	return NewIfNode(g, g.GenID(), clonedPred, clonedConseq, clonedAlt)
 }
 
 func (n *IfNode) run() Msg {

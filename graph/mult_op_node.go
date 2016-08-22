@@ -54,7 +54,7 @@ func (n *MultOpNode) Clone(g *Globals) Node {
 	for i := 0; i < len(clonedNodes); i++ {
 		clonedNodes[i] = n.nodes[i].Clone(g)
 	}
-	return NewMultOpNode(g, g.GenerateID(), n.operator, clonedNodes)
+	return NewMultOpNode(g, g.GenID(), n.operator, clonedNodes)
 }
 
 func (n *MultOpNode) run() Msg {

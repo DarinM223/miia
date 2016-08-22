@@ -9,8 +9,8 @@ func TestGotoNode(t *testing.T) {
 	g := NewGlobals()
 	parentChan1, parentChan2 := make(chan Msg, InChanSize), make(chan Msg, InChanSize)
 
-	urlNode := NewValueNode(g, g.GenerateID(), "http://www.google.com")
-	gotoNode := NewGotoNode(g, g.GenerateID(), urlNode)
+	urlNode := NewValueNode(g, g.GenID(), "http://www.google.com")
+	gotoNode := NewGotoNode(g, g.GenID(), urlNode)
 	gotoNode.ParentChans()[2] = parentChan1
 	gotoNode.ParentChans()[3] = parentChan2
 
@@ -45,8 +45,8 @@ func TestGotoNodeErrsOnNonString(t *testing.T) {
 	g := NewGlobals()
 	parentChan := make(chan Msg, InChanSize)
 
-	urlNode := NewValueNode(g, g.GenerateID(), 20)
-	gotoNode := NewGotoNode(g, g.GenerateID(), urlNode)
+	urlNode := NewValueNode(g, g.GenID(), 20)
+	gotoNode := NewGotoNode(g, g.GenID(), urlNode)
 	gotoNode.ParentChans()[1] = parentChan
 
 	g.Run()
@@ -64,8 +64,8 @@ func TestGotoNodeErrsOnNonHTTP(t *testing.T) {
 	g := NewGlobals()
 	parentChan := make(chan Msg, InChanSize)
 
-	urlNode := NewValueNode(g, g.GenerateID(), "www.google.com")
-	gotoNode := NewGotoNode(g, g.GenerateID(), urlNode)
+	urlNode := NewValueNode(g, g.GenID(), "www.google.com")
+	gotoNode := NewGotoNode(g, g.GenID(), urlNode)
 	gotoNode.ParentChans()[1] = parentChan
 
 	g.Run()

@@ -39,16 +39,16 @@ func (s *Scope) set(name string, value graph.Node) {
 func CompileExpr(g *graph.Globals, expr Expr, scope *Scope) (graph.Node, error) {
 	switch e := expr.(type) {
 	case IntExpr:
-		return graph.NewValueNode(g, g.GenerateID(), e.Value), nil
+		return graph.NewValueNode(g, g.GenID(), e.Value), nil
 	case StringExpr:
-		return graph.NewValueNode(g, g.GenerateID(), e.Value), nil
+		return graph.NewValueNode(g, g.GenID(), e.Value), nil
 	case BoolExpr:
-		return graph.NewValueNode(g, g.GenerateID(), e.Value), nil
+		return graph.NewValueNode(g, g.GenID(), e.Value), nil
 	case SelectorExpr:
 		if scope.Page == nil {
 			return nil, errors.New("Attempting to apply selector before loading a page")
 		}
-		return graph.NewSelectorNode(g, g.GenerateID(), scope.Page, e.Selectors), nil
+		return graph.NewSelectorNode(g, g.GenID(), scope.Page, e.Selectors), nil
 	case VarExpr:
 		return scope.lookup(e.Name)
 	case ForExpr:
@@ -58,13 +58,13 @@ func CompileExpr(g *graph.Globals, expr Expr, scope *Scope) (graph.Node, error) 
 		}
 
 		newScope := NewScope(scope)
-		newScope.set(e.Name, graph.NewVarNode(g, g.GenerateID(), e.Name))
+		newScope.set(e.Name, graph.NewVarNode(g, g.GenID(), e.Name))
 		body, err := CompileExpr(g, e.Body, newScope)
 		if err != nil {
 			return nil, err
 		}
 
-		return graph.NewForNode(g, g.GenerateID(), e.Name, collection, body), nil
+		return graph.NewForNode(g, g.GenID(), e.Name, collection, body), nil
 	case IfExpr:
 		pred, err := CompileExpr(g, e.Pred, scope)
 		if err != nil {
@@ -83,14 +83,14 @@ func CompileExpr(g *graph.Globals, expr Expr, scope *Scope) (graph.Node, error) 
 			return nil, err
 		}
 
-		return graph.NewIfNode(g, g.GenerateID(), pred, conseq, alt), nil
+		return graph.NewIfNode(g, g.GenID(), pred, conseq, alt), nil
 	case GotoExpr:
 		urlNode, err := CompileExpr(g, e.URL, scope)
 		if err != nil {
 			return nil, err
 		}
 
-		gotoNode := graph.NewGotoNode(g, g.GenerateID(), urlNode)
+		gotoNode := graph.NewGotoNode(g, g.GenID(), urlNode)
 		scope.Page = gotoNode
 		return gotoNode, nil
 	case BlockExpr:
@@ -118,10 +118,10 @@ func CompileExpr(g *graph.Globals, expr Expr, scope *Scope) (graph.Node, error) 
 
 			scope.set(name, res)
 		}
-		return graph.NewValueNode(g, g.GenerateID(), nil), nil
+		return graph.NewValueNode(g, g.GenID(), nil), nil
 	case RateLimitExpr:
 		g.SetRateLimit(e.URL, e.MaxTimes, e.Duration)
-		return graph.NewValueNode(g, g.GenerateID(), nil), nil
+		return graph.NewValueNode(g, g.GenID(), nil), nil
 	case MultOp:
 		nodes := make([]graph.Node, len(e.Exprs))
 		for i := 0; i < len(nodes); i++ {
@@ -131,7 +131,7 @@ func CompileExpr(g *graph.Globals, expr Expr, scope *Scope) (graph.Node, error) 
 			}
 			nodes[i] = node
 		}
-		return graph.NewMultOpNode(g, g.GenerateID(), e.Operator, nodes), nil
+		return graph.NewMultOpNode(g, g.GenID(), e.Operator, nodes), nil
 	case BinOp:
 		a, err := CompileExpr(g, e.A, scope)
 		if err != nil {
@@ -143,20 +143,20 @@ func CompileExpr(g *graph.Globals, expr Expr, scope *Scope) (graph.Node, error) 
 			return nil, err
 		}
 
-		return graph.NewBinOpNode(g, g.GenerateID(), e.Operator, a, b), nil
+		return graph.NewBinOpNode(g, g.GenID(), e.Operator, a, b), nil
 	case UnOp:
 		node, err := CompileExpr(g, e.A, scope)
 		if err != nil {
 			return nil, err
 		}
 
-		return graph.NewUnOpNode(g, g.GenerateID(), e.Operator, node), nil
+		return graph.NewUnOpNode(g, g.GenID(), e.Operator, node), nil
 	case CollectExpr:
 		node, err := CompileExpr(g, e.A, scope)
 		if err != nil {
 			return nil, err
 		}
-		return graph.NewCollectNode(g, g.GenerateID(), node), nil
+		return graph.NewCollectNode(g, g.GenID(), node), nil
 	default:
 		return nil, errors.New("Invalid expression type")
 	}

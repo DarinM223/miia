@@ -24,8 +24,8 @@ func NewGlobals() *Globals {
 	}
 }
 
-// GenerateID generates a new ID for a new node.
-func (n *Globals) GenerateID() int {
+// GenID generates a new ID for a new node.
+func (n *Globals) GenID() int {
 	n.mutex.Lock()
 	id := n.currID
 	n.currID++

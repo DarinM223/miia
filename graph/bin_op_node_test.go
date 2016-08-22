@@ -66,9 +66,9 @@ func TestBinOpNode(t *testing.T) {
 	for _, test := range binOpNodeTests {
 		globals := NewGlobals()
 		parentChan := make(chan Msg, InChanSize)
-		aNode := NewValueNode(globals, globals.GenerateID(), test.a)
-		bNode := NewValueNode(globals, globals.GenerateID(), test.b)
-		binOpNode := NewBinOpNode(globals, globals.GenerateID(), test.op, aNode, bNode)
+		aNode := NewValueNode(globals, globals.GenID(), test.a)
+		bNode := NewValueNode(globals, globals.GenID(), test.b)
+		binOpNode := NewBinOpNode(globals, globals.GenID(), test.op, aNode, bNode)
 		binOpNode.ParentChans()[4] = parentChan
 
 		globals.Run()
