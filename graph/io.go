@@ -4,7 +4,10 @@ import (
 	"encoding/gob"
 	"errors"
 	"github.com/DarinM223/miia/tokens"
+	"github.com/beefsack/go-rate"
 	"io"
+	"sync"
+	"time"
 )
 
 /*
@@ -18,6 +21,16 @@ func ReadInt(r io.Reader) (int, error) {
 	}
 
 	return int(buf[0]) + (int(buf[1]) << 8) + (int(buf[2]) << 16) + (int(buf[3]) << 24), nil
+}
+
+func ReadInt64(r io.Reader) (int64, error) {
+	buf := make([]byte, 8)
+	if _, err := r.Read(buf); err != nil {
+		return -1, err
+	}
+
+	return int64(buf[0]) + (int64(buf[1]) << 8) + (int64(buf[2]) << 16) + (int64(buf[3]) << 24) +
+		(int64(buf[4]) << 32) + (int64(buf[5]) << 40) + (int64(buf[6]) << 48) + (int64(buf[7]) << 56), nil
 }
 
 func ReadString(r io.Reader) (string, error) {
@@ -50,6 +63,20 @@ func WriteInt(w io.Writer, i int) error {
 	return err
 }
 
+func WriteInt64(w io.Writer, i int64) error {
+	b7 := byte((i >> 56) & (0xFF))
+	b6 := byte((i >> 48) & (0xFF))
+	b5 := byte((i >> 40) & (0xFF))
+	b4 := byte((i >> 32) & (0xFF))
+	b3 := byte((i >> 24) & (0xFF))
+	b2 := byte((i >> 16) & (0xFF))
+	b1 := byte((i >> 8) & (0xFF))
+	b0 := byte(i & 0xFF)
+
+	_, err := w.Write([]byte{b0, b1, b2, b3, b4, b5, b6, b7})
+	return err
+}
+
 func WriteString(w io.Writer, s string) error {
 	if err := WriteInt(w, len(s)); err != nil {
 		return err
@@ -68,6 +95,56 @@ func WriteInterface(w io.Writer, i interface{}) error {
 /*
  * Implementations for reading nodes from files.
  */
+
+func ReadGlobals(r io.Reader) (*Globals, error) {
+	currID, err := ReadInt(r)
+	if err != nil {
+		return nil, err
+	}
+
+	rateLimitersLen, err := ReadInt(r)
+	if err != nil {
+		return nil, err
+	}
+
+	rateLimiters := make(map[string]*rate.RateLimiter)
+	for i := 0; i < rateLimitersLen; i++ {
+		domain, err := ReadString(r)
+		if err != nil {
+			return nil, err
+		}
+
+		limit, err := ReadInt(r)
+		if err != nil {
+			return nil, err
+		}
+
+		duration, err := ReadInt64(r)
+		if err != nil {
+			return nil, err
+		}
+
+		rateLimiters[domain] = rate.New(limit, time.Duration(duration))
+	}
+
+	nodesLen, err := ReadInt(r)
+	if err != nil {
+		return nil, err
+	}
+
+	globals := &Globals{
+		currID:       currID,
+		mutex:        &sync.Mutex{},
+		nodeMap:      make(map[int]Node),
+		rateLimiters: rateLimiters,
+	}
+	for i := 0; i < nodesLen; i++ {
+		if _, err := ReadNode(r, globals); err != nil {
+			return nil, err
+		}
+	}
+	return globals, nil
+}
 
 func ReadNode(r io.Reader, g *Globals) (Node, error) {
 	typeByte := make([]byte, 1)
@@ -331,6 +408,38 @@ func readVarNode(r io.Reader, g *Globals) (*VarNode, error) {
 /*
  * Implementations for writing nodes to files.
  */
+
+func WriteGlobals(w io.Writer, g *Globals) error {
+	if err := WriteInt(w, g.currID); err != nil {
+		return err
+	}
+	if err := WriteInt(w, len(g.rateLimiters)); err != nil {
+		return err
+	}
+
+	for domain, rateLimiter := range g.rateLimiterData {
+		if err := WriteString(w, domain); err != nil {
+			return err
+		}
+		if err := WriteInt(w, rateLimiter.limit); err != nil {
+			return err
+		}
+		if err := WriteInt64(w, int64(rateLimiter.interval)); err != nil {
+			return err
+		}
+	}
+
+	if err := WriteInt(w, len(g.nodeMap)); err != nil {
+		return err
+	}
+	for _, node := range g.nodeMap {
+		if err := node.Write(w); err != nil {
+			return err
+		}
+	}
+
+	return nil
+}
 
 func (n *BinOpNode) Write(w io.Writer) error {
 	if _, err := w.Write([]byte{byte(BinOpType)}); err != nil {

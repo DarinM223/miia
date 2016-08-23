@@ -6,21 +6,28 @@ import (
 	"time"
 )
 
+type RateLimiterData struct {
+	limit    int
+	interval time.Duration
+}
+
 // Globals contains all of the nodes so that
 // they can all be run at the start of the program.
 type Globals struct {
-	currID       int
-	mutex        *sync.Mutex
-	nodeMap      map[int]Node
-	rateLimiters map[string]*rate.RateLimiter
+	currID          int
+	mutex           *sync.Mutex
+	nodeMap         map[int]Node
+	rateLimiterData map[string]RateLimiterData
+	rateLimiters    map[string]*rate.RateLimiter
 }
 
 func NewGlobals() *Globals {
 	return &Globals{
-		currID:       0,
-		mutex:        &sync.Mutex{},
-		nodeMap:      make(map[int]Node),
-		rateLimiters: make(map[string]*rate.RateLimiter),
+		currID:          0,
+		mutex:           &sync.Mutex{},
+		nodeMap:         make(map[int]Node),
+		rateLimiterData: make(map[string]RateLimiterData),
+		rateLimiters:    make(map[string]*rate.RateLimiter),
 	}
 }
 
@@ -49,6 +56,10 @@ func (n *Globals) Run() {
 
 // SetRateLimit sets the rate limit for a URL.
 func (n *Globals) SetRateLimit(url string, maxTimes int, duration time.Duration) {
+	n.rateLimiterData[url] = RateLimiterData{
+		maxTimes,
+		duration,
+	}
 	n.rateLimiters[url] = rate.New(maxTimes, duration)
 }
 
