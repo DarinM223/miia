@@ -107,7 +107,14 @@ func ReadGlobals(r io.Reader) (*Globals, error) {
 		return nil, err
 	}
 
-	rateLimiters := make(map[string]*rate.RateLimiter)
+	globals := &Globals{
+		currID:          currID,
+		mutex:           &sync.Mutex{},
+		nodeMap:         make(map[int]Node),
+		rateLimiterData: make(map[string]RateLimiterData),
+		rateLimiters:    make(map[string]*rate.RateLimiter),
+	}
+
 	for i := 0; i < rateLimitersLen; i++ {
 		domain, err := ReadString(r)
 		if err != nil {
@@ -124,7 +131,7 @@ func ReadGlobals(r io.Reader) (*Globals, error) {
 			return nil, err
 		}
 
-		rateLimiters[domain] = rate.New(limit, time.Duration(duration))
+		globals.SetRateLimit(domain, limit, time.Duration(duration))
 	}
 
 	nodesLen, err := ReadInt(r)
@@ -132,12 +139,6 @@ func ReadGlobals(r io.Reader) (*Globals, error) {
 		return nil, err
 	}
 
-	globals := &Globals{
-		currID:       currID,
-		mutex:        &sync.Mutex{},
-		nodeMap:      make(map[int]Node),
-		rateLimiters: rateLimiters,
-	}
 	for i := 0; i < nodesLen; i++ {
 		if _, err := ReadNode(r, globals); err != nil {
 			return nil, err
