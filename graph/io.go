@@ -332,42 +332,185 @@ func readVarNode(r io.Reader, g *Globals) (*VarNode, error) {
  * Implementations for writing nodes to files.
  */
 
-func (n *BinOpNode) Write(w io.Writer) {
-	// TODO(DarinM223): implement this
+func (n *BinOpNode) Write(w io.Writer) error {
+	if _, err := w.Write([]byte{byte(BinOpType)}); err != nil {
+		return err
+	}
+
+	if err := WriteInt(w, n.id); err != nil {
+		return err
+	}
+	if err := WriteInt(w, int(n.operator)); err != nil {
+		return err
+	}
+	if err := n.a.Write(w); err != nil {
+		return err
+	}
+	if err := n.b.Write(w); err != nil {
+		return err
+	}
+	return nil
 }
 
-func (n *CollectNode) Write(w io.Writer) {
-	// TODO(DarinM223): implement this
+func (n *CollectNode) Write(w io.Writer) error {
+	if _, err := w.Write([]byte{byte(CollectType)}); err != nil {
+		return err
+	}
+
+	if err := WriteInt(w, n.id); err != nil {
+		return err
+	}
+	if err := n.node.Write(w); err != nil {
+		return err
+	}
+	return nil
 }
 
-func (n *ForNode) Write(w io.Writer) {
-	// TODO(DarinM223): implement this
+func (n *ForNode) Write(w io.Writer) error {
+	if _, err := w.Write([]byte{byte(ForType)}); err != nil {
+		return err
+	}
+
+	if err := WriteInt(w, n.id); err != nil {
+		return err
+	}
+	if err := WriteInt(w, n.fanout); err != nil {
+		return err
+	}
+	if err := WriteInterface(w, n.nodeType); err != nil {
+		return err
+	}
+	if err := n.collection.Write(w); err != nil {
+		return err
+	}
+	if err := n.body.Write(w); err != nil {
+		return err
+	}
+	return nil
 }
 
-func (n *GotoNode) Write(w io.Writer) {
-	// TODO(DarinM223): implement this
+func (n *GotoNode) Write(w io.Writer) error {
+	if _, err := w.Write([]byte{byte(GotoType)}); err != nil {
+		return err
+	}
+
+	if err := WriteInt(w, n.id); err != nil {
+		return err
+	}
+	if err := n.url.Write(w); err != nil {
+		return err
+	}
+	return nil
 }
 
-func (n *IfNode) Write(w io.Writer) {
-	// TODO(DarinM223): implement this
+func (n *IfNode) Write(w io.Writer) error {
+	if _, err := w.Write([]byte{byte(IfType)}); err != nil {
+		return err
+	}
+
+	if err := WriteInt(w, n.id); err != nil {
+		return err
+	}
+	if err := n.pred.Write(w); err != nil {
+		return err
+	}
+	if err := n.conseq.Write(w); err != nil {
+		return err
+	}
+	if err := n.alt.Write(w); err != nil {
+		return err
+	}
+	return nil
 }
 
-func (n *MultOpNode) Write(w io.Writer) {
-	// TODO(DarinM223): implement this
+func (n *MultOpNode) Write(w io.Writer) error {
+	if _, err := w.Write([]byte{byte(MultOpType)}); err != nil {
+		return err
+	}
+
+	if err := WriteInt(w, n.id); err != nil {
+		return err
+	}
+	if err := WriteInt(w, int(n.operator)); err != nil {
+		return err
+	}
+	if err := WriteInt(w, len(n.nodes)); err != nil {
+		return err
+	}
+	for _, node := range n.nodes {
+		if err := node.Write(w); err != nil {
+			return err
+		}
+	}
+	return nil
 }
 
-func (n *SelectorNode) Write(w io.Writer) {
-	// TODO(DarinM223): implement this
+func (n *SelectorNode) Write(w io.Writer) error {
+	if _, err := w.Write([]byte{byte(SelectorType)}); err != nil {
+		return err
+	}
+
+	if err := WriteInt(w, n.id); err != nil {
+		return err
+	}
+	if err := n.gotoNode.Write(w); err != nil {
+		return err
+	}
+	if err := WriteInt(w, len(n.selectors)); err != nil {
+		return err
+	}
+	for _, selector := range n.selectors {
+		if err := WriteString(w, selector.Name); err != nil {
+			return err
+		}
+		if err := WriteString(w, selector.Selector); err != nil {
+			return err
+		}
+	}
+	return nil
 }
 
-func (n *UnOpNode) Write(w io.Writer) {
-	// TODO(DarinM223): implement this
+func (n *UnOpNode) Write(w io.Writer) error {
+	if _, err := w.Write([]byte{byte(UnOpType)}); err != nil {
+		return err
+	}
+
+	if err := WriteInt(w, n.id); err != nil {
+		return err
+	}
+	if err := WriteInt(w, int(n.operator)); err != nil {
+		return err
+	}
+	if err := n.node.Write(w); err != nil {
+		return err
+	}
+	return nil
 }
 
-func (n *ValueNode) Write(w io.Writer) {
-	// TODO(DarinM223): implement this
+func (n *ValueNode) Write(w io.Writer) error {
+	if _, err := w.Write([]byte{byte(ValueType)}); err != nil {
+		return err
+	}
+
+	if err := WriteInt(w, n.id); err != nil {
+		return err
+	}
+	if err := WriteInterface(w, n.value); err != nil {
+		return err
+	}
+	return nil
 }
 
-func (n *VarNode) Write(w io.Writer) {
-	// TODO(DarinM223): implement this
+func (n *VarNode) Write(w io.Writer) error {
+	if _, err := w.Write([]byte{byte(VarType)}); err != nil {
+		return err
+	}
+
+	if err := WriteInt(w, n.id); err != nil {
+		return err
+	}
+	if err := WriteString(w, n.name); err != nil {
+		return err
+	}
+	return nil
 }

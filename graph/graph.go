@@ -36,7 +36,7 @@ type Node interface {
 	// The counterpart to Write() is the ReadNode() function which reads the
 	// outputted data representation.
 	// The implementations for both of these are in io.go.
-	Write(w io.Writer)
+	Write(w io.Writer) error
 
 	// run runs the node in a goroutine and returns an optional message for
 	// sending to the parent channels. If it handles the parent channel sending itself
