@@ -229,11 +229,6 @@ func readForNode(r io.Reader, g *Globals) (*ForNode, error) {
 		return nil, err
 	}
 
-	nodeType, err := ReadInterface(r)
-	if err != nil {
-		return nil, err
-	}
-
 	name, err := ReadString(r)
 	if err != nil {
 		return nil, err
@@ -250,7 +245,6 @@ func readForNode(r io.Reader, g *Globals) (*ForNode, error) {
 	}
 
 	forNode := NewForNode(g, id, name, collection, body)
-	forNode.nodeType = nodeType.(forNodeType)
 	forNode.setFanOut(fanout)
 	return forNode, nil
 }
@@ -487,7 +481,7 @@ func (n *ForNode) Write(w io.Writer) error {
 	if err := WriteInt(w, n.fanout); err != nil {
 		return err
 	}
-	if err := WriteInterface(w, n.nodeType); err != nil {
+	if err := WriteString(w, n.name); err != nil {
 		return err
 	}
 	if err := n.collection.Write(w); err != nil {
