@@ -102,6 +102,11 @@ func ReadGlobals(r io.Reader) (*Globals, error) {
 		return nil, err
 	}
 
+	resultNodeID, err := ReadInt(r)
+	if err != nil {
+		return nil, err
+	}
+
 	rateLimitersLen, err := ReadInt(r)
 	if err != nil {
 		return nil, err
@@ -109,6 +114,7 @@ func ReadGlobals(r io.Reader) (*Globals, error) {
 
 	globals := &Globals{
 		currID:          currID,
+		resultID:        resultNodeID,
 		mutex:           &sync.Mutex{},
 		nodeMap:         make(map[int]Node),
 		rateLimiterData: make(map[string]RateLimiterData),
@@ -406,6 +412,9 @@ func readVarNode(r io.Reader, g *Globals) (*VarNode, error) {
 
 func WriteGlobals(w io.Writer, g *Globals) error {
 	if err := WriteInt(w, g.currID); err != nil {
+		return err
+	}
+	if err := WriteInt(w, g.resultID); err != nil {
 		return err
 	}
 	if err := WriteInt(w, len(g.rateLimiters)); err != nil {

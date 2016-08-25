@@ -15,6 +15,7 @@ type RateLimiterData struct {
 // they can all be run at the start of the program.
 type Globals struct {
 	currID          int
+	resultID        int
 	mutex           *sync.Mutex
 	nodeMap         map[int]Node
 	rateLimiterData map[string]RateLimiterData
@@ -45,6 +46,17 @@ func (n *Globals) RegisterNode(id int, node Node) {
 	n.mutex.Lock()
 	n.nodeMap[id] = node
 	n.mutex.Unlock()
+}
+
+// SetResultNodeID sets the node id of the result node
+// (the node that yields the final value in the program).
+func (n *Globals) SetResultNodeID(id int) {
+	n.resultID = id
+}
+
+// ResultNode returns the node in the globals with the result node id.
+func (n *Globals) ResultNode() Node {
+	return n.nodeMap[n.resultID]
 }
 
 // Run runs all of the nodes in the map.
