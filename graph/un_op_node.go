@@ -15,8 +15,7 @@ type UnOpNode struct {
 	parentChans map[int]chan Msg
 }
 
-func NewUnOpNode(globals *Globals, operator tokens.Token, node Node) *UnOpNode {
-	id := globals.GenerateID()
+func NewUnOpNode(globals *Globals, id int, operator tokens.Token, node Node) *UnOpNode {
 	inChan := make(chan Msg, 1)
 	node.ParentChans()[id] = inChan
 
@@ -35,7 +34,9 @@ func (n *UnOpNode) ID() int                       { return n.id }
 func (n *UnOpNode) Chan() chan Msg                { return n.inChan }
 func (n *UnOpNode) ParentChans() map[int]chan Msg { return n.parentChans }
 func (n *UnOpNode) Dependencies() []Node          { return []Node{n.node} }
-func (n *UnOpNode) Clone(g *Globals) Node         { return NewUnOpNode(g, n.operator, n.node.Clone(g)) }
+func (n *UnOpNode) Clone(g *Globals) Node {
+	return NewUnOpNode(g, g.GenID(), n.operator, n.node.Clone(g))
+}
 
 func (n *UnOpNode) run() Msg {
 	defer destroyNode(n)

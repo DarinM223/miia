@@ -98,34 +98,34 @@ func (t *Testing) GenerateTestNode(g *Globals, node Node) Node {
 	switch n := node.(type) {
 	case *BinOpNode:
 		a, b := t.GenerateTestNode(g, n.a), t.GenerateTestNode(g, n.b)
-		return NewBinOpNode(g, n.operator, a, b)
+		return NewBinOpNode(g, g.GenID(), n.operator, a, b)
 	case *CollectNode:
-		return NewCollectNode(g, t.GenerateTestNode(g, n.node))
+		return NewCollectNode(g, g.GenID(), t.GenerateTestNode(g, n.node))
 	case *ForNode:
 		collection, body := t.GenerateTestNode(g, n.collection), t.GenerateTestNode(g, n.body)
-		return NewForNode(g, n.name, collection, body)
+		return NewForNode(g, g.GenID(), n.name, collection, body)
 	case *GotoNode:
 		url := t.GenerateTestNode(g, n.url)
-		return NewGotoNode(g, url)
+		return NewGotoNode(g, g.GenID(), url)
 	case *IfNode:
 		pred, conseq, alt := t.GenerateTestNode(g, n.pred), t.GenerateTestNode(g, n.conseq), t.GenerateTestNode(g, n.alt)
-		return NewIfNode(g, pred, conseq, alt)
+		return NewIfNode(g, g.GenID(), pred, conseq, alt)
 	case *MultOpNode:
 		nodes := make([]Node, len(n.nodes))
 		for i := 0; i < len(n.nodes); i++ {
 			nodes[i] = t.GenerateTestNode(g, n.nodes[i])
 		}
-		return NewMultOpNode(g, n.operator, nodes)
+		return NewMultOpNode(g, g.GenID(), n.operator, nodes)
 	case *SelectorNode:
 		gotoNode := t.GenerateTestNode(g, n.gotoNode)
-		return NewSelectorNode(g, gotoNode, n.selectors)
+		return NewSelectorNode(g, g.GenID(), gotoNode, n.selectors)
 	case *UnOpNode:
 		node := t.GenerateTestNode(g, n.node)
-		return NewUnOpNode(g, n.operator, node)
+		return NewUnOpNode(g, g.GenID(), n.operator, node)
 	case *ValueNode:
-		return NewValueNode(g, n.value)
+		return NewValueNode(g, g.GenID(), n.value)
 	case *VarNode:
-		return NewVarNode(g, n.name)
+		return NewVarNode(g, g.GenID(), n.name)
 	default:
 		panic("Invalid node type for GenerateTestNode()")
 	}

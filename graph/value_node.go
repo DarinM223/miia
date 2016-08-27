@@ -8,8 +8,7 @@ type ValueNode struct {
 	parentChans map[int]chan Msg
 }
 
-func NewValueNode(globals *Globals, value interface{}) *ValueNode {
-	id := globals.GenerateID()
+func NewValueNode(globals *Globals, id int, value interface{}) *ValueNode {
 	valueNode := &ValueNode{
 		id:          id,
 		value:       value,
@@ -24,7 +23,7 @@ func (n *ValueNode) ID() int                       { return n.id }
 func (n *ValueNode) Chan() chan Msg                { return n.inChan }
 func (n *ValueNode) ParentChans() map[int]chan Msg { return n.parentChans }
 func (n *ValueNode) Dependencies() []Node          { return nil }
-func (n *ValueNode) Clone(globals *Globals) Node   { return NewValueNode(globals, n.value) }
+func (n *ValueNode) Clone(g *Globals) Node         { return NewValueNode(g, g.GenID(), n.value) }
 
 func (n *ValueNode) run() Msg {
 	return NewValueMsg(n.id, true, n.value)

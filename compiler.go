@@ -36,68 +36,68 @@ func (s *Scope) set(name string, value graph.Node) {
 	s.Env[name] = value
 }
 
-func CompileExpr(globals *graph.Globals, expr Expr, scope *Scope) (graph.Node, error) {
+func CompileExpr(g *graph.Globals, expr Expr, scope *Scope) (graph.Node, error) {
 	switch e := expr.(type) {
 	case IntExpr:
-		return graph.NewValueNode(globals, e.Value), nil
+		return graph.NewValueNode(g, g.GenID(), e.Value), nil
 	case StringExpr:
-		return graph.NewValueNode(globals, e.Value), nil
+		return graph.NewValueNode(g, g.GenID(), e.Value), nil
 	case BoolExpr:
-		return graph.NewValueNode(globals, e.Value), nil
+		return graph.NewValueNode(g, g.GenID(), e.Value), nil
 	case SelectorExpr:
 		if scope.Page == nil {
 			return nil, errors.New("Attempting to apply selector before loading a page")
 		}
-		return graph.NewSelectorNode(globals, scope.Page, e.Selectors), nil
+		return graph.NewSelectorNode(g, g.GenID(), scope.Page, e.Selectors), nil
 	case VarExpr:
 		return scope.lookup(e.Name)
 	case ForExpr:
-		collection, err := CompileExpr(globals, e.Collection, scope)
+		collection, err := CompileExpr(g, e.Collection, scope)
 		if err != nil {
 			return nil, err
 		}
 
 		newScope := NewScope(scope)
-		newScope.set(e.Name, graph.NewVarNode(globals, e.Name))
-		body, err := CompileExpr(globals, e.Body, newScope)
+		newScope.set(e.Name, graph.NewVarNode(g, g.GenID(), e.Name))
+		body, err := CompileExpr(g, e.Body, newScope)
 		if err != nil {
 			return nil, err
 		}
 
-		return graph.NewForNode(globals, e.Name, collection, body), nil
+		return graph.NewForNode(g, g.GenID(), e.Name, collection, body), nil
 	case IfExpr:
-		pred, err := CompileExpr(globals, e.Pred, scope)
+		pred, err := CompileExpr(g, e.Pred, scope)
 		if err != nil {
 			return nil, err
 		}
 
 		scope1, scope2 := NewScope(scope), NewScope(scope)
 
-		conseq, err := CompileExpr(globals, e.Conseq, scope1)
+		conseq, err := CompileExpr(g, e.Conseq, scope1)
 		if err != nil {
 			return nil, err
 		}
 
-		alt, err := CompileExpr(globals, e.Alt, scope2)
+		alt, err := CompileExpr(g, e.Alt, scope2)
 		if err != nil {
 			return nil, err
 		}
 
-		return graph.NewIfNode(globals, pred, conseq, alt), nil
+		return graph.NewIfNode(g, g.GenID(), pred, conseq, alt), nil
 	case GotoExpr:
-		urlNode, err := CompileExpr(globals, e.URL, scope)
+		urlNode, err := CompileExpr(g, e.URL, scope)
 		if err != nil {
 			return nil, err
 		}
 
-		gotoNode := graph.NewGotoNode(globals, urlNode)
+		gotoNode := graph.NewGotoNode(g, g.GenID(), urlNode)
 		scope.Page = gotoNode
 		return gotoNode, nil
 	case BlockExpr:
 		newScope := NewScope(scope)
 		var lastNode graph.Node
 		for i, expr := range e.Exprs {
-			res, err := CompileExpr(globals, expr, newScope)
+			res, err := CompileExpr(g, expr, newScope)
 			if err != nil {
 				return nil, err
 			}
@@ -111,52 +111,52 @@ func CompileExpr(globals *graph.Globals, expr Expr, scope *Scope) (graph.Node, e
 		return lastNode, nil
 	case BindExpr:
 		for name, expr := range e.Bindings {
-			res, err := CompileExpr(globals, expr, scope)
+			res, err := CompileExpr(g, expr, scope)
 			if err != nil {
 				return nil, err
 			}
 
 			scope.set(name, res)
 		}
-		return graph.NewValueNode(globals, nil), nil
+		return graph.NewValueNode(g, g.GenID(), nil), nil
 	case RateLimitExpr:
-		globals.SetRateLimit(e.URL, e.MaxTimes, e.Duration)
-		return graph.NewValueNode(globals, nil), nil
+		g.SetRateLimit(e.URL, e.MaxTimes, e.Duration)
+		return graph.NewValueNode(g, g.GenID(), nil), nil
 	case MultOp:
 		nodes := make([]graph.Node, len(e.Exprs))
 		for i := 0; i < len(nodes); i++ {
-			node, err := CompileExpr(globals, e.Exprs[i], scope)
+			node, err := CompileExpr(g, e.Exprs[i], scope)
 			if err != nil {
 				return nil, err
 			}
 			nodes[i] = node
 		}
-		return graph.NewMultOpNode(globals, e.Operator, nodes), nil
+		return graph.NewMultOpNode(g, g.GenID(), e.Operator, nodes), nil
 	case BinOp:
-		a, err := CompileExpr(globals, e.A, scope)
+		a, err := CompileExpr(g, e.A, scope)
 		if err != nil {
 			return nil, err
 		}
 
-		b, err := CompileExpr(globals, e.B, scope)
+		b, err := CompileExpr(g, e.B, scope)
 		if err != nil {
 			return nil, err
 		}
 
-		return graph.NewBinOpNode(globals, e.Operator, a, b), nil
+		return graph.NewBinOpNode(g, g.GenID(), e.Operator, a, b), nil
 	case UnOp:
-		node, err := CompileExpr(globals, e.A, scope)
+		node, err := CompileExpr(g, e.A, scope)
 		if err != nil {
 			return nil, err
 		}
 
-		return graph.NewUnOpNode(globals, e.Operator, node), nil
+		return graph.NewUnOpNode(g, g.GenID(), e.Operator, node), nil
 	case CollectExpr:
-		node, err := CompileExpr(globals, e.A, scope)
+		node, err := CompileExpr(g, e.A, scope)
 		if err != nil {
 			return nil, err
 		}
-		return graph.NewCollectNode(globals, node), nil
+		return graph.NewCollectNode(g, g.GenID(), node), nil
 	default:
 		return nil, errors.New("Invalid expression type")
 	}

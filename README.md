@@ -24,13 +24,16 @@ First you have to run `go get` inside the project directory in order to download
 After that you can build the project by running `go build`.
 
 ## Running
-When runnning the executable, you have to specify the path to the file to compile and run.
-
-For example, running:
+When running the executable, first you have to compile the file that contains the code into
+a graph file. So to compile the test/simple.scrape file into a test/simple.out file you would run:
 ```
-./miia test/simple.scrape
+./miia compile test/simple.scrape test/simple.out
 ```
-in the project directory should run a simple program for the language.
+and the test/simple.out file will be generated. Then to run the output file, you would run:
+```
+./miia run test/simple.out
+```
+which would run the program and print the output.
 
 ## Testing
 In order to run the unit tests in all the packages, run `go test ./...` in the project directory.

@@ -6,13 +6,6 @@ import (
 	"net/http"
 )
 
-type SelectorType byte
-
-const (
-	SelectorClass SelectorType = '.' // A CSS class to retrieve.
-	SelectorID                 = '#' // A CSS id to retrieve.
-)
-
 // Selector is binding from a css string like `#id`
 // to the name of the key in the output map after
 // parsing all of the selectors like { button: ... }
@@ -31,8 +24,7 @@ type SelectorNode struct {
 	parentChans map[int]chan Msg
 }
 
-func NewSelectorNode(globals *Globals, gotoNode Node, selectors []Selector) *SelectorNode {
-	id := globals.GenerateID()
+func NewSelectorNode(globals *Globals, id int, gotoNode Node, selectors []Selector) *SelectorNode {
 	inChan := make(chan Msg, InChanSize)
 	gotoNode.ParentChans()[id] = inChan
 
@@ -52,7 +44,7 @@ func (n *SelectorNode) Chan() chan Msg                { return n.inChan }
 func (n *SelectorNode) ParentChans() map[int]chan Msg { return n.parentChans }
 func (n *SelectorNode) Dependencies() []Node          { return []Node{n.gotoNode} }
 func (n *SelectorNode) Clone(g *Globals) Node {
-	return NewSelectorNode(g, n.gotoNode.Clone(g), n.selectors)
+	return NewSelectorNode(g, g.GenID(), n.gotoNode.Clone(g), n.selectors)
 }
 
 func (n *SelectorNode) run() (data Msg) {

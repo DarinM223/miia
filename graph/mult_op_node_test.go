@@ -45,19 +45,19 @@ var multOpNodeTests = []struct {
 
 func TestMultOpNode(t *testing.T) {
 	for _, test := range multOpNodeTests {
-		globals := NewGlobals()
+		g := NewGlobals()
 		valuesNodes := make([]Node, len(test.values))
 		for i, value := range test.values {
-			valuesNodes[i] = NewValueNode(globals, value)
+			valuesNodes[i] = NewValueNode(g, g.GenID(), value)
 		}
 
-		multOpNode := NewMultOpNode(globals, test.op, valuesNodes)
+		multOpNode := NewMultOpNode(g, g.GenID(), test.op, valuesNodes)
 
 		parentChan1, parentChan2 := make(chan Msg, InChanSize), make(chan Msg, InChanSize)
 		multOpNode.ParentChans()[len(test.values)+1] = parentChan1
 		multOpNode.ParentChans()[len(test.values)+2] = parentChan2
 
-		globals.Run()
+		g.Run()
 
 		if msg, ok := <-parentChan1; ok {
 			if !reflect.DeepEqual(msg, test.expected) {

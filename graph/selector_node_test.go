@@ -19,15 +19,15 @@ var selectorNodeTests = []struct {
 
 func TestSelectorNode(t *testing.T) {
 	for _, test := range selectorNodeTests {
-		globals := NewGlobals()
+		g := NewGlobals()
 
 		parentChan := make(chan Msg, InChanSize)
-		stringNode := NewValueNode(globals, test.url)
-		gotoNode := NewGotoNode(globals, stringNode)
-		selectorNode := NewSelectorNode(globals, gotoNode, test.selectors)
+		stringNode := NewValueNode(g, g.GenID(), test.url)
+		gotoNode := NewGotoNode(g, g.GenID(), stringNode)
+		selectorNode := NewSelectorNode(g, g.GenID(), gotoNode, test.selectors)
 		selectorNode.ParentChans()[3] = parentChan
 
-		globals.Run()
+		g.Run()
 
 		if msg, ok := <-parentChan; ok {
 			if !reflect.DeepEqual(msg, test.expected) {

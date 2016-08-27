@@ -1,7 +1,24 @@
 package graph
 
+import "io"
+
 // The default size of the input channel buffers for nodes.
 const InChanSize = 5
+
+type NodeType int
+
+const (
+	BinOpType NodeType = iota
+	CollectType
+	ForType
+	GotoType
+	IfType
+	MultOpType
+	SelectorType
+	UnOpType
+	ValueType
+	VarType
+)
 
 // Node is a contained "actor" that sends/receives messages.
 type Node interface {
@@ -15,6 +32,11 @@ type Node interface {
 	Clone(*Globals) Node
 	// Dependencies returns the dependency nodes for the node.
 	Dependencies() []Node
+	// Write writes the data representation of the node to the data stream.
+	// The counterpart to Write() is the ReadNode() function which reads the
+	// outputted data representation.
+	// The implementations for both of these are in io.go.
+	Write(w io.Writer) error
 
 	// run runs the node in a goroutine and returns an optional message for
 	// sending to the parent channels. If it handles the parent channel sending itself

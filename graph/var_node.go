@@ -1,8 +1,6 @@
 package graph
 
-import (
-	"errors"
-)
+import "errors"
 
 // VarNode is a variable node that is set dynamically.
 // A VarNode's message can be set either before it's running
@@ -21,8 +19,7 @@ type VarNode struct {
 	parentChans map[int]chan Msg
 }
 
-func NewVarNode(globals *Globals, name string) *VarNode {
-	id := globals.GenerateID()
+func NewVarNode(globals *Globals, id int, name string) *VarNode {
 	varNode := &VarNode{
 		id:          id,
 		name:        name,
@@ -38,8 +35,8 @@ func (n *VarNode) ID() int                       { return n.id }
 func (n *VarNode) Chan() chan Msg                { return n.inChan }
 func (n *VarNode) ParentChans() map[int]chan Msg { return n.parentChans }
 func (n *VarNode) Dependencies() []Node          { return nil }
-func (n *VarNode) Clone(globals *Globals) Node {
-	varNode := NewVarNode(globals, n.name)
+func (n *VarNode) Clone(g *Globals) Node {
+	varNode := NewVarNode(g, g.GenID(), n.name)
 	varNode.msg = n.msg
 	return varNode
 }
@@ -49,17 +46,11 @@ func (n *VarNode) run() Msg {
 		return n.msg.SetID(n.id)
 	}
 
-	select {
-	case <-n.inChan:
-		switch n.msg.(type) {
-		case ValueMsg:
-			return n.msg.SetID(n.id)
-		case StreamMsg:
-			return NewErrMsg(n.id, true, errors.New("Stream message as var not implemented yet"))
-		default:
-			return NewErrMsg(n.id, true, errors.New("Unknown var message type"))
-		}
+	if _, ok := <-n.inChan; !ok {
+		return NewErrMsg(n.id, true, errors.New("Error receiving from channel"))
 	}
+
+	return n.msg.SetID(n.id)
 }
 
 // setMsg sets the message that the VarNode will send to its parents.

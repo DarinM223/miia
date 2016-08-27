@@ -13,8 +13,7 @@ type CollectNode struct {
 	results     DataNode
 }
 
-func NewCollectNode(globals *Globals, node Node) *CollectNode {
-	id := globals.GenerateID()
+func NewCollectNode(globals *Globals, id int, node Node) *CollectNode {
 	inChan := make(chan Msg, InChanSize)
 	node.ParentChans()[id] = inChan
 	collectNode := &CollectNode{
@@ -34,7 +33,7 @@ func (n *CollectNode) ParentChans() map[int]chan Msg { return n.parentChans }
 func (n *CollectNode) Dependencies() []Node          { return []Node{n.node} }
 
 func (n *CollectNode) Clone(g *Globals) Node {
-	return NewCollectNode(g, n.node.Clone(g))
+	return NewCollectNode(g, g.GenID(), n.node.Clone(g))
 }
 
 func (n *CollectNode) run() Msg {
