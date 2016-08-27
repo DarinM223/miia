@@ -1,18 +1,38 @@
 package graph
 
 import (
-	"encoding/gob"
 	"errors"
 	"github.com/DarinM223/miia/tokens"
 	"github.com/beefsack/go-rate"
 	"io"
+	"reflect"
 	"sync"
 	"time"
 )
 
+func Btoi(b bool) int {
+	if b {
+		return 1
+	}
+	return 0
+}
+
+func Itob(i int) bool {
+	return i != 0
+}
+
 /*
  * Helper functions for reading and writing to files.
  */
+
+type DataType int
+
+const (
+	IntType DataType = iota
+	StringType
+	BoolType
+	NilType
+)
 
 func ReadInt(r io.Reader) (int, error) {
 	buf := make([]byte, 4)
@@ -47,9 +67,25 @@ func ReadString(r io.Reader) (string, error) {
 	return string(buf[:]), nil
 }
 
-func ReadInterface(r io.Reader) (result interface{}, err error) {
-	decoder := gob.NewDecoder(r)
-	err = decoder.Decode(&result)
+func ReadValue(r io.Reader) (result interface{}, err error) {
+	dataType, err := ReadInt(r)
+	if err != nil {
+		return nil, err
+	}
+
+	switch DataType(dataType) {
+	case IntType:
+		result, err = ReadInt(r)
+	case BoolType:
+		boolNum, e := ReadInt(r)
+		result, err = Itob(boolNum), e
+	case StringType:
+		result, err = ReadString(r)
+	case NilType:
+		result, err = nil, nil
+	default:
+		err = errors.New("Invalid data type for decoding")
+	}
 	return
 }
 
@@ -87,9 +123,40 @@ func WriteString(w io.Writer, s string) error {
 	return err
 }
 
-func WriteInterface(w io.Writer, i interface{}) error {
-	encoder := gob.NewEncoder(w)
-	return encoder.Encode(&i)
+func WriteValue(w io.Writer, i interface{}) error {
+	err := errors.New("Invalid data type to encode")
+	var dataType DataType
+	if i == nil {
+		dataType = NilType
+	} else {
+		switch reflect.TypeOf(i).Kind() {
+		case reflect.Int:
+			dataType = IntType
+		case reflect.Bool:
+			dataType = BoolType
+		case reflect.String:
+			dataType = StringType
+		default:
+			return err
+		}
+	}
+
+	if err := WriteInt(w, int(dataType)); err != nil {
+		return err
+	}
+
+	switch dataType {
+	case IntType:
+		return WriteInt(w, i.(int))
+	case BoolType:
+		return WriteInt(w, Btoi(i.(bool)))
+	case StringType:
+		return WriteString(w, i.(string))
+	case NilType:
+		return nil
+	default:
+		return err
+	}
 }
 
 /*
@@ -140,15 +207,9 @@ func ReadGlobals(r io.Reader) (*Globals, error) {
 		globals.SetRateLimit(domain, limit, time.Duration(duration))
 	}
 
-	nodesLen, err := ReadInt(r)
-	if err != nil {
+	// Read result node.
+	if _, err := ReadNode(r, globals); err != nil {
 		return nil, err
-	}
-
-	for i := 0; i < nodesLen; i++ {
-		if _, err := ReadNode(r, globals); err != nil {
-			return nil, err
-		}
 	}
 	return globals, nil
 }
@@ -384,7 +445,7 @@ func readValueNode(r io.Reader, g *Globals) (*ValueNode, error) {
 		return nil, err
 	}
 
-	value, err := ReadInterface(r)
+	value, err := ReadValue(r)
 	if err != nil {
 		return nil, err
 	}
@@ -417,7 +478,7 @@ func WriteGlobals(w io.Writer, g *Globals) error {
 	if err := WriteInt(w, g.resultID); err != nil {
 		return err
 	}
-	if err := WriteInt(w, len(g.rateLimiters)); err != nil {
+	if err := WriteInt(w, len(g.rateLimiterData)); err != nil {
 		return err
 	}
 
@@ -433,15 +494,9 @@ func WriteGlobals(w io.Writer, g *Globals) error {
 		}
 	}
 
-	if err := WriteInt(w, len(g.nodeMap)); err != nil {
+	if err := g.ResultNode().Write(w); err != nil {
 		return err
 	}
-	for _, node := range g.nodeMap {
-		if err := node.Write(w); err != nil {
-			return err
-		}
-	}
-
 	return nil
 }
 
@@ -608,7 +663,7 @@ func (n *ValueNode) Write(w io.Writer) error {
 	if err := WriteInt(w, n.id); err != nil {
 		return err
 	}
-	if err := WriteInterface(w, n.value); err != nil {
+	if err := WriteValue(w, n.value); err != nil {
 		return err
 	}
 	return nil
