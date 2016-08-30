@@ -7,19 +7,21 @@ import (
 	"io/ioutil"
 	"os"
 	"path/filepath"
+	"strconv"
 )
 
 func main() {
 	if len(os.Args) <= 1 {
-		fmt.Println("Needs to specify the command to run (`compile` or `run`)")
+		fmt.Println("Needs to specify the command to run ('compile' or 'run')")
 		return
 	}
 
 	command := os.Args[1]
 	switch command {
 	case "compile":
-		if len(os.Args) <= 3 {
-			fmt.Println("`compile` needs to specify the path to the code file and the path to the output graph file")
+		if len(os.Args) <= 4 {
+			fmt.Println(`'compile' needs to specify the path to the code file, the path to the output graph file,
+and the maximum number of goroutines to run at once.`)
 			return
 		}
 
@@ -60,8 +62,17 @@ func main() {
 			return
 		}
 
-		fanout := 20
-		graph.SetNodesFanOut(resultNode, fanout)
+		fanout, err := strconv.Atoi(os.Args[4])
+		if err != nil {
+			fmt.Println("Error: the maximum number of goroutines parameter is not an integer")
+			return
+		}
+
+		results := graph.SetNodesFanOut(resultNode, fanout)
+		for i, f := range results {
+			fmt.Printf("Fanout for for loop %d is %d\n", i, f)
+		}
+
 		globals.SetResultNodeID(resultNode.ID())
 
 		outputFile, err := os.Create(absGraphPath)
@@ -70,10 +81,15 @@ func main() {
 			return
 		}
 
-		graph.WriteGlobals(outputFile, globals)
+		if err := graph.WriteGlobals(outputFile, globals); err != nil {
+			fmt.Println("Error writing to disk: ", err)
+			return
+		}
+
+		fmt.Println("Compiling completed")
 	case "run":
 		if len(os.Args) <= 2 {
-			fmt.Println("`run` needs to specify the path to the output graph file")
+			fmt.Println("'run' needs to specify the path to the output graph file")
 			return
 		}
 
@@ -111,6 +127,6 @@ func main() {
 			}
 		}
 	default:
-		fmt.Println("miia only accepts `compile` and `run` as commands")
+		fmt.Println("miia only accepts 'compile' and 'run' as commands")
 	}
 }

@@ -175,12 +175,12 @@ func setNodeFanOut(node Node, vars *[]*varFanOut) fanOutType {
 // for all for nodes in the graph starting from the given node
 // given the maximum limit of concurrently running goroutines.
 // This function is to be run before running the nodes in the graph.
-func SetNodesFanOut(node Node, totalNodes int) {
+func SetNodesFanOut(node Node, totalNodes int) []int {
 	var vars []*varFanOut
 	fanOut := setNodeFanOut(node, &vars)
 
 	if len(vars) < 1 {
-		return
+		return nil
 	}
 
 	filled := make([]bool, len(vars))
@@ -207,8 +207,11 @@ func SetNodesFanOut(node Node, totalNodes int) {
 		}
 	}
 
+	finalFanouts := make([]int, len(vars))
 	// Set the fan outs into the for nodes.
-	for _, v := range vars {
+	for i, v := range vars {
+		finalFanouts[i] = v.numSubnodes
 		v.node.setFanOut(v.numSubnodes)
 	}
+	return finalFanouts
 }
