@@ -20,6 +20,12 @@ const (
 // Find gets the descendants of each element in the current set of matched
 // elements, filtered by a selector. It returns a new Selection object
 // containing these matched elements.
+//
+// Note that as for all methods accepting a selector string, the selector is
+// compiled and applied by the cascadia package and inherits its behavior and
+// constraints regarding supported selectors. See the note on cascadia in
+// the goquery documentation here:
+// https://github.com/PuerkitoBio/goquery?tab=readme-ov-file#api
 func (s *Selection) Find(selector string) *Selection {
 	return pushStack(s, findWithMatcher(s.Nodes, compileMatcher(selector)))
 }
@@ -143,11 +149,15 @@ func (s *Selection) ClosestMatcher(m Matcher) *Selection {
 // ClosestNodes gets the first element that matches one of the nodes by testing the
 // element itself and traversing up through its ancestors in the DOM tree.
 func (s *Selection) ClosestNodes(nodes ...*html.Node) *Selection {
+	set := make(map[*html.Node]bool)
+	for _, n := range nodes {
+		set[n] = true
+	}
 	return pushStack(s, mapNodes(s.Nodes, func(i int, n *html.Node) []*html.Node {
 		// For each node in the selection, test the node itself, then each parent
 		// until a match is found.
 		for ; n != nil; n = n.Parent {
-			if isInSlice(nodes, n) {
+			if set[n] {
 				return []*html.Node{n}
 			}
 		}
@@ -684,10 +694,11 @@ func getParentNodes(nodes []*html.Node) []*html.Node {
 // Returns an array of nodes mapped by calling the callback function once for
 // each node in the source nodes.
 func mapNodes(nodes []*html.Node, f func(int, *html.Node) []*html.Node) (result []*html.Node) {
+	set := make(map[*html.Node]bool)
 	for i, n := range nodes {
 		if vals := f(i, n); len(vals) > 0 {
-			result = appendWithoutDuplicates(result, vals)
+			result = appendWithoutDuplicates(result, vals, set)
 		}
 	}
-	return
+	return result
 }

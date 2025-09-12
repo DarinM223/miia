@@ -2,10 +2,11 @@ package graph
 
 import (
 	"bytes"
-	"github.com/DarinM223/miia/tokens"
-	"github.com/davecgh/go-spew/spew"
 	"reflect"
 	"testing"
+
+	"github.com/DarinM223/miia/tokens"
+	"github.com/davecgh/go-spew/spew"
 )
 
 func TestReadWriteInt(t *testing.T) {
@@ -58,7 +59,7 @@ func TestReadWriteString(t *testing.T) {
 	}
 
 	if result != str {
-		t.Errorf("Expected %d got %d", str, result)
+		t.Errorf("Expected %s got %s", str, result)
 	}
 }
 

@@ -49,18 +49,18 @@ call to Next. For example, to extract an HTML page's anchor text:
 	for {
 		tt := z.Next()
 		switch tt {
-		case ErrorToken:
+		case html.ErrorToken:
 			return z.Err()
-		case TextToken:
+		case html.TextToken:
 			if depth > 0 {
 				// emitBytes should copy the []byte it receives,
 				// if it doesn't process it immediately.
 				emitBytes(z.Text())
 			}
-		case StartTagToken, EndTagToken:
+		case html.StartTagToken, html.EndTagToken:
 			tn, _ := z.TagName()
 			if len(tn) == 1 && tn[0] == 'a' {
-				if tt == StartTagToken {
+				if tt == html.StartTagToken {
 					depth++
 				} else {
 					depth--
@@ -78,22 +78,38 @@ example, to process each anchor node in depth-first order:
 	if err != nil {
 		// ...
 	}
-	var f func(*html.Node)
-	f = func(n *html.Node) {
+	for n := range doc.Descendants() {
 		if n.Type == html.ElementNode && n.Data == "a" {
 			// Do something with n...
 		}
-		for c := n.FirstChild; c != nil; c = c.NextSibling {
-			f(c)
-		}
 	}
-	f(doc)
 
 The relevant specifications include:
 https://html.spec.whatwg.org/multipage/syntax.html and
 https://html.spec.whatwg.org/multipage/syntax.html#tokenization
+
+# Security Considerations
+
+Care should be taken when parsing and interpreting HTML, whether full documents
+or fragments, within the framework of the HTML specification, especially with
+regard to untrusted inputs.
+
+This package provides both a tokenizer and a parser, which implement the
+tokenization, and tokenization and tree construction stages of the WHATWG HTML
+parsing specification respectively. While the tokenizer parses and normalizes
+individual HTML tokens, only the parser constructs the DOM tree from the
+tokenized HTML, as described in the tree construction stage of the
+specification, dynamically modifying or extending the document's DOM tree.
+
+If your use case requires semantically well-formed HTML documents, as defined by
+the WHATWG specification, the parser should be used rather than the tokenizer.
+
+In security contexts, if trust decisions are being made using the tokenized or
+parsed content, the input must be re-serialized (for instance by using Render or
+Token.String) in order for those trust decisions to hold, as the process of
+tokenization or parsing may alter the content.
 */
-package html
+package html // import "golang.org/x/net/html"
 
 // The tokenization algorithm implemented by this package is not a line-by-line
 // transliteration of the relatively verbose state-machine in the WHATWG
