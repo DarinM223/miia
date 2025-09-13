@@ -17,9 +17,9 @@ func TestGotoNode(t *testing.T) {
 	g.Run()
 
 	if msg, ok := <-parentChan1; ok {
-		if msg, ok := msg.(ValueMsg); ok {
-			if _, ok := msg.Data.(*http.Response); !ok {
-				t.Errorf("Message is not an HTTP response: got %v", msg.Data)
+		if valueMsg, ok := msg.(ValueMsg); ok {
+			if _, ok := valueMsg.Data.(*http.Response); !ok {
+				t.Errorf("Message is not an HTTP response: got %v", valueMsg.Data)
 			}
 		} else {
 			t.Errorf("Message is not a Value message, got %v", msg)
@@ -29,9 +29,9 @@ func TestGotoNode(t *testing.T) {
 	}
 
 	if msg, ok := <-parentChan2; ok {
-		if msg, ok := msg.(ValueMsg); ok {
-			if _, ok := msg.Data.(*http.Response); !ok {
-				t.Errorf("Message is not an HTTP response: got %v", msg.Data)
+		if valueMsg, ok := msg.(ValueMsg); ok {
+			if _, ok := valueMsg.Data.(*http.Response); !ok {
+				t.Errorf("Message is not an HTTP response: got %v", valueMsg.Data)
 			}
 		} else {
 			t.Errorf("Message is not a Value message, got %v", msg)

@@ -21,7 +21,7 @@ var ifNodeTests = []struct {
 	},
 	{
 		1, "Conseq", "Alt",
-		NewErrMsg(3, true, IfPredicateErr),
+		NewErrMsg(3, true, ErrIfPredicate),
 	},
 }
 

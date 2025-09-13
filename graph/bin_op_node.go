@@ -3,9 +3,10 @@ package graph
 import (
 	"errors"
 	"fmt"
-	"github.com/DarinM223/miia/tokens"
 	"math"
 	"reflect"
+
+	"github.com/DarinM223/miia/tokens"
 )
 
 // BinOpNode listens to two nodes and applies
@@ -49,7 +50,7 @@ func (n *BinOpNode) Clone(g *Globals) Node {
 func (n *BinOpNode) run() Msg {
 	defer destroyNode(n)
 
-	var errMsg Msg = NewErrMsg(n.id, true, errors.New("Error with BinOp values"))
+	var errMsg Msg = NewErrMsg(n.id, true, errors.New("error with BinOp values"))
 
 	val1, ok := (<-n.aChan).(ValueMsg)
 	if !ok {
@@ -86,10 +87,10 @@ func applyBinOp(a interface{}, b interface{}, op tokens.Token) (interface{}, err
 			}
 			return rangeInts, nil
 		}
-		return nil, errors.New(fmt.Sprintf("Invalid types for BinOp RangeToken: types %v and %v", reflect.TypeOf(a), reflect.TypeOf(b)))
+		return nil, fmt.Errorf("invalid types for BinOp RangeToken: types %v and %v", reflect.TypeOf(a), reflect.TypeOf(b))
 	case tokens.EqualsToken:
 		if reflect.TypeOf(a) != reflect.TypeOf(b) {
-			return nil, errors.New("Invalid types for BinOp EqualsToken")
+			return nil, errors.New("invalid types for BinOp EqualsToken")
 		}
 		return reflect.DeepEqual(a, b), nil
 	case tokens.OrToken:
@@ -99,7 +100,7 @@ func applyBinOp(a interface{}, b interface{}, op tokens.Token) (interface{}, err
 		if firstOk && secondOk {
 			return firstVal || secondVal, nil
 		}
-		return nil, errors.New("Invalid types for BinOp OrToken")
+		return nil, errors.New("invalid types for BinOp OrToken")
 	case tokens.AndToken:
 		firstVal, firstOk := a.(bool)
 		secondVal, secondOk := b.(bool)
@@ -107,8 +108,8 @@ func applyBinOp(a interface{}, b interface{}, op tokens.Token) (interface{}, err
 		if firstOk && secondOk {
 			return firstVal && secondVal, nil
 		}
-		return nil, errors.New("Invalid types for BinOp AndToken")
+		return nil, errors.New("invalid types for BinOp AndToken")
 	default:
-		return nil, errors.New("Invalid BinOp operator")
+		return nil, errors.New("invalid BinOp operator")
 	}
 }

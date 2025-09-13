@@ -1,7 +1,6 @@
 package graph
 
 import (
-	"errors"
 	"fmt"
 	"reflect"
 )
@@ -58,7 +57,7 @@ func (t *valueNodeType) handleMsg(n *ForNode, msg Msg) (Msg, bool) {
 		return streamMsg.SetID(n.id), finished
 	}
 
-	err := errors.New(fmt.Sprintf("Message is not a value or stream message: %v instead: %v", msg, reflect.TypeOf(msg)))
+	err := fmt.Errorf("message is not a value or stream message: %v instead: %v", msg, reflect.TypeOf(msg))
 	return NewErrMsg(n.id, true, err), true
 }
 
@@ -114,7 +113,7 @@ func (t *streamNodeType) handleMsg(n *ForNode, msg Msg) (Msg, bool) {
 		return streamMsg.SetID(n.id), finished
 	}
 
-	err := errors.New(fmt.Sprintf("Message is not a value or stream message: %v", msg))
+	err := fmt.Errorf("message is not a value or stream message: %v", msg)
 	return NewErrMsg(n.id, true, err), true
 }
 

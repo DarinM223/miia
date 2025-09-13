@@ -122,7 +122,7 @@ type streamNode struct {
 func (s *streamNode) Set(idx StreamIndex, data interface{}) error {
 	i, restIdx := idx.PopIndex()
 	if i >= len(s.data) || i < 0 {
-		return errors.New(fmt.Sprintf("Set index out of bounds: index: %d, length: %d", i, len(s.data)))
+		return fmt.Errorf("set index out of bounds: index: %d, length: %d", i, len(s.data))
 	}
 	return s.data[i].Set(restIdx, data)
 }
@@ -130,7 +130,7 @@ func (s *streamNode) Set(idx StreamIndex, data interface{}) error {
 func (s *streamNode) Get(idx StreamIndex) (interface{}, error) {
 	i, restIdx := idx.PopIndex()
 	if i >= len(s.data) || i < 0 {
-		return nil, errors.New(fmt.Sprintf("Get index out of bounds: index: %d, length: %d", i, len(s.data)))
+		return nil, fmt.Errorf("get index out of bounds: index: %d, length: %d", i, len(s.data))
 	}
 	return s.data[i].Get(restIdx)
 }
@@ -158,14 +158,14 @@ func (s *streamLeaf) Set(idx StreamIndex, data interface{}) error {
 		s.data = data
 		return nil
 	}
-	return errors.New("Setting data with non-empty index")
+	return errors.New("setting data with non-empty index")
 }
 
 func (s *streamLeaf) Get(idx StreamIndex) (interface{}, error) {
 	if idx.Empty() {
 		return s.data, nil
 	}
-	return nil, errors.New("Getting data with non-empty index")
+	return nil, errors.New("getting data with non-empty index")
 }
 
 func (s *streamLeaf) Data() interface{} {

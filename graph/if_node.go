@@ -2,7 +2,7 @@ package graph
 
 import "errors"
 
-var IfPredicateErr error = errors.New("Predicate return is not a boolean value")
+var ErrIfPredicate error = errors.New("predicate return is not a boolean value")
 
 // IfNode is a node that listens to the predicate node,
 // the consequence node (the node when predicate is true),
@@ -58,7 +58,7 @@ func (n *IfNode) Clone(g *Globals) Node {
 func (n *IfNode) run() Msg {
 	defer destroyNode(n)
 
-	var data Msg = NewErrMsg(n.id, true, IfPredicateErr)
+	var data Msg = NewErrMsg(n.id, true, ErrIfPredicate)
 
 	msg, ok := (<-n.inChan).(ValueMsg)
 	if !ok {

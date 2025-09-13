@@ -2,6 +2,7 @@ package graph
 
 import (
 	"errors"
+
 	"github.com/DarinM223/miia/tokens"
 )
 
@@ -41,7 +42,7 @@ func (n *UnOpNode) Clone(g *Globals) Node {
 func (n *UnOpNode) run() Msg {
 	defer destroyNode(n)
 
-	var errMsg Msg = NewErrMsg(n.id, true, errors.New("Invalid type for UnOp NotToken"))
+	var errMsg Msg = NewErrMsg(n.id, true, errors.New("invalid type for UnOp NotToken"))
 
 	val, ok := (<-n.inChan).(ValueMsg)
 	if !ok {
@@ -57,6 +58,6 @@ func (n *UnOpNode) run() Msg {
 
 		return NewValueMsg(n.id, true, !value)
 	default:
-		return NewErrMsg(n.id, true, errors.New("Invalid UnOp operator"))
+		return NewErrMsg(n.id, true, errors.New("invalid UnOp operator"))
 	}
 }

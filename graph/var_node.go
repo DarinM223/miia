@@ -47,7 +47,7 @@ func (n *VarNode) run() Msg {
 	}
 
 	if _, ok := <-n.inChan; !ok {
-		return NewErrMsg(n.id, true, errors.New("Error receiving from channel"))
+		return NewErrMsg(n.id, true, errors.New("error receiving from channel"))
 	}
 
 	return n.msg.SetID(n.id)

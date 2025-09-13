@@ -57,9 +57,7 @@ func ContainsLoopNode(node Node) bool {
 		if _, ok := n.(*ForNode); ok {
 			return true
 		} else {
-			for _, dep := range n.Dependencies() {
-				queue = append(queue, dep)
-			}
+			queue = append(queue, n.Dependencies()...)
 		}
 	}
 	return false
@@ -78,9 +76,7 @@ func SetVarNodes(node Node, name string, value interface{}) {
 			varNode.setMsg(NewValueMsg(node.ID(), true, value))
 			varNode.inChan <- nil
 		} else {
-			for _, dep := range n.Dependencies() {
-				queue = append(queue, dep)
-			}
+			queue = append(queue, n.Dependencies()...)
 		}
 	}
 }
@@ -96,7 +92,7 @@ func RunNode(node Node) {
 // startNode starts a node and its dependencies.
 // Only to be used when a node is created dynamically
 // and needs to be started after the other nodes.
-func startNode(globals *Globals, node Node) {
+func startNode(_ *Globals, node Node) {
 	var queue []Node
 	queue = append(queue, node)
 
@@ -106,9 +102,7 @@ func startNode(globals *Globals, node Node) {
 
 		go RunNode(n)
 
-		for _, dep := range n.Dependencies() {
-			queue = append(queue, dep)
-		}
+		queue = append(queue, n.Dependencies()...)
 	}
 }
 

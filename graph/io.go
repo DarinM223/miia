@@ -2,12 +2,13 @@ package graph
 
 import (
 	"errors"
-	"github.com/DarinM223/miia/tokens"
-	"github.com/beefsack/go-rate"
 	"io"
 	"reflect"
 	"sync"
 	"time"
+
+	"github.com/DarinM223/miia/tokens"
+	"github.com/beefsack/go-rate"
 )
 
 func Btoi(b bool) int {
@@ -84,7 +85,7 @@ func ReadValue(r io.Reader) (result interface{}, err error) {
 	case NilType:
 		result, err = nil, nil
 	default:
-		err = errors.New("Invalid data type for decoding")
+		err = errors.New("invalid data type for decoding")
 	}
 	return
 }
@@ -124,7 +125,7 @@ func WriteString(w io.Writer, s string) error {
 }
 
 func WriteValue(w io.Writer, i interface{}) error {
-	err := errors.New("Invalid data type to encode")
+	err := errors.New("invalid data type to encode")
 	var dataType DataType
 	if i == nil {
 		dataType = NilType
@@ -243,7 +244,7 @@ func ReadNode(r io.Reader, g *Globals) (Node, error) {
 	case VarType:
 		return readVarNode(r, g)
 	default:
-		return nil, errors.New("Invalid node type")
+		return nil, errors.New("invalid node type")
 	}
 }
 

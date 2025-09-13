@@ -2,6 +2,7 @@ package graph
 
 import (
 	"errors"
+
 	"github.com/DarinM223/miia/tokens"
 )
 
@@ -87,7 +88,7 @@ func (n *MultOpNode) run() Msg {
 
 func applyMultOp(data []interface{}, op tokens.Token) (interface{}, error) {
 	if len(data) <= 0 {
-		return nil, errors.New("Need to apply MultOp to at least one element")
+		return nil, errors.New("need to apply MultOp to at least one element")
 	}
 	switch op {
 	case tokens.AddToken:
@@ -96,7 +97,7 @@ func applyMultOp(data []interface{}, op tokens.Token) (interface{}, error) {
 			for i := 1; i < len(data); i++ {
 				elem, ok := data[i].(string)
 				if !ok {
-					return nil, errors.New("Invalid types for MultOp AddToken")
+					return nil, errors.New("invalid types for MultOp AddToken")
 				}
 				result += elem
 			}
@@ -105,24 +106,24 @@ func applyMultOp(data []interface{}, op tokens.Token) (interface{}, error) {
 			for i := 1; i < len(data); i++ {
 				elem, ok := data[i].(int)
 				if !ok {
-					return nil, errors.New("Invalid types for MultOp AddToken")
+					return nil, errors.New("invalid types for MultOp AddToken")
 				}
 				result += elem
 			}
 			return result, nil
 		default:
-			return nil, errors.New("Invalid types for MultOp AddToken")
+			return nil, errors.New("invalid types for MultOp AddToken")
 		}
 	case tokens.SubToken:
 		result, ok := data[0].(int)
 		if !ok {
-			return nil, errors.New("Invalid types for MultOp SubToken")
+			return nil, errors.New("invalid types for MultOp SubToken")
 		}
 
 		for i := 1; i < len(data); i++ {
 			elem, ok := data[i].(int)
 			if !ok {
-				return nil, errors.New("Invalid types for MultOp SubToken")
+				return nil, errors.New("invalid types for MultOp SubToken")
 			}
 			result -= elem
 		}
@@ -132,7 +133,7 @@ func applyMultOp(data []interface{}, op tokens.Token) (interface{}, error) {
 		for i := 0; i < len(data); i++ {
 			elem, ok := data[i].(int)
 			if !ok {
-				return nil, errors.New("Invalid types for MultOp MulToken")
+				return nil, errors.New("invalid types for MultOp MulToken")
 			}
 			result *= elem
 		}
@@ -140,13 +141,13 @@ func applyMultOp(data []interface{}, op tokens.Token) (interface{}, error) {
 	case tokens.DivToken:
 		result, ok := data[0].(int)
 		if !ok {
-			return nil, errors.New("Invalid types for MultOp Divtoken")
+			return nil, errors.New("invalid types for MultOp Divtoken")
 		}
 
 		for i := 1; i < len(data); i++ {
 			elem, ok := data[i].(int)
 			if !ok {
-				return nil, errors.New("Invalid types for MultOp Divtoken")
+				return nil, errors.New("invalid types for MultOp Divtoken")
 			}
 			result /= elem
 		}
@@ -154,6 +155,6 @@ func applyMultOp(data []interface{}, op tokens.Token) (interface{}, error) {
 	case tokens.ListToken:
 		return data, nil
 	default:
-		return nil, errors.New("Invalid MultOp operator")
+		return nil, errors.New("invalid MultOp operator")
 	}
 }

@@ -2,8 +2,9 @@ package graph
 
 import (
 	"errors"
-	"github.com/PuerkitoBio/goquery"
 	"net/http"
+
+	"github.com/PuerkitoBio/goquery"
 )
 
 // Selector is binding from a css string like `#id`
@@ -50,7 +51,7 @@ func (n *SelectorNode) Clone(g *Globals) Node {
 func (n *SelectorNode) run() (data Msg) {
 	defer n.destroy()
 
-	var errMsg Msg = NewErrMsg(n.id, true, errors.New("Message received is not a HTTP response"))
+	var errMsg Msg = NewErrMsg(n.id, true, errors.New("message received is not a HTTP response"))
 
 	msg, ok := (<-n.inChan).(ValueMsg)
 	if !ok {
@@ -62,7 +63,7 @@ func (n *SelectorNode) run() (data Msg) {
 		return errMsg
 	}
 
-	doc, err := goquery.NewDocumentFromResponse(resp)
+	doc, err := goquery.NewDocumentFromReader(resp.Body)
 	if err != nil {
 		return NewErrMsg(n.id, true, err)
 	}

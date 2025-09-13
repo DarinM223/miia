@@ -40,7 +40,7 @@ func (n *GotoNode) Clone(g *Globals) Node         { return NewGotoNode(g, g.GenI
 func (n *GotoNode) run() Msg {
 	defer destroyNode(n)
 
-	var errMsg Msg = NewErrMsg(n.id, true, errors.New("Message received is not a string"))
+	var errMsg Msg = NewErrMsg(n.id, true, errors.New("message received is not a string"))
 
 	msg, ok := (<-n.inChan).(ValueMsg)
 	if !ok {
