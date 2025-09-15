@@ -72,8 +72,10 @@ type streamNodeType struct {
 
 func (t *streamNodeType) increment(n *ForNode) bool {
 	t.numCurrIdxs--
+	// If all nodes are already visited, don't need to start another node.
 	if len(t.visitedNodes) >= t.len.Len() {
-		return true
+		// For node is finished once all of its currently running nodes have finished.
+		return t.numCurrIdxs == 0
 	}
 
 	// Find the next node by looking through the saved nodes ignoring
@@ -226,7 +228,7 @@ func (n *ForNode) handleStreamMsg(msg StreamMsg) {
 		n.inChan = make(chan Msg, msg.Len.Len())
 	}
 	if n.nodeType == nil {
-		n.nodeType = &streamNodeType{-1, msg.Len, make(map[string]bool), false}
+		n.nodeType = &streamNodeType{0, msg.Len, make(map[string]bool), false}
 	}
 
 	i := msg.Idx.String()
@@ -259,6 +261,7 @@ func (n *ForNode) setFanOut(fanout int) {
 func (n *ForNode) run() Msg {
 	defer destroyNode(n)
 
+out:
 	for {
 		select {
 		case msg := <-n.collectionChan:
@@ -272,7 +275,7 @@ func (n *ForNode) run() Msg {
 			}
 		case msg := <-n.inChan:
 			if finished := n.handlePassUpMsg(msg); finished {
-				break
+				break out
 			}
 		}
 	}

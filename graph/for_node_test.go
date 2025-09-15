@@ -1,10 +1,11 @@
 package graph
 
 import (
-	"github.com/DarinM223/miia/tokens"
-	"github.com/davecgh/go-spew/spew"
 	"reflect"
 	"testing"
+
+	"github.com/DarinM223/miia/tokens"
+	"github.com/davecgh/go-spew/spew"
 )
 
 var forNodeTests = []struct {
