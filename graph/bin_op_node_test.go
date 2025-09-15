@@ -8,7 +8,7 @@ import (
 
 var binOpNodeTests = []struct {
 	op             tokens.Token
-	a, b, expected interface{}
+	a, b, expected any
 }{
 	{
 		tokens.RangeToken,

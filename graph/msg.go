@@ -24,7 +24,7 @@ type ValueMsg struct {
 
 	// Data is the data contained
 	// in the value message.
-	Data interface{}
+	Data any
 }
 
 func (m ValueMsg) SetID(id int) Msg {
@@ -43,7 +43,7 @@ type StreamMsg struct {
 	Len StreamIndex
 	// Data is the data contained in the
 	// stream message.
-	Data interface{}
+	Data any
 }
 
 func (m StreamMsg) SetID(id int) Msg {
@@ -63,11 +63,11 @@ func (m ErrMsg) SetID(id int) Msg {
 	return m
 }
 
-func NewValueMsg(id int, passUp bool, data interface{}) ValueMsg {
+func NewValueMsg(id int, passUp bool, data any) ValueMsg {
 	return ValueMsg{msgTag{id, passUp}, data}
 }
 
-func NewStreamMsg(id int, passUp bool, idx StreamIndex, len StreamIndex, data interface{}) StreamMsg {
+func NewStreamMsg(id int, passUp bool, idx StreamIndex, len StreamIndex, data any) StreamMsg {
 	return StreamMsg{msgTag{id, passUp}, idx, len, data}
 }
 

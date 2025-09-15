@@ -64,7 +64,7 @@ func ContainsLoopNode(node Node) bool {
 }
 
 // SetVarNodes traverses the graph setting variable nodes.
-func SetVarNodes(node Node, name string, value interface{}) {
+func SetVarNodes(node Node, name string, value any) {
 	var queue []Node
 	queue = append(queue, node)
 

@@ -11,30 +11,30 @@ import (
 var forNodeTests = []struct {
 	collection, body Node
 	name             string
-	expected         interface{}
+	expected         any
 }{
 	{
-		testUtils.NewValueNode([]interface{}{1, 2, 3, 4, 5, 6}),
+		testUtils.NewValueNode([]any{1, 2, 3, 4, 5, 6}),
 		testUtils.NewMultOpNode(tokens.AddToken, []Node{
 			testUtils.NewVarNode("i"),
 			testUtils.NewValueNode(1),
 		}),
 		"i",
-		[]interface{}{2, 3, 4, 5, 6, 7},
+		[]any{2, 3, 4, 5, 6, 7},
 	},
 	{
-		testUtils.NewValueNode([]interface{}{1, 2, 3, 4, 5, 6}),
+		testUtils.NewValueNode([]any{1, 2, 3, 4, 5, 6}),
 		testUtils.NewMultOpNode(tokens.AddToken, []Node{
 			testUtils.NewValueNode(1),
 			testUtils.NewVarNode("i"),
 		}),
 		"i",
-		[]interface{}{2, 3, 4, 5, 6, 7},
+		[]any{2, 3, 4, 5, 6, 7},
 	},
 	{
 		testUtils.NewForNode(
 			"a",
-			testUtils.NewValueNode([]interface{}{1, 2, 3, 4, 5, 6}),
+			testUtils.NewValueNode([]any{1, 2, 3, 4, 5, 6}),
 			testUtils.NewVarNode("a"),
 		),
 		testUtils.NewMultOpNode(tokens.SubToken, []Node{
@@ -42,55 +42,55 @@ var forNodeTests = []struct {
 			testUtils.NewValueNode(1),
 		}),
 		"i",
-		[]interface{}{0, 1, 2, 3, 4, 5},
+		[]any{0, 1, 2, 3, 4, 5},
 	},
 	{
 		testUtils.NewForNode(
 			"i",
-			testUtils.NewValueNode([]interface{}{1, 2, 3}),
+			testUtils.NewValueNode([]any{1, 2, 3}),
 			testUtils.NewCollectNode(
 				testUtils.NewForNode(
 					"x",
-					testUtils.NewValueNode([]interface{}{1, 2, 3, 4, 5, 6}),
+					testUtils.NewValueNode([]any{1, 2, 3, 4, 5, 6}),
 					testUtils.NewVarNode("x"),
 				),
 			),
 		),
 		testUtils.NewValueNode(1),
 		"a",
-		[]interface{}{1, 1, 1},
+		[]any{1, 1, 1},
 	},
 	{
 		testUtils.NewForNode(
 			"i",
 			testUtils.NewForNode(
 				"a",
-				testUtils.NewValueNode([]interface{}{1, 2, 3, 4, 5}),
+				testUtils.NewValueNode([]any{1, 2, 3, 4, 5}),
 				testUtils.NewVarNode("a"),
 			),
 			testUtils.NewCollectNode(
 				testUtils.NewForNode(
 					"x",
-					testUtils.NewValueNode([]interface{}{1, 2, 3, 4, 5, 6}),
+					testUtils.NewValueNode([]any{1, 2, 3, 4, 5, 6}),
 					testUtils.NewVarNode("x"),
 				),
 			),
 		),
 		testUtils.NewValueNode(1),
 		"b",
-		[]interface{}{1, 1, 1, 1, 1},
+		[]any{1, 1, 1, 1, 1},
 	},
 	{
-		testUtils.NewValueNode([]interface{}{1, 2, 3, 4, 5, 6}),
-		testUtils.NewForNode("a", testUtils.NewValueNode([]interface{}{1}), testUtils.NewVarNode("x")),
+		testUtils.NewValueNode([]any{1, 2, 3, 4, 5, 6}),
+		testUtils.NewForNode("a", testUtils.NewValueNode([]any{1}), testUtils.NewVarNode("x")),
 		"x",
-		[]interface{}{1, 2, 3, 4, 5, 6},
+		[]any{1, 2, 3, 4, 5, 6},
 	},
 	{
-		testUtils.NewForNode("a", testUtils.NewValueNode([]interface{}{1, 2, 3, 4, 5, 6}), testUtils.NewVarNode("a")),
-		testUtils.NewForNode("a", testUtils.NewValueNode([]interface{}{1}), testUtils.NewVarNode("x")),
+		testUtils.NewForNode("a", testUtils.NewValueNode([]any{1, 2, 3, 4, 5, 6}), testUtils.NewVarNode("a")),
+		testUtils.NewForNode("a", testUtils.NewValueNode([]any{1}), testUtils.NewVarNode("x")),
 		"x",
-		[]interface{}{1, 2, 3, 4, 5, 6},
+		[]any{1, 2, 3, 4, 5, 6},
 	},
 }
 

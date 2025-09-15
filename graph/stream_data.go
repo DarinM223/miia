@@ -88,11 +88,11 @@ func (i StreamIndex) Len() int {
 
 type DataNode interface {
 	// Set a value at the index.
-	Set(idx StreamIndex, data interface{}) error
+	Set(idx StreamIndex, data any) error
 	// Get a value at the index.
-	Get(idx StreamIndex) (interface{}, error)
+	Get(idx StreamIndex) (any, error)
 	// Return the data representation of the node.
-	Data() interface{}
+	Data() any
 }
 
 // NewDataNode creates a new data given a stream index of
@@ -119,7 +119,7 @@ type streamNode struct {
 	data []DataNode
 }
 
-func (s *streamNode) Set(idx StreamIndex, data interface{}) error {
+func (s *streamNode) Set(idx StreamIndex, data any) error {
 	i, restIdx := idx.PopIndex()
 	if i >= len(s.data) || i < 0 {
 		return fmt.Errorf("set index out of bounds: index: %d, length: %d", i, len(s.data))
@@ -127,7 +127,7 @@ func (s *streamNode) Set(idx StreamIndex, data interface{}) error {
 	return s.data[i].Set(restIdx, data)
 }
 
-func (s *streamNode) Get(idx StreamIndex) (interface{}, error) {
+func (s *streamNode) Get(idx StreamIndex) (any, error) {
 	i, restIdx := idx.PopIndex()
 	if i >= len(s.data) || i < 0 {
 		return nil, fmt.Errorf("get index out of bounds: index: %d, length: %d", i, len(s.data))
@@ -135,14 +135,14 @@ func (s *streamNode) Get(idx StreamIndex) (interface{}, error) {
 	return s.data[i].Get(restIdx)
 }
 
-func (s *streamNode) Data() interface{} {
+func (s *streamNode) Data() any {
 	if len(s.data) == 0 {
 		return nil
 	} else if len(s.data) == 1 {
 		return s.data[0].Data()
 	}
 
-	results := make([]interface{}, len(s.data))
+	results := make([]any, len(s.data))
 	for i, data := range s.data {
 		results[i] = data.Data()
 	}
@@ -150,10 +150,10 @@ func (s *streamNode) Data() interface{} {
 }
 
 type streamLeaf struct {
-	data interface{}
+	data any
 }
 
-func (s *streamLeaf) Set(idx StreamIndex, data interface{}) error {
+func (s *streamLeaf) Set(idx StreamIndex, data any) error {
 	if idx.Empty() {
 		s.data = data
 		return nil
@@ -161,13 +161,13 @@ func (s *streamLeaf) Set(idx StreamIndex, data interface{}) error {
 	return errors.New("setting data with non-empty index")
 }
 
-func (s *streamLeaf) Get(idx StreamIndex) (interface{}, error) {
+func (s *streamLeaf) Get(idx StreamIndex) (any, error) {
 	if idx.Empty() {
 		return s.data, nil
 	}
 	return nil, errors.New("getting data with non-empty index")
 }
 
-func (s *streamLeaf) Data() interface{} {
+func (s *streamLeaf) Data() any {
 	return s.data
 }

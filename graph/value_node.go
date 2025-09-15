@@ -3,12 +3,12 @@ package graph
 // ValueNode is a node that only passes up a value back to the parents.
 type ValueNode struct {
 	id          int
-	value       interface{}
+	value       any
 	inChan      chan Msg
 	parentChans map[int]chan Msg
 }
 
-func NewValueNode(globals *Globals, id int, value interface{}) *ValueNode {
+func NewValueNode(globals *Globals, id int, value any) *ValueNode {
 	valueNode := &ValueNode{
 		id:          id,
 		value:       value,

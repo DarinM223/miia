@@ -8,38 +8,38 @@ import (
 
 var multOpNodeTests = []struct {
 	op       tokens.Token
-	values   []interface{}
-	expected interface{}
+	values   []any
+	expected any
 }{
 	{
 		tokens.AddToken,
-		[]interface{}{1, 2, 3, 4, 5, 6},
+		[]any{1, 2, 3, 4, 5, 6},
 		NewValueMsg(6, true, 21),
 	},
 	{
 		tokens.MulToken,
-		[]interface{}{1, 2, 3, 4, 5, 6},
+		[]any{1, 2, 3, 4, 5, 6},
 		NewValueMsg(6, true, 720),
 	},
 	{
 		tokens.AddToken,
-		[]interface{}{"a", "b", "c", "d", "e"},
+		[]any{"a", "b", "c", "d", "e"},
 		NewValueMsg(5, true, "abcde"),
 	},
 	{
 		tokens.SubToken,
-		[]interface{}{10, 2, 2, 1, 1},
+		[]any{10, 2, 2, 1, 1},
 		NewValueMsg(5, true, 4),
 	},
 	{
 		tokens.DivToken,
-		[]interface{}{6, 3, 2},
+		[]any{6, 3, 2},
 		NewValueMsg(3, true, 1),
 	},
 	{
 		tokens.ListToken,
-		[]interface{}{1, 2, 3},
-		NewValueMsg(3, true, []interface{}{1, 2, 3}),
+		[]any{1, 2, 3},
+		NewValueMsg(3, true, []any{1, 2, 3}),
 	},
 }
 

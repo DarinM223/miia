@@ -6,9 +6,9 @@ import (
 )
 
 var ifNodeTests = []struct {
-	pred     interface{}
-	conseq   interface{}
-	alt      interface{}
+	pred     any
+	conseq   any
+	alt      any
 	expected Msg
 }{
 	{

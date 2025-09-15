@@ -193,7 +193,7 @@ func (t *Testing) NewUnOpNode(operator tokens.Token, node Node) Node {
 	}
 }
 
-func (t *Testing) NewValueNode(value interface{}) Node {
+func (t *Testing) NewValueNode(value any) Node {
 	return &ValueNode{id: -1, value: value}
 }
 
@@ -201,11 +201,11 @@ func (t *Testing) NewVarNode(name string) Node {
 	return &VarNode{id: -1, name: name}
 }
 
-func (t *Testing) NewValueMsg(passUp bool, value interface{}) Msg {
+func (t *Testing) NewValueMsg(passUp bool, value any) Msg {
 	return NewValueMsg(-1, passUp, value)
 }
 
-func (t *Testing) NewStreamMsg(passUp bool, idx StreamIndex, len StreamIndex, value interface{}) Msg {
+func (t *Testing) NewStreamMsg(passUp bool, idx StreamIndex, len StreamIndex, value any) Msg {
 	return NewStreamMsg(-1, passUp, idx, len, value)
 }
 

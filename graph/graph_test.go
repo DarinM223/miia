@@ -49,9 +49,9 @@ func TestSetNodesFanOut(t *testing.T) {
 			tokens.AddToken,
 			[]Node{NewVarNode(g, g.GenID(), "x"), NewValueNode(g, g.GenID(), 1)},
 		)
-		forA := NewForNode(g, g.GenID(), "x", NewValueNode(g, g.GenID(), []interface{}{1, 2, 3, 4, 5}), forABody)
+		forA := NewForNode(g, g.GenID(), "x", NewValueNode(g, g.GenID(), []any{1, 2, 3, 4, 5}), forABody)
 		forBBody := NewCollectNode(g, g.GenID(), forA)
-		forB := NewForNode(g, g.GenID(), "i", NewValueNode(g, g.GenID(), []interface{}{1, 2, 3, 4, 5}), forBBody)
+		forB := NewForNode(g, g.GenID(), "i", NewValueNode(g, g.GenID(), []any{1, 2, 3, 4, 5}), forBBody)
 
 		SetNodesFanOut(forB, test.totalNodes)
 

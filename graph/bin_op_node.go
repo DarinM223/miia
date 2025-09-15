@@ -70,7 +70,7 @@ func (n *BinOpNode) run() Msg {
 	return NewValueMsg(n.id, true, result)
 }
 
-func applyBinOp(a interface{}, b interface{}, op tokens.Token) (interface{}, error) {
+func applyBinOp(a any, b any, op tokens.Token) (any, error) {
 	switch op {
 	case tokens.RangeToken:
 		firstVal, firstOk := a.(int)

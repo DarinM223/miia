@@ -18,7 +18,7 @@ type MultOpNode struct {
 	// Stores the results of the nodes.
 	// Index of a result corresponds to the index
 	// of the node in nodes that created the result.
-	results []interface{}
+	results []any
 	// Map from the ID of the node to the
 	// index of the node from nodes.
 	idMap map[int]int
@@ -38,7 +38,7 @@ func NewMultOpNode(globals *Globals, id int, operator tokens.Token, nodes []Node
 		nodes:       nodes,
 		inChan:      inChan,
 		parentChans: make(map[int]chan Msg),
-		results:     make([]interface{}, len(nodes)),
+		results:     make([]any, len(nodes)),
 		idMap:       idMap,
 	}
 	globals.RegisterNode(id, multOpNode)
@@ -86,7 +86,7 @@ func (n *MultOpNode) run() Msg {
 	return NewValueMsg(n.id, true, result)
 }
 
-func applyMultOp(data []interface{}, op tokens.Token) (interface{}, error) {
+func applyMultOp(data []any, op tokens.Token) (any, error) {
 	if len(data) <= 0 {
 		return nil, errors.New("need to apply MultOp to at least one element")
 	}

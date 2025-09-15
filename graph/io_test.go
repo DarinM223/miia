@@ -63,7 +63,7 @@ func TestReadWriteString(t *testing.T) {
 	}
 }
 
-var readWriteValueTests = []interface{}{
+var readWriteValueTests = []any{
 	123456789,
 	true,
 	"hello",

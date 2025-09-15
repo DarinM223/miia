@@ -68,7 +68,7 @@ func ReadString(r io.Reader) (string, error) {
 	return string(buf[:]), nil
 }
 
-func ReadValue(r io.Reader) (result interface{}, err error) {
+func ReadValue(r io.Reader) (result any, err error) {
 	dataType, err := ReadInt(r)
 	if err != nil {
 		return nil, err
@@ -124,7 +124,7 @@ func WriteString(w io.Writer, s string) error {
 	return err
 }
 
-func WriteValue(w io.Writer, i interface{}) error {
+func WriteValue(w io.Writer, i any) error {
 	err := errors.New("invalid data type to encode")
 	var dataType DataType
 	if i == nil {

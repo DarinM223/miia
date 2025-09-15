@@ -50,7 +50,7 @@ func TestNewDataNode(t *testing.T) {
 var getSetDataNodeTests = []struct {
 	lens  []int
 	index []int
-	value interface{}
+	value any
 }{
 	{
 		[]int{3, 2},
