@@ -1,9 +1,11 @@
 package graph
 
 import (
-	"github.com/beefsack/go-rate"
+	"context"
 	"sync"
 	"time"
+
+	"golang.org/x/time/rate"
 )
 
 type RateLimiterData struct {
@@ -19,7 +21,7 @@ type Globals struct {
 	mutex           *sync.Mutex
 	nodeMap         map[int]Node
 	rateLimiterData map[string]RateLimiterData
-	rateLimiters    map[string]*rate.RateLimiter
+	rateLimiters    map[string]*rate.Limiter
 }
 
 func NewGlobals() *Globals {
@@ -28,7 +30,7 @@ func NewGlobals() *Globals {
 		mutex:           &sync.Mutex{},
 		nodeMap:         make(map[int]Node),
 		rateLimiterData: make(map[string]RateLimiterData),
-		rateLimiters:    make(map[string]*rate.RateLimiter),
+		rateLimiters:    make(map[string]*rate.Limiter),
 	}
 }
 
@@ -72,12 +74,12 @@ func (n *Globals) SetRateLimit(url string, maxTimes int, duration time.Duration)
 		maxTimes,
 		duration,
 	}
-	n.rateLimiters[url] = rate.New(maxTimes, duration)
+	n.rateLimiters[url] = rate.NewLimiter(rate.Every(duration/time.Duration(maxTimes)), 1)
 }
 
 // RateLimit blocks until the URL can be called without breaking the rate limit.
 func (n *Globals) RateLimit(url string) {
 	if rateLimiter, ok := n.rateLimiters[url]; ok {
-		rateLimiter.Wait()
+		rateLimiter.Wait(context.Background())
 	}
 }

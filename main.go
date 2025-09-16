@@ -2,12 +2,12 @@ package main
 
 import (
 	"fmt"
-	"github.com/DarinM223/miia/graph"
-	_ "github.com/davecgh/go-spew/spew"
-	"io/ioutil"
 	"os"
 	"path/filepath"
 	"strconv"
+
+	"github.com/DarinM223/miia/graph"
+	_ "github.com/davecgh/go-spew/spew"
 )
 
 func main() {
@@ -42,7 +42,7 @@ and the maximum number of goroutines to run at once.`)
 
 		globals := graph.NewGlobals()
 
-		code, err := ioutil.ReadFile(absCodePath)
+		code, err := os.ReadFile(absCodePath)
 		if err != nil {
 			fmt.Println("Error reading file: ", err)
 			return

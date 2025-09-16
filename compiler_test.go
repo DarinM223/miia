@@ -1,9 +1,10 @@
 package main
 
 import (
+	"testing"
+
 	"github.com/DarinM223/miia/graph"
 	"github.com/DarinM223/miia/tokens"
-	"testing"
 )
 
 var graphTestUtils = graph.Testing{}

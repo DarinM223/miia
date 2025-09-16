@@ -8,7 +8,7 @@ import (
 	"time"
 
 	"github.com/DarinM223/miia/tokens"
-	"github.com/beefsack/go-rate"
+	"golang.org/x/time/rate"
 )
 
 func Btoi(b bool) int {
@@ -186,7 +186,7 @@ func ReadGlobals(r io.Reader) (*Globals, error) {
 		mutex:           &sync.Mutex{},
 		nodeMap:         make(map[int]Node),
 		rateLimiterData: make(map[string]RateLimiterData),
-		rateLimiters:    make(map[string]*rate.RateLimiter),
+		rateLimiters:    make(map[string]*rate.Limiter),
 	}
 
 	for i := 0; i < rateLimitersLen; i++ {

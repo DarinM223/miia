@@ -4,9 +4,6 @@ github.com/PuerkitoBio/goquery
 # github.com/andybalholm/cascadia v1.3.3
 ## explicit; go 1.16
 github.com/andybalholm/cascadia
-# github.com/beefsack/go-rate v0.0.0-20220214233405-116f4ca011a0
-## explicit
-github.com/beefsack/go-rate
 # github.com/davecgh/go-spew v1.1.1
 ## explicit
 github.com/davecgh/go-spew/spew
@@ -14,3 +11,6 @@ github.com/davecgh/go-spew/spew
 ## explicit; go 1.24.0
 golang.org/x/net/html
 golang.org/x/net/html/atom
+# golang.org/x/time v0.13.0
+## explicit; go 1.24.0
+golang.org/x/time/rate

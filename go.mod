@@ -4,8 +4,8 @@ go 1.24.6
 
 require (
 	github.com/PuerkitoBio/goquery v1.10.3
-	github.com/beefsack/go-rate v0.0.0-20220214233405-116f4ca011a0
 	github.com/davecgh/go-spew v1.1.1
+	golang.org/x/time v0.13.0
 )
 
 require (
