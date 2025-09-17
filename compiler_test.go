@@ -50,12 +50,12 @@ var compilerTests = []struct {
 		BlockExpr{
 			[]Expr{
 				GotoExpr{StringExpr{"http://www.google.com"}},
-				SelectorExpr{[]graph.Selector{{"a", "b"}, {"c", "d"}}},
+				SelectorExpr{[]graph.Selector{{Name: "a", Selector: "b"}, {Name: "c", Selector: "d"}}},
 			},
 		},
 		graphTestUtils.NewSelectorNode(
 			graphTestUtils.NewGotoNode(graphTestUtils.NewValueNode("http://www.google.com")),
-			[]graph.Selector{{"a", "b"}, {"c", "d"}},
+			[]graph.Selector{{Name: "a", Selector: "b"}, {Name: "c", Selector: "d"}},
 		),
 	},
 	{

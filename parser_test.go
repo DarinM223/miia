@@ -1,11 +1,12 @@
 package main
 
 import (
-	"github.com/DarinM223/miia/graph"
-	"github.com/DarinM223/miia/tokens"
 	"reflect"
 	"testing"
 	"time"
+
+	"github.com/DarinM223/miia/graph"
+	"github.com/DarinM223/miia/tokens"
 )
 
 var parseIdentTests = []struct {
@@ -21,7 +22,7 @@ var parseIdentTests = []struct {
 	{
 		"1hello ", "",
 		0, 0,
-		NumFirstIdentErr,
+		ErrNumFirstIdent,
 	},
 	{
 		"hello", "hello",
@@ -106,12 +107,12 @@ var expectStringTests = []struct {
 	{
 		"", "hello",
 		0, 0,
-		ExpectedStrErr,
+		ErrExpectedStr,
 	},
 	{
 		"hello world", "worlk",
 		6, 6,
-		ExpectedStrErr,
+		ErrExpectedStr,
 	},
 }
 
@@ -162,7 +163,7 @@ var parseNumberTests = []struct {
 }{
 	{"0", IntExpr{0}, nil},
 	{"1234", IntExpr{1234}, nil},
-	{"abcd", nil, NumErr},
+	{"abcd", nil, ErrNum},
 	{"-23", IntExpr{-23}, nil},
 }
 
@@ -184,8 +185,8 @@ var parseStringTests = []struct {
 	err  error
 }{
 	{"\"Sample Text\"", StringExpr{"Sample Text"}, nil},
-	{"\"Sample Text", nil, StringNotClosedErr},
-	{"Sample Text\"", nil, StringNotClosedErr},
+	{"\"Sample Text", nil, ErrStringNotClosed},
+	{"Sample Text\"", nil, ErrStringNotClosed},
 }
 
 func TestParseString(t *testing.T) {
@@ -254,8 +255,8 @@ var parseExprTests = []struct {
 		"( sel button \"#button\" textbox \"textbox\")",
 		SelectorExpr{
 			[]graph.Selector{
-				{"button", "#button"},
-				{"textbox", "textbox"},
+				{Name: "button", Selector: "#button"},
+				{Name: "textbox", Selector: "textbox"},
 			},
 		},
 		nil,

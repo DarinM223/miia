@@ -2,6 +2,7 @@ package main
 
 import (
 	"errors"
+
 	"github.com/DarinM223/miia/graph"
 )
 
@@ -27,7 +28,7 @@ func (s *Scope) lookup(name string) (graph.Node, error) {
 		return node, nil
 	}
 	if s.Parent == nil {
-		return nil, errors.New("Variable with name not in scope")
+		return nil, errors.New("variable with name not in scope")
 	}
 	return s.Parent.lookup(name)
 }
@@ -46,7 +47,7 @@ func CompileExpr(g *graph.Globals, expr Expr, scope *Scope) (graph.Node, error) 
 		return graph.NewValueNode(g, g.GenID(), e.Value), nil
 	case SelectorExpr:
 		if scope.Page == nil {
-			return nil, errors.New("Attempting to apply selector before loading a page")
+			return nil, errors.New("attempting to apply selector before loading a page")
 		}
 		return graph.NewSelectorNode(g, g.GenID(), scope.Page, e.Selectors), nil
 	case VarExpr:
@@ -158,6 +159,6 @@ func CompileExpr(g *graph.Globals, expr Expr, scope *Scope) (graph.Node, error) 
 		}
 		return graph.NewCollectNode(g, g.GenID(), node), nil
 	default:
-		return nil, errors.New("Invalid expression type")
+		return nil, errors.New("invalid expression type")
 	}
 }

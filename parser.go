@@ -3,21 +3,22 @@ package main
 import (
 	"bytes"
 	"errors"
+	"time"
+
 	"github.com/DarinM223/miia/graph"
 	"github.com/DarinM223/miia/tokens"
-	"time"
 )
 
 var (
-	NumFirstIdentErr   error = errors.New("Digit is scanned as the first character in an ident")
-	InvalidChErr             = errors.New("Invalid character scanned")
-	InvalidTokenErr          = errors.New("Invalid token scanned")
-	ExpectedStrErr           = errors.New("String different from expected")
-	NumErr                   = errors.New("Error parsing number")
-	StringNotClosedErr       = errors.New("String does not have an opening or closing quote")
-	GotoNotStringErr         = errors.New("Goto URL is not a string type")
-	BindingNotIdentErr       = errors.New("Binding statment must start with an ident")
-	PosOutOfBoundsErr        = errors.New("Text index is greater than the text length")
+	ErrNumFirstIdent   error = errors.New("digit is scanned as the first character in an ident")
+	ErrInvalidCh             = errors.New("invalid character scanned")
+	ErrInvalidToken          = errors.New("invalid token scanned")
+	ErrExpectedStr           = errors.New("string different from expected")
+	ErrNum                   = errors.New("error parsing number")
+	ErrStringNotClosed       = errors.New("string does not have an opening or closing quote")
+	ErrGotoNotString         = errors.New("goto URL is not a string type")
+	ErrBindingNotIdent       = errors.New("binding statment must start with an ident")
+	ErrPosOutOfBounds        = errors.New("text index is greater than the text length")
 )
 
 type Parser struct {
@@ -45,7 +46,7 @@ func (p *Parser) parseIdent() (string, error) {
 		case '0' <= ch && ch <= '9':
 			// Idents cannot start with a digit
 			if i == 0 {
-				return "", NumFirstIdentErr
+				return "", ErrNumFirstIdent
 			}
 			if err := ident.WriteByte(ch); err != nil {
 				return "", err
@@ -86,7 +87,7 @@ func (p *Parser) expectString(expected string) error {
 	for i := 0; i < len(expected); i++ {
 		if p.pos >= len(p.text) {
 			p.pos = oldPos
-			return ExpectedStrErr
+			return ErrExpectedStr
 		}
 
 		ch := p.text[p.pos]
@@ -94,7 +95,7 @@ func (p *Parser) expectString(expected string) error {
 			p.pos++
 		} else {
 			p.pos = oldPos
-			return ExpectedStrErr
+			return ErrExpectedStr
 		}
 	}
 	return nil
@@ -141,7 +142,7 @@ func (p *Parser) parseNumber() (Expr, error) {
 		}
 	}
 	if num == -1 {
-		return nil, NumErr
+		return nil, ErrNum
 	}
 
 	if isNegative {
@@ -153,7 +154,7 @@ func (p *Parser) parseNumber() (Expr, error) {
 // parseString parses a string from the file.
 func (p *Parser) parseString() (Expr, error) {
 	if err := p.expectString("\""); err != nil {
-		return nil, StringNotClosedErr
+		return nil, ErrStringNotClosed
 	}
 
 	var str bytes.Buffer
@@ -173,13 +174,13 @@ func (p *Parser) parseString() (Expr, error) {
 			p.pos++
 		}
 	}
-	return nil, StringNotClosedErr
+	return nil, ErrStringNotClosed
 }
 
 // parseExpr parses an expression from the file.
 func (p *Parser) parseExpr() (Expr, error) {
 	if p.pos >= len(p.text) {
-		return nil, PosOutOfBoundsErr
+		return nil, ErrPosOutOfBounds
 	}
 
 	ch := p.text[p.pos]
@@ -242,7 +243,7 @@ func (p *Parser) parseExpr() (Expr, error) {
 	case ch == '"':
 		return p.parseString()
 	}
-	return nil, errors.New("Invalid expr")
+	return nil, errors.New("invalid expr")
 }
 
 // parseIf parses an if expression.
@@ -349,13 +350,13 @@ func (p *Parser) parseMultOp(token tokens.Token) (Expr, error) {
 	if block, ok := exprs.(BlockExpr); ok {
 		return MultOp{token, block.Exprs}, nil
 	}
-	return nil, errors.New("Expression not a block")
+	return nil, errors.New("expression not a block")
 }
 
 // parseSelector parses a selector expression.
 func (p *Parser) parseSelector() (Expr, error) {
 	if p.pos >= len(p.text) {
-		return nil, PosOutOfBoundsErr
+		return nil, ErrPosOutOfBounds
 	}
 
 	ch := p.text[p.pos]
@@ -374,12 +375,12 @@ func (p *Parser) parseSelector() (Expr, error) {
 		}
 
 		if selector, ok := selectorExpr.(StringExpr); ok {
-			selectorList = append(selectorList, graph.Selector{ident, selector.Value})
+			selectorList = append(selectorList, graph.Selector{Name: ident, Selector: selector.Value})
 		}
 
 		p.parseWhitespace()
 		if p.pos >= len(p.text) {
-			return nil, PosOutOfBoundsErr
+			return nil, ErrPosOutOfBounds
 		}
 		ch = p.text[p.pos]
 	}
@@ -389,7 +390,7 @@ func (p *Parser) parseSelector() (Expr, error) {
 // parseBlock parses a block of expressions.
 func (p *Parser) parseBlock() (Expr, error) {
 	if p.pos >= len(p.text) {
-		return nil, PosOutOfBoundsErr
+		return nil, ErrPosOutOfBounds
 	}
 
 	ch := p.text[p.pos]
@@ -405,7 +406,7 @@ func (p *Parser) parseBlock() (Expr, error) {
 
 		p.parseWhitespace()
 		if p.pos >= len(p.text) {
-			return nil, PosOutOfBoundsErr
+			return nil, ErrPosOutOfBounds
 		}
 		ch = p.text[p.pos]
 	}
@@ -442,7 +443,7 @@ func (p *Parser) parseRateLimit() (Expr, error) {
 // parseBindings parses a variable binding expression.
 func (p *Parser) parseBindings() (Expr, error) {
 	if p.pos >= len(p.text) {
-		return nil, PosOutOfBoundsErr
+		return nil, ErrPosOutOfBounds
 	}
 
 	ch := p.text[p.pos]
@@ -464,7 +465,7 @@ func (p *Parser) parseBindings() (Expr, error) {
 
 		p.parseWhitespace()
 		if p.pos >= len(p.text) {
-			return nil, PosOutOfBoundsErr
+			return nil, ErrPosOutOfBounds
 		}
 		ch = p.text[p.pos]
 	}
@@ -474,7 +475,7 @@ func (p *Parser) parseBindings() (Expr, error) {
 // parseGoto parses a goto expression.
 func (p *Parser) parseGoto() (Expr, error) {
 	if p.pos >= len(p.text) {
-		return nil, PosOutOfBoundsErr
+		return nil, ErrPosOutOfBounds
 	}
 
 	p.parseWhitespace()
