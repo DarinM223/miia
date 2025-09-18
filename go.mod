@@ -4,7 +4,6 @@ go 1.24.6
 
 require (
 	github.com/PuerkitoBio/goquery v1.10.3
-	github.com/davecgh/go-spew v1.1.1
 	golang.org/x/time v0.13.0
 )
 

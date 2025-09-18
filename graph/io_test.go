@@ -6,7 +6,6 @@ import (
 	"testing"
 
 	"github.com/DarinM223/miia/tokens"
-	"github.com/davecgh/go-spew/spew"
 )
 
 func TestReadWriteInt(t *testing.T) {
@@ -142,7 +141,7 @@ func TestReadWriteNode(t *testing.T) {
 		}
 
 		if !testUtils.CompareTestNodeToRealNode(readNode, node) {
-			t.Errorf("Expected %v got %v", spew.Sdump(node), spew.Sdump(readNode))
+			t.Errorf("Expected %#v got %#v", node, readNode)
 		}
 	}
 }
@@ -171,6 +170,6 @@ func TestReadWriteGlobals(t *testing.T) {
 		t.Errorf("Rate limiter data different: expected %v got %v", g.rateLimiterData, ng.rateLimiterData)
 	}
 	if !testUtils.CompareTestNodeToRealNode(g.ResultNode(), ng.ResultNode()) {
-		t.Errorf("Result nodes different: expected %v got %v", spew.Sdump(g.ResultNode()), spew.Sdump(ng.ResultNode()))
+		t.Errorf("Result nodes different: expected %#v got %#v", g.ResultNode(), ng.ResultNode())
 	}
 }

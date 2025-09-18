@@ -5,7 +5,6 @@ import (
 	"testing"
 
 	"github.com/DarinM223/miia/tokens"
-	"github.com/davecgh/go-spew/spew"
 )
 
 var forNodeTests = []struct {
@@ -136,7 +135,7 @@ func TestForNode(t *testing.T) {
 		}
 
 		if !reflect.DeepEqual(result.Data(), test.expected) {
-			t.Errorf("Different values: expected %s got %s", spew.Sdump(test.expected), spew.Sdump(result.Data()))
+			t.Errorf("Different values: expected %v got %v", test.expected, result.Data())
 		}
 	}
 }

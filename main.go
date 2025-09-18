@@ -7,7 +7,6 @@ import (
 	"strconv"
 
 	"github.com/DarinM223/miia/graph"
-	_ "github.com/davecgh/go-spew/spew"
 )
 
 func main() {

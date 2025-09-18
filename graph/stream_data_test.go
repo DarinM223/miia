@@ -1,7 +1,6 @@
 package graph
 
 import (
-	"github.com/davecgh/go-spew/spew"
 	"reflect"
 	"testing"
 )
@@ -43,7 +42,7 @@ func TestNewDataNode(t *testing.T) {
 	}
 
 	if !reflect.DeepEqual(node, expected) {
-		t.Errorf("Different nodes: expected %v got %v", spew.Sdump(expected), spew.Sdump(node))
+		t.Errorf("Different nodes: expected %#v got %#v", expected, node)
 	}
 }
 
