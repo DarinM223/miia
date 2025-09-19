@@ -3,6 +3,7 @@ package main
 import (
 	"bytes"
 	"errors"
+	"fmt"
 	"time"
 
 	"github.com/DarinM223/miia/graph"
@@ -33,7 +34,7 @@ func NewParser(text string) *Parser {
 	}
 }
 
-// parseIdent parses an ident from the file.
+// parseIdent parses an identifier from the file.
 func (p *Parser) parseIdent() (string, error) {
 	var ident bytes.Buffer
 	for i := 0; ; i++ {
@@ -49,14 +50,14 @@ func (p *Parser) parseIdent() (string, error) {
 				return "", ErrNumFirstIdent
 			}
 			if err := ident.WriteByte(ch); err != nil {
-				return "", err
+				return "", fmt.Errorf("error writing to identifier buffer: %w", err)
 			}
 			p.pos++
 		case ch == ' ' || ch == '\t' || ch == '\n' || ch == ')' || ch == '(':
 			return ident.String(), nil
 		default:
 			if err := ident.WriteByte(ch); err != nil {
-				return "", err
+				return "", fmt.Errorf("error writing to identifier buffer: %w", err)
 			}
 			p.pos++
 		}
@@ -106,7 +107,7 @@ func (p *Parser) expectString(expected string) error {
 func (p *Parser) parseKeywordOrIdent() (tokens.Token, string, error) {
 	ident, err := p.parseIdent()
 	if err != nil {
-		return -1, "", err
+		return -1, "", fmt.Errorf("error parsing identifier: %w", err)
 	}
 
 	if token, err := tokens.Lookup(ident, tokens.Tokens); err == nil {
@@ -169,7 +170,7 @@ func (p *Parser) parseString() (Expr, error) {
 			return StringExpr{str.String()}, nil
 		} else {
 			if err := str.WriteByte(ch); err != nil {
-				return nil, err
+				return nil, fmt.Errorf("error writing to string buffer: %w", err)
 			}
 			p.pos++
 		}
@@ -190,7 +191,7 @@ func (p *Parser) parseExpr() (Expr, error) {
 		p.parseWhitespace()
 		tok, name, err := p.parseKeywordOrIdent()
 		if err != nil {
-			return nil, err
+			return nil, fmt.Errorf("error parsing keyword or identifier: %w", err)
 		}
 
 		var expr Expr
@@ -227,14 +228,14 @@ func (p *Parser) parseExpr() (Expr, error) {
 
 		p.parseWhitespace()
 		if err := p.expectString(")"); err != nil {
-			return nil, err
+			return nil, fmt.Errorf("expected expression to be closed by \")\": %w", err)
 		}
 
 		return expr, nil
 	case isLetter(ch):
 		lit, err := p.parseIdent()
 		if err != nil {
-			return nil, err
+			return nil, fmt.Errorf("error parsing variable expression: %w", err)
 		}
 
 		return VarExpr{lit}, nil
@@ -251,19 +252,19 @@ func (p *Parser) parseIf() (Expr, error) {
 	p.parseWhitespace()
 	pred, err := p.parseExpr()
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("error parsing if predicate: %w", err)
 	}
 
 	p.parseWhitespace()
 	conseq, err := p.parseExpr()
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("error parsing if consequence: %w", err)
 	}
 
 	p.parseWhitespace()
 	alt, err := p.parseExpr()
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("error parsing if alternative: %w", err)
 	}
 
 	return IfExpr{
@@ -278,19 +279,19 @@ func (p *Parser) parseFor() (Expr, error) {
 	p.parseWhitespace()
 	name, err := p.parseIdent()
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("error parsing for binding identifier: %w", err)
 	}
 
 	p.parseWhitespace()
 	collection, err := p.parseExpr()
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("error parsing for collection: %w", err)
 	}
 
 	p.parseWhitespace()
 	body, err := p.parseExpr()
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("error parsing for body: %w", err)
 	}
 
 	return ForExpr{
@@ -305,7 +306,7 @@ func (p *Parser) parseUnOp(token tokens.Token) (Expr, error) {
 	p.parseWhitespace()
 	expr, err := p.parseExpr()
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("error parsing unop expression: %w", err)
 	}
 
 	return UnOp{token, expr}, nil
@@ -316,7 +317,7 @@ func (p *Parser) parseCollect() (Expr, error) {
 	p.parseWhitespace()
 	expr, err := p.parseExpr()
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("error parsing collect expression: %w", err)
 	}
 	return CollectExpr{expr}, nil
 }
@@ -326,13 +327,13 @@ func (p *Parser) parseBinOp(token tokens.Token) (Expr, error) {
 	p.parseWhitespace()
 	a, err := p.parseExpr()
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("error parsing binop lhs: %w", err)
 	}
 
 	p.parseWhitespace()
 	b, err := p.parseExpr()
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("error parsing binop rhs: %w", err)
 	}
 
 	return BinOp{token, a, b}, nil
@@ -344,13 +345,13 @@ func (p *Parser) parseMultOp(token tokens.Token) (Expr, error) {
 	p.parseWhitespace()
 	exprs, err := p.parseBlock()
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("error parsing multop expressions: %w", err)
 	}
 
 	if block, ok := exprs.(BlockExpr); ok {
 		return MultOp{token, block.Exprs}, nil
 	}
-	return nil, errors.New("expression not a block")
+	return nil, errors.New("error parsing multop expressions: expression not a block")
 }
 
 // parseSelector parses a selector expression.
@@ -365,13 +366,13 @@ func (p *Parser) parseSelector() (Expr, error) {
 		p.parseWhitespace()
 		ident, err := p.parseIdent()
 		if err != nil {
-			return nil, err
+			return nil, fmt.Errorf("error parsing selector binding: %w", err)
 		}
 
 		p.parseWhitespace()
 		selectorExpr, err := p.parseString()
 		if err != nil {
-			return nil, err
+			return nil, fmt.Errorf("error parsing selector for binding %s: %w", ident, err)
 		}
 
 		if selector, ok := selectorExpr.(StringExpr); ok {
@@ -399,7 +400,7 @@ func (p *Parser) parseBlock() (Expr, error) {
 		p.parseWhitespace()
 		expr, err := p.parseExpr()
 		if err != nil {
-			return nil, err
+			return nil, fmt.Errorf("error parsing expression at index %d: %w", len(exprList), err)
 		}
 
 		exprList = append(exprList, expr)
@@ -418,19 +419,19 @@ func (p *Parser) parseRateLimit() (Expr, error) {
 	p.parseWhitespace()
 	url, err := p.parseString()
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("error parsing rate limit url: %w", err)
 	}
 
 	p.parseWhitespace()
 	maxTimes, err := p.parseNumber()
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("error parsing rate limit max times: %w", err)
 	}
 
 	p.parseWhitespace()
 	duration, err := p.parseNumber()
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("error parsing rate limit duration: %w", err)
 	}
 
 	return RateLimitExpr{
@@ -452,13 +453,13 @@ func (p *Parser) parseBindings() (Expr, error) {
 		p.parseWhitespace()
 		name, err := p.parseIdent()
 		if err != nil {
-			return nil, err
+			return nil, fmt.Errorf("error parsing binding identifier: %w", err)
 		}
 
 		p.parseWhitespace()
 		expr, err := p.parseExpr()
 		if err != nil {
-			return nil, err
+			return nil, fmt.Errorf("error parsing expression for binding %s: %w", name, err)
 		}
 
 		bindings[name] = expr
@@ -481,7 +482,7 @@ func (p *Parser) parseGoto() (Expr, error) {
 	p.parseWhitespace()
 	url, err := p.parseExpr()
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("error parsing goto expression: %w", err)
 	}
 
 	return GotoExpr{url}, nil

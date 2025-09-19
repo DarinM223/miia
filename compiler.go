@@ -2,6 +2,7 @@ package main
 
 import (
 	"errors"
+	"fmt"
 
 	"github.com/DarinM223/miia/graph"
 )
@@ -55,40 +56,40 @@ func CompileExpr(g *graph.Globals, expr Expr, scope *Scope) (graph.Node, error) 
 	case ForExpr:
 		collection, err := CompileExpr(g, e.Collection, scope)
 		if err != nil {
-			return nil, err
+			return nil, fmt.Errorf("error compiling for collection: %w", err)
 		}
 
 		newScope := NewScope(scope)
 		newScope.set(e.Name, graph.NewVarNode(g, g.GenID(), e.Name))
 		body, err := CompileExpr(g, e.Body, newScope)
 		if err != nil {
-			return nil, err
+			return nil, fmt.Errorf("error compiling for body: %w", err)
 		}
 
 		return graph.NewForNode(g, g.GenID(), e.Name, collection, body), nil
 	case IfExpr:
 		pred, err := CompileExpr(g, e.Pred, scope)
 		if err != nil {
-			return nil, err
+			return nil, fmt.Errorf("error compiling if predicate: %w", err)
 		}
 
 		scope1, scope2 := NewScope(scope), NewScope(scope)
 
 		conseq, err := CompileExpr(g, e.Conseq, scope1)
 		if err != nil {
-			return nil, err
+			return nil, fmt.Errorf("error compiling if consequence: %w", err)
 		}
 
 		alt, err := CompileExpr(g, e.Alt, scope2)
 		if err != nil {
-			return nil, err
+			return nil, fmt.Errorf("error compiling if alternative: %w", err)
 		}
 
 		return graph.NewIfNode(g, g.GenID(), pred, conseq, alt), nil
 	case GotoExpr:
 		urlNode, err := CompileExpr(g, e.URL, scope)
 		if err != nil {
-			return nil, err
+			return nil, fmt.Errorf("error compiling goto url: %w", err)
 		}
 
 		gotoNode := graph.NewGotoNode(g, g.GenID(), urlNode)
@@ -100,7 +101,7 @@ func CompileExpr(g *graph.Globals, expr Expr, scope *Scope) (graph.Node, error) 
 		for i, expr := range e.Exprs {
 			res, err := CompileExpr(g, expr, newScope)
 			if err != nil {
-				return nil, err
+				return nil, fmt.Errorf("error compiling block: %w", err)
 			}
 
 			// Return result of last expression.
@@ -114,7 +115,7 @@ func CompileExpr(g *graph.Globals, expr Expr, scope *Scope) (graph.Node, error) 
 		for name, expr := range e.Bindings {
 			res, err := CompileExpr(g, expr, scope)
 			if err != nil {
-				return nil, err
+				return nil, fmt.Errorf("error compiling binding %s: %w", name, err)
 			}
 
 			scope.set(name, res)
@@ -128,7 +129,7 @@ func CompileExpr(g *graph.Globals, expr Expr, scope *Scope) (graph.Node, error) 
 		for i := 0; i < len(nodes); i++ {
 			node, err := CompileExpr(g, e.Exprs[i], scope)
 			if err != nil {
-				return nil, err
+				return nil, fmt.Errorf("error compiling mult at index %d: %w", i, err)
 			}
 			nodes[i] = node
 		}
@@ -136,26 +137,26 @@ func CompileExpr(g *graph.Globals, expr Expr, scope *Scope) (graph.Node, error) 
 	case BinOp:
 		a, err := CompileExpr(g, e.A, scope)
 		if err != nil {
-			return nil, err
+			return nil, fmt.Errorf("error compiling binop lhs: %w", err)
 		}
 
 		b, err := CompileExpr(g, e.B, scope)
 		if err != nil {
-			return nil, err
+			return nil, fmt.Errorf("error compiling binop rhs: %w", err)
 		}
 
 		return graph.NewBinOpNode(g, g.GenID(), e.Operator, a, b), nil
 	case UnOp:
 		node, err := CompileExpr(g, e.A, scope)
 		if err != nil {
-			return nil, err
+			return nil, fmt.Errorf("error compiling unop expression %w", err)
 		}
 
 		return graph.NewUnOpNode(g, g.GenID(), e.Operator, node), nil
 	case CollectExpr:
 		node, err := CompileExpr(g, e.A, scope)
 		if err != nil {
-			return nil, err
+			return nil, fmt.Errorf("error compiling collect expression %w", err)
 		}
 		return graph.NewCollectNode(g, g.GenID(), node), nil
 	default:
