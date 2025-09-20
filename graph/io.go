@@ -2,6 +2,7 @@ package graph
 
 import (
 	"errors"
+	"fmt"
 	"io"
 	"reflect"
 	"sync"
@@ -37,8 +38,8 @@ const (
 
 func ReadInt(r io.Reader) (int, error) {
 	buf := make([]byte, 4)
-	if _, err := r.Read(buf); err != nil {
-		return -1, err
+	if n, err := r.Read(buf); err != nil {
+		return -1, fmt.Errorf("error reading to 32-bit integer buffer (%d bytes read): %w", n, err)
 	}
 
 	return int(buf[0]) + (int(buf[1]) << 8) + (int(buf[2]) << 16) + (int(buf[3]) << 24), nil
@@ -46,8 +47,8 @@ func ReadInt(r io.Reader) (int, error) {
 
 func ReadInt64(r io.Reader) (int64, error) {
 	buf := make([]byte, 8)
-	if _, err := r.Read(buf); err != nil {
-		return -1, err
+	if n, err := r.Read(buf); err != nil {
+		return -1, fmt.Errorf("error reading to 64-bit integer buffer (%d bytes read): %w", n, err)
 	}
 
 	return int64(buf[0]) + (int64(buf[1]) << 8) + (int64(buf[2]) << 16) + (int64(buf[3]) << 24) +
@@ -57,12 +58,12 @@ func ReadInt64(r io.Reader) (int64, error) {
 func ReadString(r io.Reader) (string, error) {
 	len, err := ReadInt(r)
 	if err != nil {
-		return "", err
+		return "", fmt.Errorf("error reading string length: %w", err)
 	}
 
 	buf := make([]byte, len)
-	if _, err := r.Read(buf); err != nil {
-		return "", err
+	if n, err := r.Read(buf); err != nil {
+		return "", fmt.Errorf("error reading to string buffer (%d bytes read): %w", n, err)
 	}
 
 	return string(buf[:]), nil
@@ -71,7 +72,7 @@ func ReadString(r io.Reader) (string, error) {
 func ReadValue(r io.Reader) (result any, err error) {
 	dataType, err := ReadInt(r)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("error reading value tag: %w", err)
 	}
 
 	switch DataType(dataType) {
@@ -96,8 +97,10 @@ func WriteInt(w io.Writer, i int) error {
 	b1 := byte((i >> 8) & (0xFF))
 	b0 := byte(i & 0xFF)
 
-	_, err := w.Write([]byte{b0, b1, b2, b3})
-	return err
+	if n, err := w.Write([]byte{b0, b1, b2, b3}); err != nil {
+		return fmt.Errorf("error writing 32-bit integer (wrote %d bytes): %w", n, err)
+	}
+	return nil
 }
 
 func WriteInt64(w io.Writer, i int64) error {
@@ -110,22 +113,26 @@ func WriteInt64(w io.Writer, i int64) error {
 	b1 := byte((i >> 8) & (0xFF))
 	b0 := byte(i & 0xFF)
 
-	_, err := w.Write([]byte{b0, b1, b2, b3, b4, b5, b6, b7})
-	return err
+	if n, err := w.Write([]byte{b0, b1, b2, b3, b4, b5, b6, b7}); err != nil {
+		return fmt.Errorf("error writing 64-bit integer (wrote %d bytes): %w", n, err)
+	}
+	return nil
 }
 
 func WriteString(w io.Writer, s string) error {
 	if err := WriteInt(w, len(s)); err != nil {
-		return err
+		return fmt.Errorf("error writing string length: %w", err)
 	}
 
 	bytes := []byte(s)
-	_, err := w.Write(bytes)
-	return err
+	if n, err := w.Write(bytes); err != nil {
+		return fmt.Errorf("error writing string (wrote %d bytes): %w", n, err)
+	}
+	return nil
 }
 
 func WriteValue(w io.Writer, i any) error {
-	err := errors.New("invalid data type to encode")
+	errInvalidType := errors.New("invalid data type to encode")
 	var dataType DataType
 	if i == nil {
 		dataType = NilType
@@ -138,12 +145,12 @@ func WriteValue(w io.Writer, i any) error {
 		case reflect.String:
 			dataType = StringType
 		default:
-			return err
+			return errInvalidType
 		}
 	}
 
 	if err := WriteInt(w, int(dataType)); err != nil {
-		return err
+		return fmt.Errorf("error writing value tag: %w", err)
 	}
 
 	switch dataType {
@@ -156,7 +163,7 @@ func WriteValue(w io.Writer, i any) error {
 	case NilType:
 		return nil
 	default:
-		return err
+		return errInvalidType
 	}
 }
 
@@ -167,17 +174,17 @@ func WriteValue(w io.Writer, i any) error {
 func ReadGlobals(r io.Reader) (*Globals, error) {
 	currID, err := ReadInt(r)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("error reading globals current id: %w", err)
 	}
 
 	resultNodeID, err := ReadInt(r)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("error reading globals result node id: %w", err)
 	}
 
 	rateLimitersLen, err := ReadInt(r)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("error reading globals rate limiters length: %w", err)
 	}
 
 	globals := &Globals{
@@ -192,17 +199,17 @@ func ReadGlobals(r io.Reader) (*Globals, error) {
 	for i := 0; i < rateLimitersLen; i++ {
 		domain, err := ReadString(r)
 		if err != nil {
-			return nil, err
+			return nil, fmt.Errorf("error reading rate limiter domain for index %d: %w", i, err)
 		}
 
 		limit, err := ReadInt(r)
 		if err != nil {
-			return nil, err
+			return nil, fmt.Errorf("error reading rate limiter limit for index %d: %w", i, err)
 		}
 
 		duration, err := ReadInt64(r)
 		if err != nil {
-			return nil, err
+			return nil, fmt.Errorf("error reading rate limiter duration for index %d: %w", i, err)
 		}
 
 		globals.SetRateLimit(domain, limit, time.Duration(duration))
@@ -210,7 +217,7 @@ func ReadGlobals(r io.Reader) (*Globals, error) {
 
 	// Read result node.
 	if _, err := ReadNode(r, globals); err != nil {
-		return nil, err
+		return nil, fmt.Errorf("error reading globals result node: %w", err)
 	}
 	return globals, nil
 }
@@ -218,7 +225,7 @@ func ReadGlobals(r io.Reader) (*Globals, error) {
 func ReadNode(r io.Reader, g *Globals) (Node, error) {
 	typeByte := make([]byte, 1)
 	if _, err := r.Read(typeByte); err != nil {
-		return nil, err
+		return nil, fmt.Errorf("error reading node tag: %w", err)
 	}
 
 	typeTag := NodeType(typeByte[0])
@@ -251,22 +258,22 @@ func ReadNode(r io.Reader, g *Globals) (Node, error) {
 func readBinOpNode(r io.Reader, g *Globals) (*BinOpNode, error) {
 	id, err := ReadInt(r)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("error reading binop id: %w", err)
 	}
 
 	operator, err := ReadInt(r)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("error reading binop operator: %w", err)
 	}
 
 	a, err := ReadNode(r, g)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("error reading binop lhs: %w", err)
 	}
 
 	b, err := ReadNode(r, g)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("error reading binop rhs: %w", err)
 	}
 
 	return NewBinOpNode(g, id, tokens.Token(operator), a, b), nil
@@ -275,12 +282,12 @@ func readBinOpNode(r io.Reader, g *Globals) (*BinOpNode, error) {
 func readCollectNode(r io.Reader, g *Globals) (*CollectNode, error) {
 	id, err := ReadInt(r)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("error reading collect id: %w", err)
 	}
 
 	node, err := ReadNode(r, g)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("error reading collect node: %w", err)
 	}
 
 	return NewCollectNode(g, id, node), nil
@@ -289,27 +296,27 @@ func readCollectNode(r io.Reader, g *Globals) (*CollectNode, error) {
 func readForNode(r io.Reader, g *Globals) (*ForNode, error) {
 	id, err := ReadInt(r)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("error reading for node id: %w", err)
 	}
 
 	fanout, err := ReadInt(r)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("error reading for node fanout: %w", err)
 	}
 
 	name, err := ReadString(r)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("error reading for node name: %w", err)
 	}
 
 	collection, err := ReadNode(r, g)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("error reading for node collection: %w", err)
 	}
 
 	body, err := ReadNode(r, g)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("error reading for node body: %w", err)
 	}
 
 	forNode := NewForNode(g, id, name, collection, body)
@@ -320,12 +327,12 @@ func readForNode(r io.Reader, g *Globals) (*ForNode, error) {
 func readGotoNode(r io.Reader, g *Globals) (*GotoNode, error) {
 	id, err := ReadInt(r)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("error reading goto id: %w", err)
 	}
 
 	url, err := ReadNode(r, g)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("error reading goto url: %w", err)
 	}
 
 	return NewGotoNode(g, id, url), nil
@@ -334,22 +341,22 @@ func readGotoNode(r io.Reader, g *Globals) (*GotoNode, error) {
 func readIfNode(r io.Reader, g *Globals) (*IfNode, error) {
 	id, err := ReadInt(r)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("error reading if node id: %w", err)
 	}
 
 	pred, err := ReadNode(r, g)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("error reading if node predicate: %w", err)
 	}
 
 	conseq, err := ReadNode(r, g)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("error reading if node consequence: %w", err)
 	}
 
 	alt, err := ReadNode(r, g)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("error reading if node alternative: %w", err)
 	}
 
 	return NewIfNode(g, id, pred, conseq, alt), nil
@@ -358,24 +365,24 @@ func readIfNode(r io.Reader, g *Globals) (*IfNode, error) {
 func readMultOpNode(r io.Reader, g *Globals) (*MultOpNode, error) {
 	id, err := ReadInt(r)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("error reading multop id: %w", err)
 	}
 
 	operator, err := ReadInt(r)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("error reading multop operator: %w", err)
 	}
 
 	nodesLen, err := ReadInt(r)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("error reading multop nodes length: %w", err)
 	}
 
 	nodes := make([]Node, nodesLen)
 	for i := 0; i < nodesLen; i++ {
 		node, err := ReadNode(r, g)
 		if err != nil {
-			return nil, err
+			return nil, fmt.Errorf("error reading multop node at index %d: %w", i, err)
 		}
 
 		nodes[i] = node
@@ -387,29 +394,29 @@ func readMultOpNode(r io.Reader, g *Globals) (*MultOpNode, error) {
 func readSelectorNode(r io.Reader, g *Globals) (*SelectorNode, error) {
 	id, err := ReadInt(r)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("error reading selector node id: %w", err)
 	}
 
 	gotoNode, err := ReadNode(r, g)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("error reading selector node goto: %w", err)
 	}
 
 	selectorsLen, err := ReadInt(r)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("error reading selector node length: %w", err)
 	}
 
 	selectors := make([]Selector, selectorsLen)
 	for i := 0; i < selectorsLen; i++ {
 		name, err := ReadString(r)
 		if err != nil {
-			return nil, err
+			return nil, fmt.Errorf("error reading selector name at index %d: %w", i, err)
 		}
 
 		selector, err := ReadString(r)
 		if err != nil {
-			return nil, err
+			return nil, fmt.Errorf("error reading selector for %s at index %d: %w", name, i, err)
 		}
 
 		selectors[i] = Selector{
@@ -424,17 +431,17 @@ func readSelectorNode(r io.Reader, g *Globals) (*SelectorNode, error) {
 func readUnOpNode(r io.Reader, g *Globals) (*UnOpNode, error) {
 	id, err := ReadInt(r)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("error reading unop id: %w", err)
 	}
 
 	operator, err := ReadInt(r)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("error reading unop operator: %w", err)
 	}
 
 	node, err := ReadNode(r, g)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("error reading unop node: %w", err)
 	}
 
 	return NewUnOpNode(g, id, tokens.Token(operator), node), nil
@@ -443,12 +450,12 @@ func readUnOpNode(r io.Reader, g *Globals) (*UnOpNode, error) {
 func readValueNode(r io.Reader, g *Globals) (*ValueNode, error) {
 	id, err := ReadInt(r)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("error reading value node id: %w", err)
 	}
 
 	value, err := ReadValue(r)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("error reading value node value: %w", err)
 	}
 
 	return NewValueNode(g, id, value), nil
@@ -457,12 +464,12 @@ func readValueNode(r io.Reader, g *Globals) (*ValueNode, error) {
 func readVarNode(r io.Reader, g *Globals) (*VarNode, error) {
 	id, err := ReadInt(r)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("error reading var node id: %w", err)
 	}
 
 	name, err := ReadString(r)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("error reading var node name: %w", err)
 	}
 
 	return NewVarNode(g, id, name), nil
@@ -474,141 +481,141 @@ func readVarNode(r io.Reader, g *Globals) (*VarNode, error) {
 
 func WriteGlobals(w io.Writer, g *Globals) error {
 	if err := WriteInt(w, g.currID); err != nil {
-		return err
+		return fmt.Errorf("error writing globals current id: %w", err)
 	}
 	if err := WriteInt(w, g.resultID); err != nil {
-		return err
+		return fmt.Errorf("error writing globals result id: %w", err)
 	}
 	if err := WriteInt(w, len(g.rateLimiterData)); err != nil {
-		return err
+		return fmt.Errorf("error writing globals rate limiter length: %w", err)
 	}
 
 	for domain, rateLimiter := range g.rateLimiterData {
 		if err := WriteString(w, domain); err != nil {
-			return err
+			return fmt.Errorf("error writing domain %s: %w", domain, err)
 		}
 		if err := WriteInt(w, rateLimiter.limit); err != nil {
-			return err
+			return fmt.Errorf("error writing rate limiter limit for domain %s: %w", domain, err)
 		}
 		if err := WriteInt64(w, int64(rateLimiter.interval)); err != nil {
-			return err
+			return fmt.Errorf("error writing rate limiter interval for domain %s: %w", domain, err)
 		}
 	}
 
 	if err := g.ResultNode().Write(w); err != nil {
-		return err
+		return fmt.Errorf("error writing globals result node: %w", err)
 	}
 	return nil
 }
 
 func (n *BinOpNode) Write(w io.Writer) error {
 	if _, err := w.Write([]byte{byte(BinOpType)}); err != nil {
-		return err
+		return fmt.Errorf("error writing binop tag: %w", err)
 	}
 
 	if err := WriteInt(w, n.id); err != nil {
-		return err
+		return fmt.Errorf("error writing binop id: %w", err)
 	}
 	if err := WriteInt(w, int(n.operator)); err != nil {
-		return err
+		return fmt.Errorf("error writing binop operator: %w", err)
 	}
 	if err := n.a.Write(w); err != nil {
-		return err
+		return fmt.Errorf("error writing binop lhs: %w", err)
 	}
 	if err := n.b.Write(w); err != nil {
-		return err
+		return fmt.Errorf("error writing binop rhs: %w", err)
 	}
 	return nil
 }
 
 func (n *CollectNode) Write(w io.Writer) error {
 	if _, err := w.Write([]byte{byte(CollectType)}); err != nil {
-		return err
+		return fmt.Errorf("error writing collect tag: %w", err)
 	}
 
 	if err := WriteInt(w, n.id); err != nil {
-		return err
+		return fmt.Errorf("error writing collect id: %w", err)
 	}
 	if err := n.node.Write(w); err != nil {
-		return err
+		return fmt.Errorf("error writing collect node: %w", err)
 	}
 	return nil
 }
 
 func (n *ForNode) Write(w io.Writer) error {
 	if _, err := w.Write([]byte{byte(ForType)}); err != nil {
-		return err
+		return fmt.Errorf("error writing for node tag: %w", err)
 	}
 
 	if err := WriteInt(w, n.id); err != nil {
-		return err
+		return fmt.Errorf("error writing for node id: %w", err)
 	}
 	if err := WriteInt(w, n.fanout); err != nil {
-		return err
+		return fmt.Errorf("error writing for node fanout: %w", err)
 	}
 	if err := WriteString(w, n.name); err != nil {
-		return err
+		return fmt.Errorf("error writing for node name: %w", err)
 	}
 	if err := n.collection.Write(w); err != nil {
-		return err
+		return fmt.Errorf("error writing for node collection: %w", err)
 	}
 	if err := n.body.Write(w); err != nil {
-		return err
+		return fmt.Errorf("error writing for node body: %w", err)
 	}
 	return nil
 }
 
 func (n *GotoNode) Write(w io.Writer) error {
 	if _, err := w.Write([]byte{byte(GotoType)}); err != nil {
-		return err
+		return fmt.Errorf("error writing goto tag: %w", err)
 	}
 
 	if err := WriteInt(w, n.id); err != nil {
-		return err
+		return fmt.Errorf("error writing goto id: %w", err)
 	}
 	if err := n.url.Write(w); err != nil {
-		return err
+		return fmt.Errorf("error writing goto url: %w", err)
 	}
 	return nil
 }
 
 func (n *IfNode) Write(w io.Writer) error {
 	if _, err := w.Write([]byte{byte(IfType)}); err != nil {
-		return err
+		return fmt.Errorf("error writing if node tag: %w", err)
 	}
 
 	if err := WriteInt(w, n.id); err != nil {
-		return err
+		return fmt.Errorf("error writing if node id: %w", err)
 	}
 	if err := n.pred.Write(w); err != nil {
-		return err
+		return fmt.Errorf("error writing if node predicate: %w", err)
 	}
 	if err := n.conseq.Write(w); err != nil {
-		return err
+		return fmt.Errorf("error writing if node consequence: %w", err)
 	}
 	if err := n.alt.Write(w); err != nil {
-		return err
+		return fmt.Errorf("error writing if node alternative: %w", err)
 	}
 	return nil
 }
 
 func (n *MultOpNode) Write(w io.Writer) error {
 	if _, err := w.Write([]byte{byte(MultOpType)}); err != nil {
-		return err
+		return fmt.Errorf("error writing multop tag: %w", err)
 	}
 
 	if err := WriteInt(w, n.id); err != nil {
-		return err
+		return fmt.Errorf("error writing multop id: %w", err)
 	}
 	if err := WriteInt(w, int(n.operator)); err != nil {
-		return err
+		return fmt.Errorf("error writing multop operator: %w", err)
 	}
 	if err := WriteInt(w, len(n.nodes)); err != nil {
-		return err
+		return fmt.Errorf("error writing multop nodes length: %w", err)
 	}
-	for _, node := range n.nodes {
+	for i, node := range n.nodes {
 		if err := node.Write(w); err != nil {
-			return err
+			return fmt.Errorf("error writing multop node at index %d: %w", i, err)
 		}
 	}
 	return nil
@@ -616,24 +623,24 @@ func (n *MultOpNode) Write(w io.Writer) error {
 
 func (n *SelectorNode) Write(w io.Writer) error {
 	if _, err := w.Write([]byte{byte(SelectorType)}); err != nil {
-		return err
+		return fmt.Errorf("error writing selector node tag: %w", err)
 	}
 
 	if err := WriteInt(w, n.id); err != nil {
-		return err
+		return fmt.Errorf("error writing selector node id: %w", err)
 	}
 	if err := n.gotoNode.Write(w); err != nil {
-		return err
+		return fmt.Errorf("error writing selector node goto: %w", err)
 	}
 	if err := WriteInt(w, len(n.selectors)); err != nil {
-		return err
+		return fmt.Errorf("error writing selector node length: %w", err)
 	}
-	for _, selector := range n.selectors {
+	for i, selector := range n.selectors {
 		if err := WriteString(w, selector.Name); err != nil {
-			return err
+			return fmt.Errorf("error writing selector name at index %d: %w", i, err)
 		}
 		if err := WriteString(w, selector.Selector); err != nil {
-			return err
+			return fmt.Errorf("error writing selector for %s at index %d: %w", selector.Name, i, err)
 		}
 	}
 	return nil
@@ -641,45 +648,45 @@ func (n *SelectorNode) Write(w io.Writer) error {
 
 func (n *UnOpNode) Write(w io.Writer) error {
 	if _, err := w.Write([]byte{byte(UnOpType)}); err != nil {
-		return err
+		return fmt.Errorf("error writing unop tag: %w", err)
 	}
 
 	if err := WriteInt(w, n.id); err != nil {
-		return err
+		return fmt.Errorf("error writing unop id: %w", err)
 	}
 	if err := WriteInt(w, int(n.operator)); err != nil {
-		return err
+		return fmt.Errorf("error writing unop operator: %w", err)
 	}
 	if err := n.node.Write(w); err != nil {
-		return err
+		return fmt.Errorf("error writing unop node: %w", err)
 	}
 	return nil
 }
 
 func (n *ValueNode) Write(w io.Writer) error {
 	if _, err := w.Write([]byte{byte(ValueType)}); err != nil {
-		return err
+		return fmt.Errorf("error writing value node tag: %w", err)
 	}
 
 	if err := WriteInt(w, n.id); err != nil {
-		return err
+		return fmt.Errorf("error writing value node id: %w", err)
 	}
 	if err := WriteValue(w, n.value); err != nil {
-		return err
+		return fmt.Errorf("error writing value node value: %w", err)
 	}
 	return nil
 }
 
 func (n *VarNode) Write(w io.Writer) error {
 	if _, err := w.Write([]byte{byte(VarType)}); err != nil {
-		return err
+		return fmt.Errorf("error writing var node tag: %w", err)
 	}
 
 	if err := WriteInt(w, n.id); err != nil {
-		return err
+		return fmt.Errorf("error writing var node id: %w", err)
 	}
 	if err := WriteString(w, n.name); err != nil {
-		return err
+		return fmt.Errorf("error writing var node name: %w", err)
 	}
 	return nil
 }
