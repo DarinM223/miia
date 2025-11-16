@@ -38,6 +38,10 @@ which would run the program and print the output.
 ## Testing
 In order to run the unit tests in all the packages, run `go test ./...` in the project directory.
 
+## Linting
+In order to run the linter (currently checks for exhaustive enums and sum types), run `golangci-lint-v2 run ./...`
+in the project directory. This requires installing [golangci-lint](https://github.com/golangci/golangci-lint) locally.
+
 ## TODO
 - ~~Add collect node that collects a from a stream of messages.~~
 - ~~Add array literal support.~~

@@ -21,6 +21,8 @@ const (
 )
 
 // Node is a contained "actor" that sends/receives messages.
+//
+//sumtype:decl
 type Node interface {
 	// ID returns the ID of the specified node.
 	ID() int
@@ -150,6 +152,7 @@ func setNodeFanOut(node Node, vars *[]*varFanOut) fanOutType {
 		return &addFanOut{&multFanOut{v, body}, &constFanOut{1}}
 	case *ValueNode, *VarNode:
 		return &constFanOut{1}
+	default:
 	}
 
 	var result fanOutType = nil

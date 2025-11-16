@@ -1,8 +1,9 @@
 package graph
 
 import (
-	"github.com/DarinM223/miia/tokens"
 	"reflect"
+
+	"github.com/DarinM223/miia/tokens"
 )
 
 // Testing contains utility methods for generating nodes

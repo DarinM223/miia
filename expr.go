@@ -1,11 +1,13 @@
 package main
 
 import (
+	"time"
+
 	"github.com/DarinM223/miia/graph"
 	"github.com/DarinM223/miia/tokens"
-	"time"
 )
 
+//sumtype:decl
 type Expr interface {
 	// expr is a dummy method that "registers"
 	// a struct to be an Expr.

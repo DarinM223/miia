@@ -7,7 +7,9 @@ type msgTag struct {
 
 func (m msgTag) ID() int      { return m.id }
 func (m msgTag) PassUp() bool { return m.passUp }
+func (m msgTag) sealed()      {}
 
+//sumtype:decl
 type Msg interface {
 	// ID is the id of the node sending the message.
 	ID() int
@@ -17,6 +19,7 @@ type Msg interface {
 	// SetID returns a copied message with
 	// the id of the message changed.
 	SetID(id int) Msg
+	sealed()
 }
 
 type ValueMsg struct {

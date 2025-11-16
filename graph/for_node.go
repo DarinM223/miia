@@ -270,6 +270,8 @@ out:
 				n.handleValueMsg(m)
 			case StreamMsg:
 				n.handleStreamMsg(m)
+			case ErrMsg:
+				return m
 			default:
 				panic(fmt.Sprintf("Invalid message from collectionChan received: %v", msg))
 			}

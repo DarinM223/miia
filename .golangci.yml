@@ -1,0 +1,12 @@
+version: "2"
+
+linters:
+  default: none
+
+  enable:
+    - exhaustive
+    - gochecksumtype
+
+  settings:
+    exhaustive:
+      default-signifies-exhaustive: true

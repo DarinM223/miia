@@ -160,6 +160,6 @@ func CompileExpr(g *graph.Globals, expr Expr, scope *Scope) (graph.Node, error) 
 		}
 		return graph.NewCollectNode(g, g.GenID(), node), nil
 	default:
-		return nil, errors.New("invalid expression type")
+		panic("invalid expression type")
 	}
 }
